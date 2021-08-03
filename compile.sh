@@ -1,0 +1,2 @@
+g++ -I/home/shaoxuan/spot-it-3d/include -L/home/shaoxuan/spot-it-3d/lib/hungarian -L/home/shaoxuan/spot-it-3d/lib/json src/*.cpp lib/hungarian/Hungarian.cpp lib/json/jsoncpp.cpp -o output.o `pkg-config --cflags --libs opencv4`
+./output.o
