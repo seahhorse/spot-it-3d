@@ -60,8 +60,8 @@ Json::StreamWriterBuilder builder;
 std::unique_ptr<Json::StreamWriter> writer(builder.newStreamWriter());
 
 void initialize_logs();
-void annotate_frames(std::array<std::shared_ptr<cv::Mat>, 2> frames_, std::array<std::shared_ptr<CameraTracks>, 2> cumulative_tracks_);
-void graphical_UI(cv::Mat combined_frame, std::array<std::shared_ptr<CameraTracks>, 2> cumulative_tracks_);
+void annotate_frames(std::array<std::shared_ptr<cv::Mat>, NUM_OF_CAMERAS_> frames_, std::array<std::shared_ptr<CameraTracks>, NUM_OF_CAMERAS_> cumulative_tracks_);
+void graphical_UI(cv::Mat combined_frame, std::array<std::shared_ptr<CameraTracks>, NUM_OF_CAMERAS_> cumulative_tracks_);
 void imshow_resized(std::string window_name, cv::Mat img);
 
 int main(int argc, char * argv[]) {
@@ -86,6 +86,10 @@ int main(int argc, char * argv[]) {
 			if (camera->frame_.empty()) {
 				std::cout << "Error: Video camera is disconnected!" << std::endl;
 				break;
+			}
+
+			if (IS_REALTIME_) {
+				recordings_[camera->cam_index_]->write(camera->frame_);
 			}
 
 			sky_saturation(camera);
@@ -138,7 +142,7 @@ int main(int argc, char * argv[]) {
 
 		auto detect_end = std::chrono::system_clock::now();
 		
-		for (int i = 0; i < 2; i++) {
+		for (int i = 0; i < NUM_OF_CAMERAS_; i++) {
 			frames_[i] = std::make_shared<cv::Mat>(cameras_[i]->frame_);
 			good_tracks_[i].clear();
 			for (auto & track : cameras_[i]->good_tracks_) {
@@ -156,22 +160,27 @@ int main(int argc, char * argv[]) {
 		
 		auto track_start = std::chrono::system_clock::now();
 
-		update_cumulative_tracks(0, good_tracks_);
-		update_cumulative_tracks(1, good_tracks_);
+		for (int i = 0; i < NUM_OF_CAMERAS_; i++) {
+			update_cumulative_tracks(i, good_tracks_);
+		}
 
-		process_new_tracks(0, 1, good_tracks_, filter_good_tracks_, dead_tracks_);
-		process_new_tracks(1, 0, good_tracks_, filter_good_tracks_, dead_tracks_);
+		if (NUM_OF_CAMERAS_ > 1) {
 
-		generate_matched_ids();
+			process_new_tracks(0, 1, good_tracks_, filter_good_tracks_, dead_tracks_);
+			process_new_tracks(1, 0, good_tracks_, filter_good_tracks_, dead_tracks_);
 
-		verify_existing_tracks();
+			generate_matched_ids();
 
-		calculate_3D();
-		
-		log_3D();
+			verify_existing_tracks();
 
-		prune_tracks(0);
-		prune_tracks(1);
+			calculate_3D();
+			
+			log_3D();
+
+			prune_tracks(0);
+			prune_tracks(1);
+
+		}
 
 		print_frame_summary();
 
@@ -180,17 +189,20 @@ int main(int argc, char * argv[]) {
 		auto track_end = std::chrono::system_clock::now();
 		
 		// show and save video combined tracking frame
-		cv::Mat combined_frame;
-		cv::hconcat(*frames_[0].get(), *frames_[1].get(), combined_frame);
+		cv::Mat combined_frame = *frames_[0].get();
 
-		for (auto line : lines) {
-			cv::line(combined_frame, cv::Point((int) line[0], (int)line[1]), cv::Point((int) line[2], (int) line[3]), cv::Scalar(0, (int) (line[4] * 255), (int) ((1 - line[4]) * 255)), 1);
-			std::string scores;
-			scores = std::to_string(line[5]).substr(0,4) + ", " + std::to_string(line[6]).substr(0,4);
-			cv::putText(combined_frame, scores, cv::Point((int) ((line[0] + line[2]) / 2), (int) ((line[1] + line[3]) / 2)),  
-							cv::FONT_HERSHEY_SIMPLEX, FONT_SCALE_ * 1.5, cv::Scalar(0, (int) (line[4] * 255), (int) ((1 - line[4]) * 255)), 3, cv::LINE_AA);
+		for (int i = 1; i < NUM_OF_CAMERAS_; i++) {
+			cv::hconcat(combined_frame, *frames_[i].get(), combined_frame);
 		}
-		lines.clear();
+		
+		// for (auto line : lines) {
+		// 	cv::line(combined_frame, cv::Point((int) line[0], (int)line[1]), cv::Point((int) line[2], (int) line[3]), cv::Scalar(0, (int) (line[4] * 255), (int) ((1 - line[4]) * 255)), 1);
+		// 	std::string scores;
+		// 	scores = std::to_string(line[5]).substr(0,4) + ", " + std::to_string(line[6]).substr(0,4);
+		// 	cv::putText(combined_frame, scores, cv::Point((int) ((line[0] + line[2]) / 2), (int) ((line[1] + line[3]) / 2)),  
+		// 					cv::FONT_HERSHEY_SIMPLEX, FONT_SCALE_ * 1.5, cv::Scalar(0, (int) (line[4] * 255), (int) ((1 - line[4]) * 255)), 3, cv::LINE_AA);
+		// }
+		// lines.clear();
 
 		graphical_UI(combined_frame, cumulative_tracks_);
 		
@@ -217,11 +229,18 @@ int main(int argc, char * argv[]) {
 
 	std::cout << "Writing logs..." << std::endl;
 	writer -> write(detections_2d_, &targets_2d_file);
-	Json::Value output_3d;
-	output_3d["Detections"] = detections_3d_;
-	writer -> write(output_3d, &targets_3d_file);
+	if (NUM_OF_CAMERAS_ > 1) {
+		Json::Value output_3d;
+		output_3d["Detections"] = detections_3d_;
+		writer -> write(output_3d, &targets_3d_file);
+	}
 
 	recording_.release();
+	if (IS_REALTIME_) {
+		for (int cam_idx = 0; cam_idx < NUM_OF_CAMERAS_; cam_idx++) {
+			recordings_[cam_idx]->release();
+		}
+	}
 	close_cameras();
 
 	frame_time_file.close();
@@ -242,22 +261,29 @@ void initialize_logs() {
 	targets_3d_file.open(TARGETS_3D_OUTPUT_);
 }
 
-void annotate_frames(std::array<std::shared_ptr<cv::Mat>, 2> frames_, std::array<std::shared_ptr<CameraTracks>, 2> cumulative_tracks_) {
+void annotate_frames(std::array<std::shared_ptr<cv::Mat>, NUM_OF_CAMERAS_> frames_, std::array<std::shared_ptr<CameraTracks>, NUM_OF_CAMERAS_> cumulative_tracks_) {
 	
 	// draw tracks on opencv GUI to monitor the detected tracks
 	// lopp through each camera frame
-	for (int i = 0; i < 2; i++) {
+	for (int i = 0; i < NUM_OF_CAMERAS_; i++) {
 
 		cv::putText(*frames_[i].get(), "CAMERA " + std::to_string(i), cv::Point(20, 30),
 			cv::FONT_HERSHEY_SIMPLEX, FONT_SCALE_ * 0.85, cv::Scalar(255, 0, 0), 2, cv::LINE_AA);
 		
 		cv::putText(*frames_[i].get(), "Frame Count " + std::to_string(frame_count_), cv::Point(20, 50),
 			cv::FONT_HERSHEY_SIMPLEX, FONT_SCALE_ * 0.85, cv::Scalar(255, 0, 0), 2, cv::LINE_AA);
+
+		std::map<int, std::shared_ptr<TrackPlot>> display_tracks;
+
+		if (NUM_OF_CAMERAS_ > 1) {
+			display_tracks = cumulative_tracks_[i]->track_plots_;
+		} else {
+			display_tracks = cumulative_tracks_[i]->track_new_plots_;
+		}
 		
 		// loop through every track plot
-		if (cumulative_tracks_[i]->track_plots_.empty() == false) {
-			for (auto track = cumulative_tracks_[i]->track_plots_.begin(); 
-				track != cumulative_tracks_[i]->track_plots_.end(); track++) {
+		if (display_tracks.empty() == false) {
+			for (auto track = display_tracks.begin(); track != display_tracks.end(); track++) {
 				if ((frame_count_ - track->second->lastSeen_) <= VIDEO_FPS_) {
 					
 					cv::Point2i rect_top_left((track->second->xs_.back() - (track->second->size_.back())), 
@@ -337,16 +363,21 @@ void annotate_frames(std::array<std::shared_ptr<cv::Mat>, 2> frames_, std::array
 }
 
 
-void graphical_UI(cv::Mat combined_frame, std::array<std::shared_ptr<CameraTracks>, 2> cumulative_tracks_) {
+void graphical_UI(cv::Mat combined_frame, std::array<std::shared_ptr<CameraTracks>, NUM_OF_CAMERAS_> cumulative_tracks_) {
 
 	// Summary box
 	cv::rectangle(combined_frame, cv::Point(190, 860), cv::Point(800, 900), cv::Scalar(220,220,220), -1);
 	cv::rectangle(combined_frame, cv::Point(190, 860), cv::Point(800, 900), cv::Scalar(110,110,110), 4);
 	int spacing = 0;
 	int drones_on_screen = 0;
-	if (cumulative_tracks_[0]->track_plots_.empty() == false) {
-		for (auto track = cumulative_tracks_[0]->track_plots_.begin(); 
-			track != cumulative_tracks_[0]->track_plots_.end(); track++) {
+	std::map<int, std::shared_ptr<TrackPlot>> display_tracks;
+	if (NUM_OF_CAMERAS_ > 1) {
+		display_tracks = cumulative_tracks_[0]->track_plots_;
+	} else {
+		display_tracks = cumulative_tracks_[0]->track_new_plots_;
+	}
+	if (display_tracks.empty() == false) {
+		for (auto track = display_tracks.begin(); track != display_tracks.end(); track++) {
 			if ((frame_count_ - track->second->lastSeen_) <= VIDEO_FPS_) {
 				drones_on_screen++;
 				cv::putText(combined_frame, "ID: " + std::to_string(track->second->id_).substr(0,4), cv::Point(210 + spacing, 890), cv::FONT_HERSHEY_SIMPLEX,
@@ -382,8 +413,8 @@ void imshow_resized(std::string window_name, cv::Mat img) {
 	double aspect_ratio = (double) img_size.width / (double) img_size.height;
 
 	cv::Size window_size;
-	window_size.width = 1920;
-	window_size.height = (int) (1920.0 / aspect_ratio);
+	window_size.width = 1280;
+	window_size.height = (int) (1280.0 / aspect_ratio);
 	
 	cv::Mat img_;	
 	cv::resize(img, img_, window_size, 0, 0, cv::INTER_CUBIC);

@@ -55,6 +55,7 @@ namespace mcmt {
 	// declare Camera variables
 	std::vector<std::shared_ptr<Camera>> cameras_;
 	cv::Mat element_;
+	std::vector<std::shared_ptr<cv::VideoWriter>> recordings_;
 
 	// declare logging variables
 	Json::Value detections_2d_(Json::arrayValue);
@@ -89,26 +90,40 @@ namespace mcmt {
 	 * Constants, variable and functions definition
 	 */
 	cv::Mat initialize_cameras() {
-		auto camera_1_ = std::shared_ptr<Camera>(
-			new Camera(1, IS_REALTIME_, VIDEO_INPUT_1_, VIDEO_FPS_, FRAME_WIDTH_, 
-				FRAME_HEIGHT_, FGBG_HISTORY_, BACKGROUND_RATIO_, NMIXTURES_));
-		
-		auto camera_2_ = std::shared_ptr<Camera>(
-			new Camera(2, IS_REALTIME_, VIDEO_INPUT_2_, VIDEO_FPS_, FRAME_WIDTH_, 
-				FRAME_HEIGHT_, FGBG_HISTORY_, BACKGROUND_RATIO_, NMIXTURES_));
 
-		cv::Mat sample_frame_1, sample_frame_2;
+		std::string vid_input, vid_output;
 
-		camera_1_->cap_ >> sample_frame_1;
-		camera_1_->cap_ >> sample_frame_2;
-		
-		cameras_.push_back(camera_1_);
-		cameras_.push_back(camera_2_);
+		for (int cam_idx = 0; cam_idx < NUM_OF_CAMERAS_; cam_idx++) {
+			switch (cam_idx) {
+				case 0: 
+					vid_input = VIDEO_INPUT_1_;
+					vid_output = VIDEO_OUTPUT_1_;
+					break;
+				case 1:
+					vid_input = VIDEO_INPUT_2_;
+					vid_output = VIDEO_OUTPUT_2_;
+					break;
+			}
+
+			cameras_.push_back(std::shared_ptr<Camera>(
+				new Camera(cam_idx, IS_REALTIME_, vid_input, VIDEO_FPS_, FRAME_WIDTH_, 
+				FRAME_HEIGHT_, FGBG_HISTORY_, BACKGROUND_RATIO_, NMIXTURES_)));
+
+			if (IS_REALTIME_) {
+				recordings_.push_back(std::shared_ptr<cv::VideoWriter>(new cv::VideoWriter(
+				vid_output, cv::VideoWriter::fourcc('M','J','P','G'), VIDEO_FPS_, 
+				cv::Size(FRAME_WIDTH_, FRAME_HEIGHT_))));
+			}
+			
+		}
+
+		cv::Mat sample_frame;
+		cameras_[0]->cap_ >> sample_frame;
 
 		// initialize kernel used for morphological transformations
 		element_ = cv::getStructuringElement(0, cv::Size(5, 5));
 
-		return sample_frame_1;
+		return sample_frame;
 	}
 
 	void sky_saturation(std::shared_ptr<Camera> & camera) {
@@ -756,7 +771,7 @@ namespace mcmt {
 		Json::Value frame_detections;
 		Json::Value detections(Json::arrayValue);
 		
-		if (camera->good_tracks_.size() != 0 && camera->cam_index_ == 1) {
+		if (camera->good_tracks_.size() != 0 && camera->cam_index_ == 0) {
 			for (auto & good_track : camera->good_tracks_) {
 				Json::Value detection;
 				detection["ID"] = good_track->id_;
@@ -780,8 +795,9 @@ namespace mcmt {
 	 * This function closes the cameras after the program ends.
 	 */
 	void close_cameras() {
-		cameras_[0].get()->cap_.release();
-		cameras_[1].get()->cap_.release();
+		for (int cam_idx = 0; cam_idx < NUM_OF_CAMERAS_; cam_idx++) {
+			cameras_[cam_idx].get()->cap_.release();
+		}
 	}
 
 }

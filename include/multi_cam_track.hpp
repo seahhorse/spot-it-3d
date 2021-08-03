@@ -73,14 +73,14 @@ namespace mcmt {
 
 	// declare tracking variables
 	int next_id_;
-	std::array<std::shared_ptr<CameraTracks>, 2> cumulative_tracks_;
-	std::array<int, 2> total_tracks_;
-	std::array<std::map<int, int>, 2> matching_dict_;
+	std::array<std::shared_ptr<CameraTracks>, NUM_OF_CAMERAS_> cumulative_tracks_;
+	std::array<int, NUM_OF_CAMERAS_> total_tracks_;
+	std::array<std::map<int, int>, NUM_OF_CAMERAS_> matching_dict_;
 
 	// declare tracking arrays
-	std::array<std::shared_ptr<cv::Mat>, 2> frames_;
-	std::array<std::vector<std::shared_ptr<GoodTrack>>, 2> good_tracks_, filter_good_tracks_;
-	std::array<std::vector<int>, 2> dead_tracks_;
+	std::array<std::shared_ptr<cv::Mat>, NUM_OF_CAMERAS_> frames_;
+	std::array<std::vector<std::shared_ptr<GoodTrack>>, NUM_OF_CAMERAS_> good_tracks_, filter_good_tracks_;
+	std::array<std::vector<int>, NUM_OF_CAMERAS_> dead_tracks_;
 	
 	// declare matched ids
 	std::set<int> matched_ids_;
@@ -97,13 +97,13 @@ namespace mcmt {
 
 	// declare tracking functions	
 	void initialize_tracks(cv::Mat sample_frame);
-	void update_cumulative_tracks(int index, std::array<std::vector<std::shared_ptr<GoodTrack>>, 2> & good_tracks);
+	void update_cumulative_tracks(int index, std::array<std::vector<std::shared_ptr<GoodTrack>>, NUM_OF_CAMERAS_> & good_tracks);
 	void prune_tracks(int index);
 	void verify_existing_tracks();
 	void process_new_tracks(int index, int alt,
-		std::array<std::vector<std::shared_ptr<GoodTrack>>, 2> & good_tracks,
-		std::array<std::vector<std::shared_ptr<GoodTrack>>, 2> & filter_good_tracks,
-		std::array<std::vector<int>, 2> & dead_tracks);
+		std::array<std::vector<std::shared_ptr<GoodTrack>>, NUM_OF_CAMERAS_> & good_tracks,
+		std::array<std::vector<std::shared_ptr<GoodTrack>>, NUM_OF_CAMERAS_> & filter_good_tracks,
+		std::array<std::vector<int>, NUM_OF_CAMERAS_> & dead_tracks);
 	void get_total_number_of_tracks();
 	std::vector<double> normalise_track_plot(std::shared_ptr<TrackPlot> track_plot);
 	double crossCorrelation(std::vector<double> X, std::vector<double> Y);
@@ -126,7 +126,7 @@ namespace mcmt {
 
 		// intialize video writer;
 		recording_ = cv::VideoWriter(VIDEO_OUTPUT_ANNOTATED_, cv::VideoWriter::fourcc('M','P','4','V'), VIDEO_FPS_, 
-			cv::Size(2 * sample_frame.cols, sample_frame.rows));
+			cv::Size(NUM_OF_CAMERAS_ * sample_frame.cols, sample_frame.rows));
 
 		// initialize matched track ids
 		next_id_ = 0;
@@ -141,11 +141,17 @@ namespace mcmt {
 	 * this function creates new tracks and the addition to the cumulative tracks log for each frame
 	 */
 	void update_cumulative_tracks(int index,
-		std::array<std::vector<std::shared_ptr<GoodTrack>>, 2> & good_tracks) {
+		std::array<std::vector<std::shared_ptr<GoodTrack>>, NUM_OF_CAMERAS_> & good_tracks) {
 			
-		int track_id;
+		int track_id, centroid_x, centroid_y, size;
+
 		for (auto & track : good_tracks[index]) {
+			
+			// Extract details from the track
 			track_id = track->id;
+			centroid_x = track->x;
+			centroid_y = track->y;
+			size = track->size;
 
 			// occurance of a new track
 			if (matching_dict_[index].find(track_id) == matching_dict_[index].end()) {
@@ -153,8 +159,24 @@ namespace mcmt {
 					new TrackPlot(track_id));
 				matching_dict_[index][track_id] = track_id;
 				
-			}	
-		}
+			}
+
+			std::vector<int> location;
+			location.push_back(centroid_x);
+			location.push_back(centroid_y);
+
+			std::shared_ptr<TrackPlot> track_plot;
+			if (cumulative_tracks_[index]->track_plots_.find(matching_dict_[index][track_id]) 
+				== cumulative_tracks_[index]->track_plots_.end()) {
+				track_plot = cumulative_tracks_[index]->track_new_plots_[track_id];			
+			} else {
+				track_plot = cumulative_tracks_[index]->track_plots_[matching_dict_[index][track_id]];
+			}
+			// Update track_new_plots with centroid and feature variable of every new frame
+			track_plot->update(location, size, frame_count_);
+			track_plot->calculate_track_feature_variable(frame_count_, VIDEO_FPS_);
+		}			
+
 	}
 
 	/**
@@ -265,9 +287,9 @@ namespace mcmt {
 
 	void process_new_tracks(
 		int index, int alt,
-		std::array<std::vector<std::shared_ptr<GoodTrack>>, 2> & good_tracks,
-		std::array<std::vector<std::shared_ptr<GoodTrack>>, 2> & filter_good_tracks,
-		std::array<std::vector<int>, 2> & dead_tracks) {
+		std::array<std::vector<std::shared_ptr<GoodTrack>>, NUM_OF_CAMERAS_> & good_tracks,
+		std::array<std::vector<std::shared_ptr<GoodTrack>>, NUM_OF_CAMERAS_> & filter_good_tracks,
+		std::array<std::vector<int>, NUM_OF_CAMERAS_> & dead_tracks) {
 		
 		get_total_number_of_tracks();
 		std::map<int, std::map<int, double>> corrValues;
@@ -279,20 +301,11 @@ namespace mcmt {
 
 			// Extract details from the track
 			track_id = track->id;
-			centroid_x = track->x;
-			centroid_y = track->y;
-			size = track->size;
 
 			if (cumulative_tracks_[index]->track_plots_.find(matching_dict_[index][track_id]) 
 				== cumulative_tracks_[index]->track_plots_.end()) {
-				std::vector<int> location;
-				location.push_back(centroid_x);
-				location.push_back(centroid_y);
 
-				// Update track_new_plots with centroid and feature variable of every new frame
 				auto track_plot = cumulative_tracks_[index]->track_new_plots_[track_id];			
-				track_plot->update(location, size, frame_count_);
-				track_plot->calculate_track_feature_variable(frame_count_, VIDEO_FPS_);
 
 				// Check if track feature variable has non-zero elements
 				double sum = 0;
@@ -359,13 +372,6 @@ namespace mcmt {
 				row += 1;
 
 			} else {
-				std::vector<int> location;
-				location.push_back(centroid_x);
-				location.push_back(centroid_y);
-
-				auto track_plot = cumulative_tracks_[index]->track_plots_[matching_dict_[index][track_id]];
-				track_plot->update(location, size, frame_count_);
-				track_plot->calculate_track_feature_variable(frame_count_, VIDEO_FPS_);
 				filter_good_tracks[index].erase(filter_good_tracks[index].begin() + row);
 			}
 
@@ -846,39 +852,26 @@ namespace mcmt {
 	}
 
 	void print_frame_summary() {
-        
-        std::cout << "SUMMARY OF FRAME " << frame_count_ << std::endl;
-		std::cout << "Camera 0 New Tracks: ";
-		for (auto it = cumulative_tracks_[0]->track_new_plots_.begin(); it != cumulative_tracks_[0]->track_new_plots_.end(); it++) {
-			std::cout << "(" << it->first << ": " << it->second->id_ << ") | ";
-		}
-		std::cout << std::endl;
-		std::cout << "Camera 0 Tracks: ";
-		for (auto it = cumulative_tracks_[0]->track_plots_.begin(); it != cumulative_tracks_[0]->track_plots_.end(); it++) {
-			std::cout << "(" << it->first << ": " << it->second->id_ << ") | ";
-		}
-		std::cout << std::endl;
-		std::cout << "Camera 0 Matching: ";
-		for (auto it = matching_dict_[0].begin(); it != matching_dict_[0].end(); it++) {
-			std::cout << "(" << it->first << ": " << it->second << ") | ";
-		}
-		std::cout << std::endl;
-		std::cout << "Camera 1 New Tracks: ";
-		for (auto it = cumulative_tracks_[1]->track_new_plots_.begin(); it != cumulative_tracks_[1]->track_new_plots_.end(); it++) {
-			std::cout << "(" << it->first << ": " << it->second->id_ << ") | ";
-		}
-		std::cout << std::endl;
-		std::cout << "Camera 1 Tracks: ";
-		for (auto it = cumulative_tracks_[1]->track_plots_.begin(); it != cumulative_tracks_[1]->track_plots_.end(); it++) {
-			std::cout << "(" << it->first << ": " << it->second->id_ << ") | ";
-		}
-		std::cout << std::endl;
-		std::cout << "Camera 1 Matching: ";
-		for (auto it = matching_dict_[1].begin(); it != matching_dict_[1].end(); it++) {
-			std::cout << "(" << it->first << ": " << it->second << ") | ";
-		}
-		std::cout << std::endl;
 
+		std::cout << "SUMMARY OF FRAME " << frame_count_ << std::endl;
+
+		for (int i = 0; i < NUM_OF_CAMERAS_; i++) {
+			std::cout << "Camera " << i << " New Tracks: ";
+			for (auto it = cumulative_tracks_[i]->track_new_plots_.begin(); it != cumulative_tracks_[i]->track_new_plots_.end(); it++) {
+				std::cout << "(" << it->first << ": " << it->second->id_ << ") | ";
+			}
+			std::cout << std::endl;
+			std::cout << "Camera " << i << " Tracks: ";
+			for (auto it = cumulative_tracks_[i]->track_plots_.begin(); it != cumulative_tracks_[i]->track_plots_.end(); it++) {
+				std::cout << "(" << it->first << ": " << it->second->id_ << ") | ";
+			}
+			std::cout << std::endl;
+			std::cout << "Camera " << i << " Matching: ";
+			for (auto it = matching_dict_[i].begin(); it != matching_dict_[i].end(); it++) {
+				std::cout << "(" << it->first << ": " << it->second << ") | ";
+			}
+			std::cout << std::endl;
+		}		
     }
 
 	void imshow_resized_dual(std::string & window_name, cv::Mat & img) {
