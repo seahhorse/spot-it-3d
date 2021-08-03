@@ -54,5 +54,6 @@ Thumbs.db
 *.jpg
 *.pdf
 
-# ignore csv data files
+# ignore csv and json data files
 *.csv
+*.json

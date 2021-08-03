@@ -207,7 +207,11 @@ namespace mcmt {
 
 		// open video capturing or video file
 		if (is_realtime == true) {
-			cap_ = cv::VideoCapture(std::stoi(video_input_));
+			cap_ = cv::VideoCapture(std::stoi(video_input_), cv::CAP_V4L2);
+			cap_.set(cv::CAP_PROP_FOURCC, cv::VideoWriter::fourcc('M', 'J', 'P', 'G'));
+			cap_.set(cv::CAP_PROP_FRAME_WIDTH, max_frame_width);
+			cap_.set(cv::CAP_PROP_FRAME_HEIGHT, max_frame_height);
+			cap_.set(cv::CAP_PROP_FPS, fps);
 		} else {
 			cap_ = cv::VideoCapture(video_input_);
 		}
@@ -235,8 +239,6 @@ namespace mcmt {
 			std::cout << "Camera opened successful!" << std::endl;
 		}
 		
-		cap_.set(cv::CAP_PROP_FPS, 30);
-
 		// initialize blob detector
 		cv::SimpleBlobDetector::Params blob_params;
 		blob_params.filterByConvexity = false;
