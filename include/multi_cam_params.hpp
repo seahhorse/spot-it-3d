@@ -39,7 +39,7 @@ namespace mcmt {
 	// declare filepaths
 	const bool IS_REALTIME_ = false;
     const int NUM_OF_CAMERAS_ = 2;
-    const std::string VIDEO_INPUT_1_ = "data/input/A.mp4";
+    const std::string VIDEO_INPUT_1_ = "data/input/B.mp4";
     const std::string VIDEO_INPUT_2_ = "data/input/B.mp4";
 	const std::string VIDEO_OUTPUT_1_ = "data/output/A_out.avi";
     const std::string VIDEO_OUTPUT_2_ = "data/output/B_out.avi";
@@ -71,12 +71,6 @@ namespace mcmt {
     const int DILATION_ITER_ = 2;
     const float REMOVE_GROUND_ITER_ = 5.75;
     const float BACKGROUND_CONTOUR_CIRCULARITY_ = 0.5;
-
-	// declare sky adjustment parameters
-    const int BRIGHTNESS_THRES_ = 100;
-    const int SKY_THRES_ = 100;
-    const float MAX_SUN_CONTRAST_GAIN_ = 2.0;
-    const int SUN_BRIGHTNESS_GAIN_ = 0;
 
 	// declare plotting parameters
 	const int PLOT_HISTORY_ = 200;
