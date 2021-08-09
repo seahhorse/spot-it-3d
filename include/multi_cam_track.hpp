@@ -126,7 +126,7 @@ namespace mcmt {
 
 		// intialize video writer;
 		recording_ = cv::VideoWriter(VIDEO_OUTPUT_ANNOTATED_, cv::VideoWriter::fourcc('M','P','4','V'), VIDEO_FPS_, 
-			cv::Size(NUM_OF_CAMERAS_ * sample_frame.cols, sample_frame.rows));
+			cv::Size(NUM_OF_CAMERAS_ * sample_frame.cols, sample_frame.rows + (360 * NUM_OF_CAMERAS_ * sample_frame.cols / 3840)));
 
 		// initialize matched track ids
 		next_id_ = 0;
@@ -873,20 +873,6 @@ namespace mcmt {
 			std::cout << std::endl;
 		}		
     }
-
-	void imshow_resized_dual(std::string & window_name, cv::Mat & img) {
-
-		cv::Size img_size = img.size();
-
-		double aspect_ratio = img_size.width / img_size.height;
-
-		cv::Size window_size;
-		window_size.width = 1920;
-		window_size.height = 1920 / aspect_ratio;
-		
-		cv::resize(img, img, window_size, 0, 0, cv::INTER_CUBIC);
-		cv::imshow(window_name, img);
-	}
 
 }
 

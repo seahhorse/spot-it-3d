@@ -59,14 +59,17 @@ std::ofstream frame_time_file, targets_2d_file, targets_3d_file;
 Json::StreamWriterBuilder builder;
 std::unique_ptr<Json::StreamWriter> writer(builder.newStreamWriter());
 
+cv::Mat ui_;
+
 void initialize_logs();
 void annotate_frames(std::array<std::shared_ptr<cv::Mat>, NUM_OF_CAMERAS_> frames_, std::array<std::shared_ptr<CameraTracks>, NUM_OF_CAMERAS_> cumulative_tracks_);
-void graphical_UI(cv::Mat combined_frame, std::array<std::shared_ptr<CameraTracks>, NUM_OF_CAMERAS_> cumulative_tracks_);
+void graphical_UI(cv::Mat combined_frame, std::array<std::shared_ptr<CameraTracks>, NUM_OF_CAMERAS_> cumulative_tracks_, cv::Size frame_size, double actual_fps);
 void imshow_resized(std::string window_name, cv::Mat img);
 
 int main(int argc, char * argv[]) {
 
 	frame_count_ = 1;
+	bool is_disconnected_ = false;
 
 	cv::Mat sample_frame = initialize_cameras();
 	initialize_tracks(sample_frame);
@@ -85,6 +88,7 @@ int main(int argc, char * argv[]) {
 			// check if getting frame was successful
 			if (camera->frame_.empty()) {
 				std::cout << "Error: Video camera is disconnected!" << std::endl;
+				is_disconnected_ = true;
 				break;
 			}
 
@@ -138,6 +142,10 @@ int main(int argc, char * argv[]) {
 			std::cout << "Total number of tracks in camera " << camera->cam_index_ << ": " << camera->tracks_.size() << std::endl;
 
 			log_2D(camera);
+		}
+
+		if (is_disconnected_) {
+			break;
 		}
 
 		auto detect_end = std::chrono::system_clock::now();
@@ -204,8 +212,6 @@ int main(int argc, char * argv[]) {
 		// }
 		// lines.clear();
 
-		graphical_UI(combined_frame, cumulative_tracks_);
-		
 		auto frame_end = std::chrono::system_clock::now();
 
 		std::chrono::duration<float> detect_elapsed_seconds = detect_end - detect_start;
@@ -214,8 +220,14 @@ int main(int argc, char * argv[]) {
 		std::cout << "Tracking took: " << track_elapsed_seconds.count() << "s\n";
 		std::chrono::duration<float> elapsed_seconds = frame_end - frame_start;
 		std::cout << "Total frame took: " << elapsed_seconds.count() << "s\n";
+
+		graphical_UI(combined_frame, cumulative_tracks_, sample_frame.size(), 1.0 / elapsed_seconds.count());
 	
 		frame_time_file << detect_elapsed_seconds.count() << ", " << track_elapsed_seconds.count() << ", " << elapsed_seconds.count() << "\n"; 
+
+		std::cout << combined_frame.size() << ui_.size() << std::endl;
+
+		cv::vconcat(combined_frame, ui_, combined_frame);
 		
 		recording_.write(combined_frame);
 
@@ -267,11 +279,8 @@ void annotate_frames(std::array<std::shared_ptr<cv::Mat>, NUM_OF_CAMERAS_> frame
 	// lopp through each camera frame
 	for (int i = 0; i < NUM_OF_CAMERAS_; i++) {
 
-		cv::putText(*frames_[i].get(), "CAMERA " + std::to_string(i), cv::Point(20, 30),
-			cv::FONT_HERSHEY_SIMPLEX, FONT_SCALE_ * 0.85, cv::Scalar(255, 0, 0), 2, cv::LINE_AA);
-		
-		cv::putText(*frames_[i].get(), "Frame Count " + std::to_string(frame_count_), cv::Point(20, 50),
-			cv::FONT_HERSHEY_SIMPLEX, FONT_SCALE_ * 0.85, cv::Scalar(255, 0, 0), 2, cv::LINE_AA);
+		cv::putText(*frames_[i].get(), "CAM " + std::to_string(i), cv::Point(20, 30),
+			cv::FONT_HERSHEY_SIMPLEX, FONT_SCALE_ * 1, cv::Scalar(255, 0, 0), 2, cv::LINE_AA);
 
 		std::map<int, std::shared_ptr<TrackPlot>> display_tracks;
 
@@ -314,9 +323,11 @@ void annotate_frames(std::array<std::shared_ptr<cv::Mat>, NUM_OF_CAMERAS_> frame
 					}
 
 					for (auto & idx : shown_indexes_) {
+
 						int color_idx = track->second->frameNos_[idx] - frame_count_ + PLOT_HISTORY_ - 1;
 						double alpha = 0.5 + (double) color_idx / 400;
 						double beta = 1 - alpha;
+
 						cv::Vec3b pixelColor = (*frames_[i].get()).at<cv::Vec3b>(track->second->ys_[idx], track->second->xs_[idx]);
 
 						cv::circle(*frames_[i].get(), cv::Point(track->second->xs_[idx], track->second->ys_[idx]), 3,
@@ -362,12 +373,15 @@ void annotate_frames(std::array<std::shared_ptr<cv::Mat>, NUM_OF_CAMERAS_> frame
 	}
 }
 
+void graphical_UI(cv::Mat combined_frame, std::array<std::shared_ptr<CameraTracks>, NUM_OF_CAMERAS_> cumulative_tracks_, cv::Size frame_size, double actual_fps) {
 
-void graphical_UI(cv::Mat combined_frame, std::array<std::shared_ptr<CameraTracks>, NUM_OF_CAMERAS_> cumulative_tracks_) {
+	int ui_width = 3840;
+	int ui_height = 360;
+	cv::Mat ui(ui_height, ui_width, CV_8UC3, cv::Scalar(0,0,0));
 
 	// Summary box
-	cv::rectangle(combined_frame, cv::Point(190, 860), cv::Point(800, 900), cv::Scalar(220,220,220), -1);
-	cv::rectangle(combined_frame, cv::Point(190, 860), cv::Point(800, 900), cv::Scalar(110,110,110), 4);
+	cv::rectangle(ui, cv::Point(20, 20), cv::Point(1910, 80), cv::Scalar(220,220,220), -1);
+	cv::rectangle(ui, cv::Point(20, 20), cv::Point(1910, 80), cv::Scalar(110,110,110), 4);
 	int spacing = 0;
 	int drones_on_screen = 0;
 	std::map<int, std::shared_ptr<TrackPlot>> display_tracks;
@@ -380,29 +394,48 @@ void graphical_UI(cv::Mat combined_frame, std::array<std::shared_ptr<CameraTrack
 		for (auto track = display_tracks.begin(); track != display_tracks.end(); track++) {
 			if ((frame_count_ - track->second->lastSeen_) <= VIDEO_FPS_) {
 				drones_on_screen++;
-				cv::putText(combined_frame, "ID: " + std::to_string(track->second->id_).substr(0,4), cv::Point(210 + spacing, 890), cv::FONT_HERSHEY_SIMPLEX,
-						FONT_SCALE_ * 1.5, COLORS_[track->second->id_ % 10], 2, cv::LINE_AA);
-				spacing += 100;	
+				cv::putText(ui, "ID: " + std::to_string(track->second->id_).substr(0,4), cv::Point(60 + spacing, 65), cv::FONT_HERSHEY_SIMPLEX,
+						FONT_SCALE_ * 2.5, COLORS_[track->second->id_ % 10], 3, cv::LINE_AA);
+				spacing += 200;	
 			}
 		}
 	}
 
 	// Notification box
-	cv::rectangle(combined_frame, cv::Point(20, 920), cv::Point(800, 1060), cv::Scalar(200,200,200), -1);
+	cv::rectangle(ui, cv::Point(280, 100), cv::Point(1910, 340), cv::Scalar(200,200,200), -1);
 	int num_of_messages = 4;
 	spacing = 0;
-	for (int i = 0; i < num_of_messages && i < debug_messages.size(); i++, spacing -= 30) {
-		cv::putText(combined_frame, debug_messages[debug_messages.size() - 1 - i], cv::Point(40, 1040 + spacing), 
-						cv::FONT_HERSHEY_SIMPLEX, FONT_SCALE_ * 1.5, cv::Scalar(0,0,0), 2, cv::LINE_AA);
+	for (int i = 0; i < num_of_messages && i < debug_messages.size(); i++, spacing -= 50) {
+		cv::putText(ui, debug_messages[debug_messages.size() - 1 - i], cv::Point(320, 300 + spacing), 
+						cv::FONT_HERSHEY_SIMPLEX, FONT_SCALE_ * 2.5, cv::Scalar(0,0,0), 3, cv::LINE_AA);
 	}
 
 	// Targets box
-	cv::rectangle(combined_frame, cv::Point(20, 780), cv::Point(170, 900), cv::Scalar(220,220,220), -1);
-	cv::rectangle(combined_frame, cv::Point(20, 780), cv::Point(170, 900), cv::Scalar(110,110,110), 4);
-	cv::putText(combined_frame, "TARGETS", cv::Point(45, 805), cv::FONT_HERSHEY_SIMPLEX,
-				FONT_SCALE_ * 1.5, cv::Scalar(0,0,0), 2, cv::LINE_AA);
-	cv::putText(combined_frame, std::to_string(drones_on_screen), cv::Point(60, 885), cv::FONT_HERSHEY_SIMPLEX,
-				FONT_SCALE_ * 6, cv::Scalar(0,0,0), 6, cv::LINE_AA);
+	cv::rectangle(ui, cv::Point(20, 100), cv::Point(260, 340), cv::Scalar(220,220,220), -1);
+	cv::rectangle(ui, cv::Point(20, 100), cv::Point(260, 340), cv::Scalar(110,110,110), 4);
+	cv::putText(ui, "TARGETS", cv::Point(40, 150), cv::FONT_HERSHEY_SIMPLEX,
+				FONT_SCALE_ * 3, cv::Scalar(0,0,0), 3, cv::LINE_AA);
+	cv::putText(ui, std::to_string(drones_on_screen), cv::Point(80, 305), cv::FONT_HERSHEY_SIMPLEX,
+				FONT_SCALE_ * 12, cv::Scalar(0,0,0), 15, cv::LINE_AA);
+
+	// Diagnostics
+	cv::rectangle(ui, cv::Point(1930, 20), cv::Point(3000, 340), cv::Scalar(200,200,200), -1);
+	cv::putText(ui, "Resolution: " + std::to_string(frame_size.width) + " x " + std::to_string(frame_size.height), cv::Point(1950, 80), cv::FONT_HERSHEY_SIMPLEX,
+				FONT_SCALE_ * 2.5, cv::Scalar(0,0,0), 3, cv::LINE_AA);
+	cv::putText(ui, "Actual FPS: " + std::to_string(actual_fps).substr(0,4), cv::Point(1950, 140), cv::FONT_HERSHEY_SIMPLEX,
+				FONT_SCALE_ * 2.5, cv::Scalar(0,0,0), 3, cv::LINE_AA);
+	cv::putText(ui, "Frame Count: " + std::to_string(frame_count_), cv::Point(1950, 200), cv::FONT_HERSHEY_SIMPLEX,
+				FONT_SCALE_ * 2.5, cv::Scalar(0,0,0), 3, cv::LINE_AA);
+
+	time_t now = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+	std::string s(21, '\0');
+	std::strftime(&s[0], s.size(), "%Y/%m/%d %H:%M:%S", std::localtime(&now));
+
+	cv::putText(ui, "Current Time: " + s.substr(0,19), cv::Point(1950, 260), cv::FONT_HERSHEY_SIMPLEX,
+				FONT_SCALE_ * 2.5, cv::Scalar(0,0,0), 3, cv::LINE_AA);
+
+	cv::resize(ui, ui_, cv::Size(combined_frame.cols, ui_height * combined_frame.cols / ui_width), 0, 0, cv::INTER_CUBIC);
+
 
 }
 
