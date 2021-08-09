@@ -72,12 +72,6 @@ namespace mcmt {
     const float REMOVE_GROUND_ITER_ = 5.75;
     const float BACKGROUND_CONTOUR_CIRCULARITY_ = 0.5;
 
-	// declare sky adjustment parameters
-    const int BRIGHTNESS_THRES_ = 100;
-    const int SKY_THRES_ = 100;
-    const float MAX_SUN_CONTRAST_GAIN_ = 2.0;
-    const int SUN_BRIGHTNESS_GAIN_ = 0;
-
 	// declare plotting parameters
 	const int PLOT_HISTORY_ = 200;
 	const double FONT_SCALE_ = 0.5;

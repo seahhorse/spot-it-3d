@@ -96,18 +96,26 @@ int main(int argc, char * argv[]) {
 				recordings_[camera->cam_index_]->write(camera->frame_);
 			}
 
-			sky_saturation(camera);
+			// Correct for environmental effects
+			apply_env_compensation(camera);
 
 			// apply background subtraction
-			camera->masked_ = apply_bg_subtractions(camera);
+			for (int i = 0; i < camera->masked_.size(); i++){
+				camera->masked_[i] = apply_bg_subtractions(camera, i);
+			}
 
 			// clear detection variable vectors
 			camera->sizes_.clear();
 			camera->centroids_.clear();
+			for (int i = 0; i < camera->sizes_temp_.size(); i++){
+				camera->sizes_temp_[i].clear();
+				camera->centroids_temp_[i].clear();
+			}
 			
 			// get detections
 			detect_objects(camera);
-			// cv::imshow("Remove Ground", camera->removebg_);
+			// cv::imshow("Remove Ground Original", camera->removebg_[0]);
+			// cv::imshow("Remove Ground EC", camera->removebg_[1]);
 			
 			// apply state estimation filters
 			predict_new_locations_of_tracks(camera);
@@ -134,7 +142,9 @@ int main(int argc, char * argv[]) {
 			create_new_tracks(camera);
 
 			// convert masked to BGR
-			cv::cvtColor(camera->masked_, camera->masked_, cv::COLOR_GRAY2BGR);
+			for (auto & it : camera->masked_) {
+				cv::cvtColor(it, it, cv::COLOR_GRAY2BGR);
+			}
 
 			// filter the tracks
 			camera->good_tracks_ = filter_tracks(camera);

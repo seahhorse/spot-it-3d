@@ -249,9 +249,11 @@ namespace mcmt {
 		int hist = int(fgbg_history * fps_);
 		float varThresh = float(4 / scale_factor_);
 		bool detectShad = false;
-		fgbg_ = cv::createBackgroundSubtractorMOG2(hist, varThresh, detectShad);
-		fgbg_->setBackgroundRatio(background_ratio);
-		fgbg_->setNMixtures(nmixtures);
+		for (int i = 0; i < fgbg_.size(); i++) {
+			fgbg_[i] = cv::createBackgroundSubtractorMOG2(hist, varThresh, detectShad);
+			fgbg_[i]->setBackgroundRatio(background_ratio);
+			fgbg_[i]->setNMixtures(nmixtures);
+		}
 	}
 
 }
