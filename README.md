@@ -95,7 +95,7 @@ The following step-by-step processing will guide you on the installation process
 
 3. 	Replace the parameters as shown below to your specific setup.
 
-	``` bash
+	``` cpptools
 	// declare filepaths
 	const bool IS_REALTIME_ = // true if realtime processing, false otherwise ;
     const int NUM_OF_CAMERAS_ = // 1 for single camera processing, 2 for double camera processing;
@@ -135,11 +135,11 @@ The following step-by-step processing will guide you on the installation process
 
 3. Launch XLaunch and select the following settings:
 
-	Multiple Windows
-	Display Number: -1
-	Start no client
-	
-	Select all checkbox options for "Extra Settings", ensuring that "Disable access control" is checked.
+	![Multiple Windows, -1](./docs/XMing_1.png)
+
+	![Start no client](./docs/XMing_2.png)
+
+	![Select ALL checkboxes](./docs/XMing_3.png)
 
 	*For ease of starting up in subsequent runs, you may wish to save these settings by clicking on the Save Configuration button.*
 
@@ -151,7 +151,7 @@ The following step-by-step processing will guide you on the installation process
 
 We would like to thank the lead researcher in this project, Dr. Sutthiphong Srigrarom, for his continuous guidance and supervision with the development of this project. We would also like to acknowledge the hard work the team in playing a part in developing this software. Our research team comprises:
 
-1. Dr. Sutthiphong Srigrarom (email: spot.srigrarom@nus.edu.sg, GitHub profile: spotkrub)
+1. Dr. Sutthiphong Srigrarom (email: spot.srigrarom@nus.edu.sg, GitHub profile: https://github.com/spotkrub)
 2. Niven Sie Jun Liang (email: sieniven@gmail.com, GitHub profile: https://github.com/sieniven)
 3. Seah Shao Xuan (email: shaoxuan.seah@gmail.com, GitHub profile: https://github.com/seahhorse)
 4. Lau Yan Han (email: sps08.lauyanhan@gmail.com, GitHub profile: https://github.com/disgruntled-patzer)
