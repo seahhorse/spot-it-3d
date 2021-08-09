@@ -135,11 +135,11 @@ The following step-by-step processing will guide you on the installation process
 
 3. Launch XLaunch and select the following settings:
 
-	![Multiple Windows, -1](./docs/XMing_1.png)
+	![Multiple Windows, -1](./docs/XMing_1.PNG)
 
-	![Start no client](./docs/XMing_2.png)
+	![Start no client](./docs/XMing_2.PNG)
 
-	![Select ALL checkboxes](./docs/XMing_3.png)
+	![Select ALL checkboxes](./docs/XMing_3.PNG)
 
 	*For ease of starting up in subsequent runs, you may wish to save these settings by clicking on the Save Configuration button.*
 
