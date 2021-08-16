@@ -75,7 +75,7 @@ int main(int argc, char * argv[]) {
 	initialize_tracks(sample_frame);
 	initialize_logs();
 
-	while (true) {
+	while (frame_count_ <= 90) {
 		
 		auto frame_start = std::chrono::system_clock::now();
 		auto detect_start = std::chrono::system_clock::now();
@@ -151,7 +151,7 @@ int main(int argc, char * argv[]) {
 
 			std::cout << "Total number of tracks in camera " << camera->cam_index_ << ": " << camera->tracks_.size() << std::endl;
 
-			log_2D(camera);
+			log_2D();
 		}
 
 		if (is_disconnected_) {
@@ -234,8 +234,6 @@ int main(int argc, char * argv[]) {
 		graphical_UI(combined_frame, cumulative_tracks_, sample_frame.size(), 1.0 / elapsed_seconds.count());
 	
 		frame_time_file << detect_elapsed_seconds.count() << ", " << track_elapsed_seconds.count() << ", " << elapsed_seconds.count() << "\n"; 
-
-		std::cout << combined_frame.size() << ui_.size() << std::endl;
 
 		cv::vconcat(combined_frame, ui_, combined_frame);
 		

@@ -77,7 +77,7 @@ namespace mcmt {
 	void create_new_tracks(std::shared_ptr<Camera> & camera);
 	void delete_lost_tracks(std::shared_ptr<Camera> & camera);
 	std::vector<std::shared_ptr<Track>> filter_tracks(std::shared_ptr<Camera> & camera);
-	void log_2D(std::shared_ptr<Camera> & camera);
+	void log_2D();
 	void close_cameras();
 
 	// declare utility functions
@@ -896,28 +896,30 @@ namespace mcmt {
 	/**
 	 * This function logs the 2D coordinates for each of the cameras.
 	 */
-	void log_2D(std::shared_ptr<Camera> & camera) {
+	void log_2D() {
 		Json::Value frame_detections;
-		Json::Value detections(Json::arrayValue);
-		
-		if (camera->good_tracks_.size() != 0 && camera->cam_index_ == 0) {
-			for (auto & good_track : camera->good_tracks_) {
-				Json::Value detection;
-				detection["ID"] = good_track->id_;
-				int top_left_x = good_track->centroid_.x - (good_track->size_ / 2);
-				int top_left_y = good_track->centroid_.y - (good_track->size_ / 2);
-				int bottom_right_x = good_track->centroid_.x + (good_track->size_ / 2);
-				int bottom_right_y = good_track->centroid_.y + (good_track->size_ / 2);
-				std::string top_left = "(" + std::to_string(top_left_x) + ", " + std::to_string(top_left_y) + ")";
-				std::string bottom_right = "(" + std::to_string(bottom_right_x) + ", " + std::to_string(bottom_right_y) + ")";
-				detection["Top-Left"] = top_left;
-				detection["Bottom-Right"] = bottom_right;
-				detections.append(detection);
+		frame_detections["Frame Number"] = frame_count_;
+		for (auto & camera : cameras_) {
+			Json::Value detections(Json::arrayValue);
+			if (camera->good_tracks_.size() != 0) {
+				for (auto & good_track : camera->good_tracks_) {
+					Json::Value detection;
+					detection["ID"] = good_track->id_;
+					int top_left_x = good_track->centroid_.x - (good_track->size_ / 2);
+					int top_left_y = good_track->centroid_.y - (good_track->size_ / 2);
+					int bottom_right_x = good_track->centroid_.x + (good_track->size_ / 2);
+					int bottom_right_y = good_track->centroid_.y + (good_track->size_ / 2);
+					std::string top_left = "(" + std::to_string(top_left_x) + ", " + std::to_string(top_left_y) + ")";
+					std::string bottom_right = "(" + std::to_string(bottom_right_x) + ", " + std::to_string(bottom_right_y) + ")";
+					detection["Top-Left"] = top_left;
+					detection["Bottom-Right"] = bottom_right;
+					detections.append(detection);
+				}
+				
+				frame_detections["Cam " + std::to_string(camera->cam_index_)] = detections;
 			}
-			frame_detections["Frame Number"] = frame_count_;
-			frame_detections["Detections"] = detections;
-			detections_2d_.append(frame_detections);
 		}
+		detections_2d_.append(frame_detections);
 	}
 
 	/**
