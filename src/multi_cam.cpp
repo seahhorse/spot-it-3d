@@ -75,7 +75,7 @@ int main(int argc, char * argv[]) {
 	initialize_tracks(sample_frame);
 	initialize_logs();
 
-	while (frame_count_ <= 90) {
+	while (true) {
 		
 		auto frame_start = std::chrono::system_clock::now();
 		auto detect_start = std::chrono::system_clock::now();
