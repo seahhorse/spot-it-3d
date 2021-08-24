@@ -38,12 +38,12 @@ namespace mcmt {
 
 	// declare filepaths
 	const bool IS_REALTIME_ = false;
-    const int NUM_OF_CAMERAS_ = 2;
-    const std::string VIDEO_INPUT_1_ = "data/input/E.avi";
+    const int NUM_OF_CAMERAS_ = 1;
+    const std::string VIDEO_INPUT_1_ = "data/input/easybuilding_aircamera1.mp4";
     const std::string VIDEO_INPUT_2_ = "data/input/F.avi";
 	const std::string VIDEO_OUTPUT_1_ = "data/output/A_out.avi";
     const std::string VIDEO_OUTPUT_2_ = "data/output/B_out.avi";
-	const std::string VIDEO_OUTPUT_ANNOTATED_ = "data/output/annotated.avi";
+	const std::string VIDEO_OUTPUT_ANNOTATED_ = "data/output/easybuilding_aircamera1.avi";
 	const std::string TARGETS_2D_OUTPUT_ = "data/output/targets_2d_out.json";
     const std::string TARGETS_3D_OUTPUT_ = "data/output/targets_3d_out.json";
     const std::string FRAME_TIME_ = "data/output/frame_time.csv";

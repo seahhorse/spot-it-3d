@@ -75,6 +75,8 @@ int main(int argc, char * argv[]) {
 	initialize_tracks(sample_frame);
 	initialize_logs();
 
+	cameras_[0]->cap_ >> cameras_[0]->frame_store_;
+
 	while (true) {
 		
 		auto frame_start = std::chrono::system_clock::now();
@@ -84,6 +86,17 @@ int main(int argc, char * argv[]) {
 
 			// get camera frame
 			camera->cap_ >> camera->frame_;
+
+			cv::Mat frame_delta_;
+			cv::absdiff(camera->frame_, camera->frame_store_, frame_delta_);
+
+			camera->frame_store_ = camera->frame_;
+
+			std::cout << cv::sum(frame_delta_) << std::endl;
+
+			imshow_resized("Test", frame_delta_);
+
+			camera->frame_ = frame_delta_;
 
 			// check if getting frame was successful
 			if (camera->frame_.empty()) {
@@ -152,6 +165,7 @@ int main(int argc, char * argv[]) {
 			std::cout << "Total number of tracks in camera " << camera->cam_index_ << ": " << camera->tracks_.size() << std::endl;
 
 			log_2D();
+
 		}
 
 		if (is_disconnected_) {
