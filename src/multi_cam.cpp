@@ -86,17 +86,8 @@ int main(int argc, char * argv[]) {
 
 			// get camera frame
 			camera->cap_ >> camera->frame_;
+			camera->frame_original_ = camera->frame_.clone();
 
-			cv::Mat frame_delta_;
-			cv::absdiff(camera->frame_, camera->frame_store_, frame_delta_);
-
-			camera->frame_store_ = camera->frame_;
-
-			std::cout << cv::sum(frame_delta_) << std::endl;
-
-			imshow_resized("Test", frame_delta_);
-
-			camera->frame_ = frame_delta_;
 
 			// check if getting frame was successful
 			if (camera->frame_.empty()) {
@@ -109,7 +100,10 @@ int main(int argc, char * argv[]) {
 				recordings_[camera->cam_index_]->write(camera->frame_);
 			}
 
-			// Correct for environmental effects
+			// apply frame by frame subtraction for feature enhancement
+			frame_to_frame_subtraction(camera);
+
+			// correct for environmental effects
 			apply_env_compensation(camera);
 
 			// apply background subtraction
@@ -165,6 +159,9 @@ int main(int argc, char * argv[]) {
 			std::cout << "Total number of tracks in camera " << camera->cam_index_ << ": " << camera->tracks_.size() << std::endl;
 
 			log_2D();
+			
+			// update the stored t-1 frame 
+			camera->frame_store_ = camera->frame_original_.clone();
 
 		}
 
@@ -175,7 +172,7 @@ int main(int argc, char * argv[]) {
 		auto detect_end = std::chrono::system_clock::now();
 		
 		for (int i = 0; i < NUM_OF_CAMERAS_; i++) {
-			frames_[i] = std::make_shared<cv::Mat>(cameras_[i]->frame_);
+			frames_[i] = std::make_shared<cv::Mat>(cameras_[i]->frame_original_);
 			good_tracks_[i].clear();
 			for (auto & track : cameras_[i]->good_tracks_) {
 				auto good_track = std::shared_ptr<GoodTrack>(new GoodTrack());

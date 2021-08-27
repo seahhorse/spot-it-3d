@@ -102,7 +102,7 @@ namespace mcmt {
 
 			// declare video parameters
 			cv::VideoCapture cap_;
-			cv::Mat frame_, frame_ec_, gray_, frame_store_;
+			cv::Mat frame_, frame_original_, frame_ec_, gray_, frame_store_;
 			std::array<cv::Mat, 2> masked_, removebg_;
 			std::string video_input_;
 			int cam_index_, frame_w_, frame_h_, fps_, next_id_;

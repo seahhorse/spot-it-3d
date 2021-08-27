@@ -62,6 +62,7 @@ namespace mcmt {
 
 	// declare detection and tracking functions
 	cv::Mat initialize_cameras();
+	void frame_to_frame_subtraction(std::shared_ptr<Camera> & camera);
 	void apply_env_compensation(std::shared_ptr<Camera> & camera);
 	cv::Mat apply_bg_subtractions(std::shared_ptr<Camera> & camera, int frame_id);
 	void detect_objects(std::shared_ptr<Camera> & camera);
@@ -128,6 +129,24 @@ namespace mcmt {
 	}
 
 	/**
+	 * Takes the difference between frames at t and t-1 to extract out moving objects.
+	 * Especially useful for when the drone passes behind noisy background features.
+	 * The moving objects are added back to the original frame as feature enhancements 
+	 */
+	void frame_to_frame_subtraction(std::shared_ptr<Camera> & camera) {
+		
+			cv::Mat frame_delta_, frame_delta_grayscale_;
+			cv::absdiff(camera->frame_, camera->frame_store_, frame_delta_);
+
+			cv::cvtColor(frame_delta_, frame_delta_grayscale_, CV_BGR2GRAY);
+			cv::bitwise_not(frame_delta_grayscale_, frame_delta_grayscale_);
+			cv::cvtColor(frame_delta_grayscale_, frame_delta_, CV_GRAY2RGB);
+
+			double alpha = 0.75;
+   			cv::addWeighted(frame_delta_, alpha, camera->frame_, 1.0 - alpha, 0.0, camera->frame_);
+	}
+
+	/**
 	 * Apply environmental compensation on frame. This is needed when environmental conditions prevent
  	 * the target from standing out. Localised contrast and saturation changes are applied to
  	 * regions of the frame identified as sky depending on brightness conditions in each region
@@ -190,7 +209,7 @@ namespace mcmt {
 
 		// Recombine the sky and treeline
 		cv::add(sky, non_sky, camera->frame_ec_);
-		cv::imshow("After sun compensation", camera->frame_ec_);
+		// cv::imshow("After sun compensation", camera->frame_ec_);
 	}
 
 	/**
