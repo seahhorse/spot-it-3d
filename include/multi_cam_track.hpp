@@ -132,8 +132,10 @@ namespace mcmt {
 		next_id_ = 0;
 
 		// initialize cumulative camera tracks
-		cumulative_tracks_[0] = std::shared_ptr<CameraTracks>(new CameraTracks(0));
-		cumulative_tracks_[1] = std::shared_ptr<CameraTracks>(new CameraTracks(1));
+		for (int cam_idx = 0; cam_idx < NUM_OF_CAMERAS_; cam_idx++) {
+			cumulative_tracks_[cam_idx] = std::shared_ptr<CameraTracks>(new CameraTracks(cam_idx));
+			cumulative_tracks_[cam_idx] = std::shared_ptr<CameraTracks>(new CameraTracks(cam_idx));
+		}
 
 	}
 

@@ -61,7 +61,7 @@ namespace mcmt {
 	Json::Value detections_2d_(Json::arrayValue);
 
 	// declare detection and tracking functions
-	cv::Mat initialize_cameras();
+	std::vector<cv::Mat> initialize_cameras();
 	void frame_to_frame_subtraction(std::shared_ptr<Camera> & camera);
 	void apply_env_compensation(std::shared_ptr<Camera> & camera);
 	cv::Mat apply_bg_subtractions(std::shared_ptr<Camera> & camera, int frame_id);
@@ -91,7 +91,7 @@ namespace mcmt {
 	/**
 	 * Constants, variable and functions definition
 	 */
-	cv::Mat initialize_cameras() {
+	std::vector<cv::Mat> initialize_cameras() {
 
 		std::string vid_input, vid_output;
 
@@ -119,13 +119,17 @@ namespace mcmt {
 			
 		}
 
+		std::vector<cv::Mat> sample_frames;
 		cv::Mat sample_frame;
-		cameras_[0]->cap_ >> sample_frame;
-
+		for (int cam_idx = 0; cam_idx < NUM_OF_CAMERAS_; cam_idx++) {
+			cameras_[cam_idx]->cap_ >> sample_frame;
+			sample_frames.push_back(sample_frame);
+		}
+		
 		// initialize kernel used for morphological transformations
 		element_ = cv::getStructuringElement(0, cv::Size(5, 5));
 
-		return sample_frame;
+		return sample_frames;
 	}
 
 	/**
