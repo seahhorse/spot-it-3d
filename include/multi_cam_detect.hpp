@@ -211,6 +211,15 @@ namespace mcmt {
     	}
 		cv::cvtColor(sky, sky, cv::COLOR_HSV2BGR);
 
+		// Treeline (non-sky) enhancements using histogram equalisation on intensity channel
+		channels.clear();
+		cv::Mat ycrcb;
+		cv::cvtColor(non_sky, ycrcb, cv::COLOR_BGR2YCrCb);
+		cv::split(ycrcb, channels);
+		cv::equalizeHist(channels[0], channels[0]);
+		cv::merge(channels, ycrcb);
+		cv::cvtColor(ycrcb, non_sky, cv::COLOR_YCrCb2BGR);
+
 		// Recombine the sky and treeline
 		cv::add(sky, non_sky, camera->frame_ec_);
 		// cv::imshow("After sun compensation", camera->frame_ec_);
