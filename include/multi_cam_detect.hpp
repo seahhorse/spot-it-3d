@@ -146,7 +146,7 @@ namespace mcmt {
 			cv::bitwise_not(frame_delta_grayscale_, frame_delta_grayscale_);
 			cv::cvtColor(frame_delta_grayscale_, frame_delta_, CV_GRAY2RGB);
 
-			double alpha = 0.75;
+			double alpha = 0.85;
    			cv::addWeighted(frame_delta_, alpha, camera->frame_, 1.0 - alpha, 0.0, camera->frame_);
 	}
 
@@ -317,6 +317,51 @@ namespace mcmt {
 
 		// draw contours on masked frame to remove background
 		cv::drawContours(camera->masked_[masked_id], background_contours, -1, cv::Scalar(0, 0, 0), -1);
+
+		// cv::Mat bg_mask;
+		// cv::Mat fg_mask = camera->frame_original_.clone();
+		// cv::drawContours(fg_mask, background_contours, -1, cv::Scalar(0, 0, 0), -1);
+		// cv::absdiff(fg_mask, camera->frame_original_, bg_mask);
+
+		// cv::Mat bg_mask_store = camera->frame_store_.clone();
+		// cv::drawContours(bg_mask_store, background_contours, -1, cv::Scalar(0, 0, 0), -1);
+		// cv::absdiff(bg_mask_store, camera->frame_store_, bg_mask_store);
+
+		// cv::Mat frame_delta_, frame_delta_grayscale_;
+		// cv::absdiff(bg_mask, bg_mask_store, frame_delta_);
+
+		// cv::cvtColor(frame_delta_, frame_delta_grayscale_, CV_BGR2GRAY);
+		// cv::bitwise_not(frame_delta_grayscale_, frame_delta_grayscale_);
+		// cv::cvtColor(frame_delta_grayscale_, frame_delta_, CV_GRAY2RGB);
+		// cv::Mat frame_delta_temp_ = frame_delta_.clone();
+		// cv::drawContours(frame_delta_, background_contours, -1, cv::Scalar(0, 0, 0), -1);
+		// cv::absdiff(frame_delta_, frame_delta_temp_, frame_delta_);
+
+		// cv::imshow("Frame Delta " + std::to_string(masked_id), frame_delta_);
+
+		// double alpha = 0.75;
+   		// cv::addWeighted(frame_delta_, alpha, bg_mask, 1.0 - alpha, 0.0, bg_mask);
+
+		// cv::imshow("FG Mask " + std::to_string(masked_id), fg_mask);
+
+		// cv::Mat bg_augmented_mat;
+		// cv::addWeighted(fg_mask, 1.0, bg_mask, 1.0, 0.0, bg_augmented_mat);
+
+		// cv::imshow("BG Augmented " + std::to_string(masked_id), bg_augmented_mat);
+		// // cv::imshow("BG Subtracted " + std::to_string(masked_id), camera->masked_[masked_id]);
+		// // cv::imshow("BG Contour " + std::to_string(masked_id), bg_removed);
+
+		// cv::Mat masked, converted_mask;
+		
+
+		// cv::convertScaleAbs(frame_delta_, masked);
+		// // cv::convertScaleAbs(masked, masked, 1, (256 - average_brightness(camera) + BRIGHTNESS_GAIN_));
+		
+		// // subtract background
+		// camera->fgbg_[masked_id]->apply(masked, masked, FGBG_LEARNING_RATE_);
+		// masked.convertTo(converted_mask, CV_8UC1);
+		// cv::imshow("Converted Mask " + std::to_string(masked_id), converted_mask);
+
 		return bg_removed;
 	}
 
