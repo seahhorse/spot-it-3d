@@ -146,8 +146,7 @@ namespace mcmt {
 			cv::bitwise_not(frame_delta_grayscale_, frame_delta_grayscale_);
 			cv::cvtColor(frame_delta_grayscale_, frame_delta_, cv::COLOR_GRAY2BGR);
 
-			double alpha = 0.85;
-   			cv::addWeighted(frame_delta_, alpha, camera->frame_, 1.0 - alpha, 0.0, camera->frame_);
+   			cv::addWeighted(frame_delta_, DELTA_FRAME_PROPORTION_, camera->frame_, 1.0 - DELTA_FRAME_PROPORTION_, 0.0, camera->frame_);
 	}
 
 	/**
@@ -212,7 +211,7 @@ namespace mcmt {
 		cv::cvtColor(sky, sky, cv::COLOR_HSV2BGR);
 
 		// Treeline (non-sky) enhancements using histogram equalisation on intensity channel
-		if (USE_HIST_EQUALISE) {
+		if (USE_HIST_EQUALISE_) {
 			channels.clear();
 			cv::Mat ycrcb;
 			cv::cvtColor(non_sky, ycrcb, cv::COLOR_BGR2YCrCb);
@@ -259,7 +258,7 @@ namespace mcmt {
 		for (int i = 0; i < camera->masked_.size(); i++) {
 		
 			// apply background subtractor
-			if (USE_BG_SUBTRACTOR){
+			if (USE_BG_SUBTRACTOR_){
 				camera->removebg_[i] = remove_ground(camera, i);
 			}
 		
