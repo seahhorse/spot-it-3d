@@ -62,7 +62,11 @@ namespace mcmt {
     const int SECONDARY_FILTER_ = 2;
     const float SEC_FILTER_DELAY_ = 1.0;
 
+    // declare environment compensation parameters
+    const bool USE_HIST_EQUALISE = false;
+
 	// declare background subtractor parameters
+    const bool USE_BG_SUBTRACTOR = false;
     const int FGBG_HISTORY_ = 5;
     const float BACKGROUND_RATIO_ = 0.05;
     const int NMIXTURES_ = 5;
