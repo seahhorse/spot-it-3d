@@ -142,9 +142,9 @@ namespace mcmt {
 			cv::Mat frame_delta_, frame_delta_grayscale_;
 			cv::absdiff(camera->frame_, camera->frame_store_, frame_delta_);
 
-			cv::cvtColor(frame_delta_, frame_delta_grayscale_, CV_BGR2GRAY);
+			cv::cvtColor(frame_delta_, frame_delta_grayscale_, cv::COLOR_BGR2GRAY);
 			cv::bitwise_not(frame_delta_grayscale_, frame_delta_grayscale_);
-			cv::cvtColor(frame_delta_grayscale_, frame_delta_, CV_GRAY2RGB);
+			cv::cvtColor(frame_delta_grayscale_, frame_delta_, cv::COLOR_GRAY2BGR);
 
 			double alpha = 0.85;
    			cv::addWeighted(frame_delta_, alpha, camera->frame_, 1.0 - alpha, 0.0, camera->frame_);
