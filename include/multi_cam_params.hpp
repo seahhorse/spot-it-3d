@@ -38,12 +38,12 @@ namespace mcmt {
 
 	// declare filepaths
 	const bool IS_REALTIME_ = false;
-    const int NUM_OF_CAMERAS_ = 2;
-    const std::string VIDEO_INPUT_1_ = "data/input/E.avi";
+    const int NUM_OF_CAMERAS_ = 1;
+    const std::string VIDEO_INPUT_1_ = "data/input/easybuilding_aircamera1.mp4";
     const std::string VIDEO_INPUT_2_ = "data/input/F.avi";
 	const std::string VIDEO_OUTPUT_1_ = "data/output/A_out.avi";
     const std::string VIDEO_OUTPUT_2_ = "data/output/B_out.avi";
-	const std::string VIDEO_OUTPUT_ANNOTATED_ = "data/output/annotated.avi";
+	const std::string VIDEO_OUTPUT_ANNOTATED_ = "data/output/easybuilding_aircamera1_75%.avi";
 	const std::string TARGETS_2D_OUTPUT_ = "data/output/targets_2d_out.json";
     const std::string TARGETS_3D_OUTPUT_ = "data/output/targets_3d_out.json";
     const std::string FRAME_TIME_ = "data/output/frame_time.csv";
@@ -62,7 +62,11 @@ namespace mcmt {
     const int SECONDARY_FILTER_ = 2;
     const float SEC_FILTER_DELAY_ = 1.0;
 
+    // declare environment compensation parameters
+    const bool USE_HIST_EQUALISE = false;
+
 	// declare background subtractor parameters
+    const bool USE_BG_SUBTRACTOR = false;
     const int FGBG_HISTORY_ = 5;
     const float BACKGROUND_RATIO_ = 0.05;
     const int NMIXTURES_ = 5;

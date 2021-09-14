@@ -71,9 +71,13 @@ int main(int argc, char * argv[]) {
 	frame_count_ = 1;
 	bool is_disconnected_ = false;
 
-	cv::Mat sample_frame = initialize_cameras();
-	initialize_tracks(sample_frame);
+	std::vector<cv::Mat> sample_frames = initialize_cameras();
+	initialize_tracks(sample_frames[0]);
 	initialize_logs();
+
+	for (int cam_idx = 0; cam_idx < NUM_OF_CAMERAS_; cam_idx++) {
+		cameras_[cam_idx]->cap_ >> cameras_[cam_idx]->frame_store_;
+	}
 
 	while (true) {
 		
@@ -84,6 +88,7 @@ int main(int argc, char * argv[]) {
 
 			// get camera frame
 			camera->cap_ >> camera->frame_;
+			camera->frame_original_ = camera->frame_.clone();
 
 			// check if getting frame was successful
 			if (camera->frame_.empty()) {
@@ -96,7 +101,10 @@ int main(int argc, char * argv[]) {
 				recordings_[camera->cam_index_]->write(camera->frame_);
 			}
 
-			// Correct for environmental effects
+			// apply frame by frame subtraction for feature enhancement
+			frame_to_frame_subtraction(camera);
+
+			// correct for environmental effects
 			apply_env_compensation(camera);
 
 			// apply background subtraction
@@ -152,6 +160,10 @@ int main(int argc, char * argv[]) {
 			std::cout << "Total number of tracks in camera " << camera->cam_index_ << ": " << camera->tracks_.size() << std::endl;
 
 			log_2D();
+			
+			// update the stored t-1 frame 
+			camera->frame_store_ = camera->frame_original_.clone();
+
 		}
 
 		if (is_disconnected_) {
@@ -161,7 +173,7 @@ int main(int argc, char * argv[]) {
 		auto detect_end = std::chrono::system_clock::now();
 		
 		for (int i = 0; i < NUM_OF_CAMERAS_; i++) {
-			frames_[i] = std::make_shared<cv::Mat>(cameras_[i]->frame_);
+			frames_[i] = std::make_shared<cv::Mat>(cameras_[i]->frame_original_);
 			good_tracks_[i].clear();
 			for (auto & track : cameras_[i]->good_tracks_) {
 				auto good_track = std::shared_ptr<GoodTrack>(new GoodTrack());
@@ -231,7 +243,7 @@ int main(int argc, char * argv[]) {
 		std::chrono::duration<float> elapsed_seconds = frame_end - frame_start;
 		std::cout << "Total frame took: " << elapsed_seconds.count() << "s\n";
 
-		graphical_UI(combined_frame, cumulative_tracks_, sample_frame.size(), 1.0 / elapsed_seconds.count());
+		graphical_UI(combined_frame, cumulative_tracks_, sample_frames[0].size(), 1.0 / elapsed_seconds.count());
 	
 		frame_time_file << detect_elapsed_seconds.count() << ", " << track_elapsed_seconds.count() << ", " << elapsed_seconds.count() << "\n"; 
 

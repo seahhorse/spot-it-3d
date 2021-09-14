@@ -61,7 +61,8 @@ namespace mcmt {
 	Json::Value detections_2d_(Json::arrayValue);
 
 	// declare detection and tracking functions
-	cv::Mat initialize_cameras();
+	std::vector<cv::Mat> initialize_cameras();
+	void frame_to_frame_subtraction(std::shared_ptr<Camera> & camera);
 	void apply_env_compensation(std::shared_ptr<Camera> & camera);
 	cv::Mat apply_bg_subtractions(std::shared_ptr<Camera> & camera, int frame_id);
 	void detect_objects(std::shared_ptr<Camera> & camera);
@@ -90,7 +91,7 @@ namespace mcmt {
 	/**
 	 * Constants, variable and functions definition
 	 */
-	cv::Mat initialize_cameras() {
+	std::vector<cv::Mat> initialize_cameras() {
 
 		std::string vid_input, vid_output;
 
@@ -118,13 +119,35 @@ namespace mcmt {
 			
 		}
 
+		std::vector<cv::Mat> sample_frames;
 		cv::Mat sample_frame;
-		cameras_[0]->cap_ >> sample_frame;
-
+		for (int cam_idx = 0; cam_idx < NUM_OF_CAMERAS_; cam_idx++) {
+			cameras_[cam_idx]->cap_ >> sample_frame;
+			sample_frames.push_back(sample_frame);
+		}
+		
 		// initialize kernel used for morphological transformations
 		element_ = cv::getStructuringElement(0, cv::Size(5, 5));
 
-		return sample_frame;
+		return sample_frames;
+	}
+
+	/**
+	 * Takes the difference between frames at t and t-1 to extract out moving objects.
+	 * Especially useful for when the drone passes behind noisy background features.
+	 * The moving objects are added back to the original frame as feature enhancements 
+	 */
+	void frame_to_frame_subtraction(std::shared_ptr<Camera> & camera) {
+		
+			cv::Mat frame_delta_, frame_delta_grayscale_;
+			cv::absdiff(camera->frame_, camera->frame_store_, frame_delta_);
+
+			cv::cvtColor(frame_delta_, frame_delta_grayscale_, cv::COLOR_BGR2GRAY);
+			cv::bitwise_not(frame_delta_grayscale_, frame_delta_grayscale_);
+			cv::cvtColor(frame_delta_grayscale_, frame_delta_, cv::COLOR_GRAY2BGR);
+
+			double alpha = 0.85;
+   			cv::addWeighted(frame_delta_, alpha, camera->frame_, 1.0 - alpha, 0.0, camera->frame_);
 	}
 
 	/**
@@ -188,9 +211,20 @@ namespace mcmt {
     	}
 		cv::cvtColor(sky, sky, cv::COLOR_HSV2BGR);
 
+		// Treeline (non-sky) enhancements using histogram equalisation on intensity channel
+		if (USE_HIST_EQUALISE) {
+			channels.clear();
+			cv::Mat ycrcb;
+			cv::cvtColor(non_sky, ycrcb, cv::COLOR_BGR2YCrCb);
+			cv::split(ycrcb, channels);
+			cv::equalizeHist(channels[0], channels[0]);
+			cv::merge(channels, ycrcb);
+			cv::cvtColor(ycrcb, non_sky, cv::COLOR_YCrCb2BGR);
+		}
+
 		// Recombine the sky and treeline
 		cv::add(sky, non_sky, camera->frame_ec_);
-		cv::imshow("After sun compensation", camera->frame_ec_);
+		// cv::imshow("After sun compensation", camera->frame_ec_);
 	}
 
 	/**
@@ -225,7 +259,9 @@ namespace mcmt {
 		for (int i = 0; i < camera->masked_.size(); i++) {
 		
 			// apply background subtractor
-			camera->removebg_[i] = remove_ground(camera, i);
+			if (USE_BG_SUBTRACTOR){
+				camera->removebg_[i] = remove_ground(camera, i);
+			}
 		
 			// apply morphological transformation
 			cv::dilate(camera->masked_[i], camera->masked_[i], element_, cv::Point(), DILATION_ITER_);
@@ -294,6 +330,7 @@ namespace mcmt {
 
 		// draw contours on masked frame to remove background
 		cv::drawContours(camera->masked_[masked_id], background_contours, -1, cv::Scalar(0, 0, 0), -1);
+
 		return bg_removed;
 	}
 
