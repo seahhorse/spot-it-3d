@@ -1,0 +1,1 @@
+ssh -t vilota@vilota-desktop-9b9d.local 'sudo shutdown'

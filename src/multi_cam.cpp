@@ -45,6 +45,7 @@
 #include "multi_cam_track.hpp"
 #include "multi_cam_track_utils.hpp"
 #include "multi_cam_params.hpp"
+#include "WSrtInterface.hpp"
 
 // opencv header files
 #include "opencv2/opencv.hpp"
