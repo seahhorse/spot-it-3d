@@ -53,6 +53,6 @@ fi
 
 if [ $opencv_installed == 1 ]
 then
-    g++ -I./include -L./lib/hungarian -L./lib/json src/*.cpp lib/hungarian/Hungarian.cpp lib/json/jsoncpp.cpp -o spot-it-3d `pkg-config --cflags --libs opencv4 gstreamer-1.0`
+    g++ -I./include -L./lib/hungarian -L./lib/json -L./lib -lsrtreceiver -lwsclient src/*.cpp lib/hungarian/Hungarian.cpp lib/json/jsoncpp.cpp -o spot-it-3d `pkg-config --cflags --libs opencv4 gstreamer-1.0 tbb`
     # ./spot-it-3d
 fi

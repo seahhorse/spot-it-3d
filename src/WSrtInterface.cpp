@@ -39,59 +39,61 @@
 
 #include <gst/gst.h>
 
-void wsrt_signal_handler(int signal) {
-    spdlog::info("quiting signal received");
-
-    if (srtReceiver_)
-    {
-        spdlog::info("shutdown srt receiver");
-        srtReceiver_->stop();
-    }
-}
-
-WSrt::WSrt(int cam_index, std::string srtAddress, std::string websocketAddress, std::string decoder) {
+WSrt::WSrt(int cam_index, std::string cam_ip, std::string srtPort, std::string websocketPort, std::string decoder) {
     cam_index_ = cam_index;
-    srtAddress_ = srtAddress;
-    websocketAddress_ = websocketAddress;
+    srtAddress_ = "srt://" + cam_ip + ":" + srtPort;
+    websocketAddress_ = "http://" + cam_ip + ":" + websocketPort;
     decoder_ = decoder;
+
+    // NOTE: this seems needed, and contains glib main loop logics
+    gst_init(nullptr, nullptr);
+
+    // srt
+    srtReceiver_ = srtFactory_.getReceiver(srtAddress_, decoder_);
+    srtReceiver_->start();
+
+    // websocket
+    // websocket does not need start manually, it is tagged to the glib main loop
+    websocketClient_ = websocketFactory_.getClient(websocketAddress_);
 }
 
-void WSrt::extract_data(vilota::SrtReceiverInterface::MessageQueue &queueSrt,
-                  vilota::WebsocketClientInterface::MessageQueue &queueWebsocket) {
-    vilota::SrtMessage::Ptr msgSrt;
-    vilota::WebsocketMessage::Ptr msgWebsocket;
+void WSrt::extract_data() {
 
+    auto queueSrt = srtReceiver_->receiverMessageQueue;
+    auto queueWebsocket = websocketClient_->clientMessageQueue;
+    // reset_msgs();
+    
     cv::namedWindow("Client Visualisation", cv::WINDOW_AUTOSIZE);
 
     while (true) {
-        queueSrt.pop(msgSrt);
+        queueSrt.pop(msgSrt_);
         // pop until the latest message
-        while (queueSrt.try_pop(msgSrt))
+        while (queueSrt.try_pop(msgSrt_))
             ;
         // nullptr indicating end of stream
-        if (!msgSrt)
+        if (!msgSrt_)
             return;
         spdlog::info("got srt message!");
 
-        if (queueWebsocket.try_pop(msgWebsocket)) {
+        if (queueWebsocket.try_pop(msgWebsocket_)) {
             spdlog::info("got websocket message!");
-            while (queueWebsocket.try_pop(msgWebsocket))
+            while (queueWebsocket.try_pop(msgWebsocket_))
             ;
         }
 
-        if (msgSrt->hasImage) {
+        if (msgSrt_->hasImage) {
             unsigned char *rawData;
             int rawDataSize;
-            msgSrt->getData(rawData, rawDataSize);
+            msgSrt_->getData(rawData, rawDataSize);
 
-            spdlog::debug("image timestamp {}, size {}", msgSrt->imageTimestamp, rawDataSize);
+            spdlog::debug("image timestamp {}, size {}", msgSrt_->imageTimestamp, rawDataSize);
 
-            cv::Mat cvImage(cv::Size(msgSrt->imageWidth, msgSrt->imageHeight), CV_8UC3, rawData, cv::Mat::AUTO_STEP);
+            cv::Mat cvImage(cv::Size(msgSrt_->imageWidth, msgSrt_->imageHeight), CV_8UC3, rawData, cv::Mat::AUTO_STEP);
 
             // TODO: no time sync features implemented yet
-            if (msgWebsocket && msgWebsocket->hasJson) {
+            if (msgWebsocket_ && msgWebsocket_->hasJson) {
 
-                auto &json = msgWebsocket->json["objects"];
+                auto &json = msgWebsocket_->json["objects"];
                 spdlog::debug("json: {}", json.dump());
                 spdlog::debug(json.size());
                 for (auto &object : json) {
@@ -111,33 +113,11 @@ void WSrt::extract_data(vilota::SrtReceiverInterface::MessageQueue &queueSrt,
     }
 }
 
-void WSrt::WSrt_handler() {
-    // NOTE: this seems needed, and contains glib main loop logics
-    gst_init(nullptr, nullptr);
+void WSrt::reset_msgs() {
+    //
+}
 
-    //// srt
-    auto srtFactory = vilota::SrtReceiverFactory();
-    srtReceiver_ = srtFactory.getReceiver(srtAddress_, decoder_);
-    //srtReceiver_ = srtFactory.getReceiver("srt://192.168.1.146:8888", "avdec_h264");
-
-    // start the gst pipeline
-    srtReceiver_->start();
-
-    //// websocket
-    auto websocketFactory = vilota::WebsocketClientFactory();
-    websocketClient_ = websocketFactory.getClient(websocketAddress_);
-    // websocketClient_ = websocketFactory.getClient("http://192.168.1.146:49999");
-    // websocket does not need start manually, it is tagged to the glib main loop
-
-    // Facilitate graceful Ctrl+C exit
-    // Todo: Signals cannot call member functions, should we still include this?
-    // std::signal(SIGINT, signal_handler);
-
-    extract_data(std::ref(srtReceiver_->receiverMessageQueue),
-                 std::ref(websocketClient_->clientMessageQueue));
-
+void WSrt::reset_receivers() {
     srtReceiver_.reset();
     websocketClient_.reset();
-
-    spdlog::info("main exit");
 }

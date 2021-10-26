@@ -5,6 +5,7 @@
 #define WSRTINTERFACE_HPP_
 
 #include <string>
+#include <vector>
 
 #include "srt_receiver/SrtReceiverFactory.hpp"
 #include "srt_receiver/SrtReceiverInterface.hpp"
@@ -16,20 +17,26 @@ class WSrt {
     public:
         WSrt(
             int cam_index,
-            std::string srtAddress,
-            std::string websocketAddress,
+            std::string cam_ip,
+            std::string srtPort,
+            std::string websocketPort,
             std::string decoder);
 
     virtual ~WSrt() {}
 
         int cam_index_;
         std::string srtAddress_, websocketAddress_, decoder_;
-        vilota::SrtReceiverInterface::Ptr srtReceiver_;
-        vilota::WebsocketClientInterface::Ptr websocketClient_;
 
-        void extract_data(vilota::SrtReceiverInterface::MessageQueue &queueSrt,
-                  vilota::WebsocketClientInterface::MessageQueue &queueWebsocket);
-        void WSrt_handler();
+        vilota::SrtReceiverFactory srtFactory_;
+        vilota::SrtReceiverInterface::Ptr srtReceiver_;
+        vilota::WebsocketClientFactory websocketFactory_;
+        vilota::WebsocketClientInterface::Ptr websocketClient_;
+        vilota::SrtMessage::Ptr msgSrt_;
+        vilota::WebsocketMessage::Ptr msgWebsocket_;
+
+        void extract_data();
+        void reset_msgs();
+        void reset_receivers();
 
 };
 
