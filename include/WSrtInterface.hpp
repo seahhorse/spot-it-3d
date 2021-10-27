@@ -7,11 +7,27 @@
 #include <string>
 #include <vector>
 
+#include <opencv2/core.hpp>
+
 #include "srt_receiver/SrtReceiverFactory.hpp"
 #include "srt_receiver/SrtReceiverInterface.hpp"
 
 #include "websocket_client/WebsocketClientFactory.hpp"
 #include "websocket_client/WebsocketClientInterface.hpp"
+
+namespace mcmt {
+
+struct wsrt_detections {
+    int x, y, width, height;
+};
+
+struct wsrt_output {
+    std::vector<wsrt_detections> detections;
+    int imageWidth, imageHeight;
+    std::string imagePixelFormat;
+    uint64_t imageTimestamp;
+    cv::Mat image;
+};
 
 class WSrt {
     public:
@@ -34,10 +50,12 @@ class WSrt {
         vilota::SrtMessage::Ptr msgSrt_;
         vilota::WebsocketMessage::Ptr msgWebsocket_;
 
-        void extract_data();
+        wsrt_output extract_data();
         void reset_msgs();
         void reset_receivers();
 
 };
+
+}
 
 #endif          // WSRTINTERFACE_HPP_

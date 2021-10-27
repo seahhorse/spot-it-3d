@@ -39,6 +39,8 @@
 
 #include <gst/gst.h>
 
+namespace mcmt {
+
 WSrt::WSrt(int cam_index, std::string cam_ip, std::string srtPort, std::string websocketPort, std::string decoder) {
     cam_index_ = cam_index;
     srtAddress_ = "srt://" + cam_ip + ":" + srtPort;
@@ -57,67 +59,82 @@ WSrt::WSrt(int cam_index, std::string cam_ip, std::string srtPort, std::string w
     websocketClient_ = websocketFactory_.getClient(websocketAddress_);
 }
 
-void WSrt::extract_data() {
+wsrt_output WSrt::extract_data() {
 
+    wsrt_output output;
+    
     auto queueSrt = srtReceiver_->receiverMessageQueue;
     auto queueWebsocket = websocketClient_->clientMessageQueue;
-    // reset_msgs();
+    reset_msgs();
     
-    cv::namedWindow("Client Visualisation", cv::WINDOW_AUTOSIZE);
+    // cv::namedWindow("Client Visualisation", cv::WINDOW_AUTOSIZE);
 
-    while (true) {
-        queueSrt.pop(msgSrt_);
-        // pop until the latest message
-        while (queueSrt.try_pop(msgSrt_))
-            ;
-        // nullptr indicating end of stream
-        if (!msgSrt_)
-            return;
-        spdlog::info("got srt message!");
+    queueSrt.pop(msgSrt_);
+    // pop until the latest message
+    while (queueSrt.try_pop(msgSrt_))
+    ;
+    // nullptr indicating end of stream
+    if (!msgSrt_)
+        return output;
+    spdlog::info("got srt message!");
 
-        if (queueWebsocket.try_pop(msgWebsocket_)) {
-            spdlog::info("got websocket message!");
-            while (queueWebsocket.try_pop(msgWebsocket_))
-            ;
-        }
-
-        if (msgSrt_->hasImage) {
-            unsigned char *rawData;
-            int rawDataSize;
-            msgSrt_->getData(rawData, rawDataSize);
-
-            spdlog::debug("image timestamp {}, size {}", msgSrt_->imageTimestamp, rawDataSize);
-
-            cv::Mat cvImage(cv::Size(msgSrt_->imageWidth, msgSrt_->imageHeight), CV_8UC3, rawData, cv::Mat::AUTO_STEP);
-
-            // TODO: no time sync features implemented yet
-            if (msgWebsocket_ && msgWebsocket_->hasJson) {
-
-                auto &json = msgWebsocket_->json["objects"];
-                spdlog::debug("json: {}", json.dump());
-                spdlog::debug(json.size());
-                for (auto &object : json) {
-                    spdlog::info("object: {}", object.dump());
-                    int x = object["x"];
-                    int y = object["y"];
-                    int w = object["w"];
-                    int h = object["h"];
-
-                    cv::rectangle(cvImage, {x, y}, {x + w, y + h}, 150, 3);
-                }
-            }
-
-            cv::imshow("Client Visualisation", cvImage);
-            cv::waitKey(1);
-        }
+    if (queueWebsocket.try_pop(msgWebsocket_)) {
+        spdlog::info("got websocket message!");
+        while (queueWebsocket.try_pop(msgWebsocket_))
+        ;
     }
+
+    if (msgSrt_->hasImage) {
+        unsigned char *rawData;
+        int rawDataSize;
+        msgSrt_->getData(rawData, rawDataSize);
+
+        spdlog::debug("image timestamp {}, size {}", msgSrt_->imageTimestamp, rawDataSize);
+
+        cv::Mat cvImage(cv::Size(msgSrt_->imageWidth, msgSrt_->imageHeight), CV_8UC3, rawData, cv::Mat::AUTO_STEP);
+
+        output.image = cvImage;
+        output.imageWidth = msgSrt_->imageWidth;
+        output.imageHeight = msgSrt_->imageHeight;
+        output.imageTimestamp = msgSrt_->imageTimestamp;
+        output.imagePixelFormat = msgSrt_->imagePixelFormat;
+
+        // TODO: no time sync features implemented yet
+        if (msgWebsocket_ && msgWebsocket_->hasJson) {
+
+            auto &json = msgWebsocket_->json["objects"];
+            spdlog::debug("json: {}", json.dump());
+            spdlog::debug(json.size());
+            for (auto &object : json) {
+                wsrt_detections detections;
+                detections.x = object["x"];
+                detections.y = object["y"];
+                detections.width = object["w"];
+                detections.height = object["h"];
+                output.detections.push_back(detections);
+                
+                // Draw rectangles for debugging
+                // spdlog::info("object: {}", object.dump());
+                // int x = object["x"];
+                // int y = object["y"];
+                // int w = object["w"];
+                // int h = object["h"];
+                // cv::rectangle(cvImage, {x, y}, {x + w, y + h}, 150, 3);
+            }
+        }
+        // cv::imshow("Client Visualisation", cvImage);
+    }
+    return output;
 }
 
 void WSrt::reset_msgs() {
-    //
+    msgSrt_.reset();
+    msgWebsocket_.reset();
 }
 
 void WSrt::reset_receivers() {
     srtReceiver_.reset();
     websocketClient_.reset();
+}
+
 }
