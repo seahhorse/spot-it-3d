@@ -151,75 +151,139 @@ namespace mcmt {
 	 * checks matched tracks to see if they are still valid. also checks if multiple tracks
 	 * within each camera are tracking the same target
 	 */
-	void verify_existing_tracks(int idx_a, int idx_b) {
+	// void verify_existing_tracks(int idx_a, int idx_b) {
 
-		for (auto & matched_track : matched_tracks_) {		
-			if (matched_track.second[NUM_OF_CAMERAS_] < 2 )	continue;
+	// 	for (auto & matched_track : matched_tracks_) {		
+	// 		if (matched_track.second[NUM_OF_CAMERAS_] < 2 )	continue;
 
-			int matched_id = matched_track.first;
+	// 		int matched_id = matched_track.first;
 
-			auto track_plot_a = cumulative_tracks_[idx_a]->track_plots_[matched_id];
-			auto track_plot_b = cumulative_tracks_[idx_b]->track_plots_[matched_id];
+	// 		auto track_plot_a = cumulative_tracks_[idx_a]->track_plots_[matched_id];
+	// 		auto track_plot_b = cumulative_tracks_[idx_b]->track_plots_[matched_id];
 
-			if (track_plot_a->lastSeen_ != frame_count_ || track_plot_b->lastSeen_ != frame_count_) continue;
+	// 		if (track_plot_a->lastSeen_ != frame_count_ || track_plot_b->lastSeen_ != frame_count_) continue;
 
-			// x1 : track feature variable correlation strength based on normalised vector
-			double x1 = crossCorrelation(normalise_track_plot(track_plot_a), normalise_track_plot(track_plot_b));
-			// x3 : heading deviation error score
-			double x3 = heading_score(track_plot_a, track_plot_b);
+	// 		// x1 : track feature variable correlation strength based on normalised vector
+	// 		double x1 = crossCorrelation(normalise_track_plot(track_plot_a), normalise_track_plot(track_plot_b));
+	// 		// x3 : heading deviation error score
+	// 		double x3 = heading_score(track_plot_a, track_plot_b);
 
-			double score = compute_matching_score(track_plot_a, track_plot_b, idx_a, idx_b);
+	// 		double score = compute_matching_score(track_plot_a, track_plot_b, idx_a, idx_b);
+
+	// 		// FOR TESTING
+	// 		auto convolution = crossCorrelation_3D(track_plot_a->vel_orient_, track_plot_b->vel_orient_);
+
+	// 		// std::vector<double> line{track_plot_a->xs_.back(), track_plot_a->ys_.back(), track_plot_b->xs_.back() + FRAME_WIDTH_, track_plot_b->ys_.back(), score, convolution, 0};
+	// 		// lines.push_back(line);
+			
+	// 		if (score < 0.5 && track_plot_a->frameNos_.size() > 180 && track_plot_b->frameNos_.size() > 180) {
+	// 		// if (x1 < 0.4 && x3 < 0.8 && track_plot_a->frameNos_.size() > 180 && track_plot_b->frameNos_.size() > 180) {
+				
+	// 			if (track_plot_a->check_stationary() != track_plot_b->check_stationary()) {
+	// 				track_plot_a->mismatch_count_ += 3;
+	// 				track_plot_b->mismatch_count_ += 3;
+	// 			} else {
+	// 				track_plot_a->mismatch_count_ += 1;
+	// 				track_plot_b->mismatch_count_ += 1;
+	// 			}
+			
+	// 		} else {
+	// 			track_plot_a->mismatch_count_ = 0;
+	// 			track_plot_b->mismatch_count_ = 0;
+	// 		}
+
+	// 		if (track_plot_a->mismatch_count_ >= 90 && track_plot_b->mismatch_count_ >= 90) {
+	// 			track_plot_a->mismatch_count_ = 0;
+	// 			track_plot_b->mismatch_count_ = 0;
+
+	// 			debug_messages.push_back("Target ID " +  std::to_string(matched_id)  + " is dropped due to mismatch");
+
+	// 			track_plot_a->id_ = track_plot_a->oid_;
+	// 			track_plot_b->id_ = track_plot_b->oid_;
+
+	// 			cumulative_tracks_[0]->track_new_plots_[track_plot_a->oid_] = track_plot_a;
+	// 			cumulative_tracks_[0]->track_plots_.erase(matched_id);
+
+	// 			cumulative_tracks_[1]->track_new_plots_[track_plot_b->oid_] = track_plot_b;
+	// 			cumulative_tracks_[1]->track_plots_.erase(matched_id);
+
+	// 			matching_dict_[0][track_plot_a->oid_] = track_plot_a->oid_;
+	// 			matching_dict_[1][track_plot_b->oid_] = track_plot_b->oid_;
+
+	// 			matched_tracks_.erase(matched_id);
+	// 		}
+			
+	// 	}
+
+	// }
+	
+	/**
+	 * checks matched tracks to see if they are still valid. also checks if multiple tracks
+	 * within each camera are tracking the same target
+	 */
+	void verify_existing_tracks(int idx) {
+
+		std::vector<std::shared_ptr<TrackPlot>> remove_tracks;
+
+		for (auto & tracks : cumulative_tracks_[idx]->track_plots_) {
+
+			auto track_plot = tracks.second;
+			int matched_id = track_plot->id_;
+			double max_score = 0;
+			double score = 0;
+
+			if (matched_tracks_[matched_id][NUM_OF_CAMERAS_] < 2) continue;
+
+			for (int alt = 0; alt < NUM_OF_CAMERAS_; alt++) {
+
+				if (idx != alt && matched_tracks_[matched_id][alt]) {
+
+					auto alt_track_plot = cumulative_tracks_[alt]->track_plots_[matched_id];
+					
+					if (track_plot->lastSeen_ != frame_count_ || alt_track_plot->lastSeen_ != frame_count_) continue;
+					if (track_plot->check_stationary() != alt_track_plot->check_stationary()) continue;
+
+					// x1 : track feature variable correlation strength based on normalised vector
+					double x1 = crossCorrelation(normalise_track_plot(track_plot), normalise_track_plot(alt_track_plot));
+					// x3 : heading deviation error score
+					double x3 = heading_score(track_plot, alt_track_plot);
+					
+					score = compute_matching_score(track_plot, alt_track_plot, idx, alt) > max_score;
+
+					max_score = (score > max_score) ? score : max_score;
+				}
+			
+			}
 
 			// FOR TESTING
-			auto convolution = crossCorrelation_3D(track_plot_a->vel_orient_, track_plot_b->vel_orient_);
+			// auto convolution = crossCorrelation_3D(track_plot_a->vel_orient_, track_plot_b->vel_orient_);
 
 			// std::vector<double> line{track_plot_a->xs_.back(), track_plot_a->ys_.back(), track_plot_b->xs_.back() + FRAME_WIDTH_, track_plot_b->ys_.back(), score, convolution, 0};
 			// lines.push_back(line);
-			
-			if (score < 0.5 && track_plot_a->frameNos_.size() > 180 && track_plot_b->frameNos_.size() > 180) {
-			// if (x1 < 0.4 && x3 < 0.8 && track_plot_a->frameNos_.size() > 180 && track_plot_b->frameNos_.size() > 180) {
-				
-				if (track_plot_a->check_stationary() != track_plot_b->check_stationary()) {
-					track_plot_a->mismatch_count_ += 3;
-					track_plot_b->mismatch_count_ += 3;
-				} else {
-					track_plot_a->mismatch_count_ += 1;
-					track_plot_b->mismatch_count_ += 1;
-				}
-			
+
+			if (max_score < 0.5 && track_plot->frameNos_.size() > 180) {
+			// if (x1 < 0.4 && x3 < 0.8 && track_plot->frameNos_.size() > 180 && track_plot_b->frameNos_.size() > 180) {
+				track_plot->mismatch_count_ += 1;
+				std::cout << track_plot->id_ << " added 1 to MMC: Total " << track_plot->mismatch_count_ << std::endl;
 			} else {
-				track_plot_a->mismatch_count_ = 0;
-				track_plot_b->mismatch_count_ = 0;
+				track_plot->mismatch_count_ = 0;
 			}
 
-			if (track_plot_a->mismatch_count_ >= 90 && track_plot_b->mismatch_count_ >= 90) {
-				track_plot_a->mismatch_count_ = 0;
-				track_plot_b->mismatch_count_ = 0;
-
-				debug_messages.push_back("Target ID " +  std::to_string(matched_id)  + " is dropped due to mismatch");
-
-				track_plot_a->id_ = track_plot_a->oid_;
-				track_plot_b->id_ = track_plot_b->oid_;
-
-				cumulative_tracks_[0]->track_new_plots_[track_plot_a->oid_] = track_plot_a;
-				cumulative_tracks_[0]->track_plots_.erase(matched_id);
-
-				cumulative_tracks_[1]->track_new_plots_[track_plot_b->oid_] = track_plot_b;
-				cumulative_tracks_[1]->track_plots_.erase(matched_id);
-
-				matching_dict_[0][track_plot_a->oid_] = track_plot_a->oid_;
-				matching_dict_[1][track_plot_b->oid_] = track_plot_b->oid_;
-
-				matched_tracks_.erase(matched_id);
+			if (track_plot->mismatch_count_ >= VIDEO_FPS_) {
+				track_plot->mismatch_count_ = 0;
+				debug_messages.push_back("Target ID " +  std::to_string(matched_id) + " from Cam " + std::to_string(idx) + " is dropped due to mismatch");
+				remove_tracks.push_back(track_plot);
 			}
-			
 		}
 
+		for (auto & remove_track : remove_tracks) {
+			demote_to_unmatched(idx, remove_track, remove_track->id_, remove_track->oid_);
+		}
 	}
 
 	void process_new_tracks(int idx, int alt, std::vector<std::shared_ptr<GoodTrack>> & good_tracks) {
 		
-		std::vector<std::shared_ptr<GoodTrack>> filter_good_tracks(good_tracks);
+		std::vector<std::shared_ptr<GoodTrack>> filter_good_tracks;
 
 		std::map<int, std::map<int, double>> corrValues;
 		std::shared_ptr<TrackPlot> track_plot, alt_track_plot;
@@ -231,79 +295,69 @@ namespace mcmt {
 
 			// Extract details from the track
 			track_id = track->id;
+			std::shared_ptr<TrackPlot> track_plot;
 
 			if (exists(cumulative_tracks_[idx]->track_new_plots_, track_id)) {
+				// Track is in track_new_plots_
+				track_plot = cumulative_tracks_[idx]->track_new_plots_[track_id];
+				filter_good_tracks.push_back(track);
+			} else {
+				continue;
+			}
 
-				auto track_plot = cumulative_tracks_[idx]->track_new_plots_[track_id];			
+			// if track is a new track, we set a criteria of a min number of frames and non-zero track feature variables
+			if (track_plot->frameNos_.size() >= 30) {
+				
+				// Look into other camera's new tracks list (new tracks first)
+				for (auto & alt_track_item : cumulative_tracks_[alt]->track_new_plots_) {
 
-				// if track is a new track, we set a criteria of a min number of frames and non-zero track feature variables
-				if (track_plot->frameNos_.size() >= 30 && track_plot->track_feature_variable_.size() >= 30 
-						&& std::accumulate(track_plot->track_feature_variable_.begin(), track_plot->track_feature_variable_.end(), 0)) {
-					// Look into other camera's new tracks list (new tracks first)
-					for (auto & alt_track_item : cumulative_tracks_[alt]->track_new_plots_) {
+					alt_track_plot = alt_track_item.second;
+					alt_track_id = alt_track_plot->id_;
+					
+					// if track is a new track, we set a criteria of a min number of frames and non-zero track feature variables
+					if (alt_track_plot->frameNos_.size() >= 30) {
 
-						alt_track_plot = alt_track_item.second;
-						alt_track_id = alt_track_plot->id_;
-						
-						// if track is a new track, we set a criteria of a min number of frames and non-zero track feature variables
-						if (alt_track_plot->frameNos_.size() >= 30 && alt_track_plot->track_feature_variable_.size() >= 30 
-								&& std::accumulate(alt_track_plot->track_feature_variable_.begin(), alt_track_plot->track_feature_variable_.end(), 0)) {
-
-							// Compute a matching score for both tracks and append to corrValues only if non-zero
-							score = compute_matching_score(track_plot, alt_track_plot, idx, alt);
-							if (score != 0)	{
-								// track is on dim 0, alt_track is on dim 1
-								corrValues[track_id][alt_track_id] = score;
-							}
-						}
-					}
-					// Look into other camera's matched tracks list (old tracks last)
-					for (auto & alt_track_item : cumulative_tracks_[alt]->track_plots_) {
-
-						alt_track_plot = alt_track_item.second;
-						alt_track_id = alt_track_plot->id_;
-
-						bool eligibility_flag = true;
-						
-						// test to see if alternate camera's track is currently being matched with current camera
-						for (auto & oth_idx_track : cumulative_tracks_[idx]->track_plots_) {
-							if (alt_track_id == oth_idx_track.second->id_) {
-								eligibility_flag = false; // 2nd camera's track has already been matched. skip the process of matching for this track
-								break;
-							}
-						}
-
-						if (eligibility_flag && std::accumulate(alt_track_plot->track_feature_variable_.begin(), alt_track_plot->track_feature_variable_.end(), 0)) {
-							
-							// Compute a matching score for both tracks and append to corrValues only if non-zero
-							score = compute_matching_score(track_plot, alt_track_plot, idx, alt);
-							if (score != 0)	{
-								// track is on dim 0, alt_track is on dim 1
-								corrValues[track_id][alt_track_id] = score;
-							}
+						// Compute a matching score for both tracks and append to corrValues only if non-zero
+						score = compute_matching_score(track_plot, alt_track_plot, idx, alt);
+						if (score != 0)	{
+							// track is on dim 0, alt_track is on dim 1
+							corrValues[track_id][alt_track_id] = score;
 						}
 					}
 				}
-				row += 1;
-			} else {
-				filter_good_tracks.erase(filter_good_tracks.begin() + row);
-			}
 
+				// Look into other camera's matched tracks list (matched tracks last)
+				for (auto & alt_track_item : cumulative_tracks_[alt]->track_plots_) {
+
+					alt_track_plot = alt_track_item.second;
+					alt_track_id = alt_track_plot->id_;
+					
+					// test to see if alternate camera's track is currently being matched with current camera
+					if (!matched_tracks_[alt_track_id][idx]) {
+						// Compute a matching score for both tracks and append to corrValues only if non-zero
+						score = compute_matching_score(track_plot, alt_track_plot, idx, alt);
+						if (score != 0)	{
+							// track is on dim 0, alt_track is on dim 1
+							corrValues[track_id][alt_track_id] = score;
+						}
+					}
+				}
+			}
 		}
+
 		for (auto & track : filter_good_tracks) {
 
 			// Extract details from the track
 			track_id = track->id;
 
-			std::map<int, double> maxValues = corrValues[track_id];
 			int maxID = -1;
 			double maxValue = -1;
 
 			// for the selected max track in the 2nd camera, we check to see if the track has a higher
 			// cross correlation value with another track in current camera
 
-			while (maxValues.size() != 0) {
-				for (auto it : maxValues) {
+			while (corrValues[track_id].size() != 0) {
+				for (auto it : corrValues[track_id]) {
 					if (maxValue < it.second) {
 						maxID = it.first;
 						maxValue = it.second;
@@ -316,27 +370,30 @@ namespace mcmt {
 				bool global_max_flag = false;
 				for (auto & oth_idx_track : filter_good_tracks) {
 					if (exists(corrValues[oth_idx_track->id], maxID) && (corrValues[oth_idx_track->id][maxID] > maxValue)) {
-						maxValues.erase(maxID);
+						corrValues[track_id].erase(maxID);
 						global_max_flag = true;
 						break;
 					}
 				}
 
-				if (global_max_flag == true) {
+				if (global_max_flag) {
 					// there existed a value larger than the current maxValue. thus, re-id cannot occur
+					maxID = -1;
+					maxValue = -1;
 					continue;
 				} else {
 					// went through the whole loop without finding any other max, thus it is the maximum value. re-id can occur
 					break;
 				}
 			}
+
 			// re-id process
-			if (corrValues[track->id].size()) {
+			if (maxID != -1) {
 
 				track_plot = cumulative_tracks_[idx]->track_new_plots_[track_id];
 
 				// if track is in alt camera's track_new_plots
-				if (maxID != 1 && exists(cumulative_tracks_[alt]->track_new_plots_, maxID)) {
+				if (exists(cumulative_tracks_[alt]->track_new_plots_, maxID)) {
 
 					alt_track_id = maxID;
 					alt_track_plot = cumulative_tracks_[alt]->track_new_plots_[alt_track_id];
@@ -352,12 +409,10 @@ namespace mcmt {
 
 				// if track is in alt camera's track_plots
 				} else {
-
 					alt_track_id = maxID;
 					alt_track_plot = cumulative_tracks_[alt]->track_plots_[alt_track_id];
 					// add notification message
 					debug_messages.push_back("New target ID " +  std::to_string(track_plot->id_)  + " acquired with a score of " + std::to_string(maxValue));
-					
 					promote_to_matched(idx, track_plot, alt_track_plot->id_, track_id);
 				}
 			}
@@ -368,6 +423,7 @@ namespace mcmt {
 	 * Moves a track from track_new_plots to track_plots and updates all necessary variables
 	 */ 
 	void promote_to_matched(int index, std::shared_ptr<TrackPlot> track_plot, int matched_id, int old_id) {
+
 		track_plot->id_ = matched_id;
 		cumulative_tracks_[index]->track_plots_.insert({matched_id, track_plot});
 		cumulative_tracks_[index]->track_new_plots_.erase(old_id);
@@ -375,6 +431,145 @@ namespace mcmt {
 		matched_tracks_[matched_id][index] = old_id;
 		matched_tracks_[matched_id][NUM_OF_CAMERAS_]++;	
 	}
+
+	/**
+	 * Moves a track from track_plots to track_new_plots and updates all necessary variables
+	 */ 
+	void demote_to_unmatched(int index, std::shared_ptr<TrackPlot> track_plot, int matched_id, int old_id) {		
+		track_plot->id_ = old_id;
+		cumulative_tracks_[index]->track_new_plots_.insert({old_id, track_plot});
+		cumulative_tracks_[index]->track_plots_.erase(matched_id);
+		matching_dict_[index][track_plot->oid_] = track_plot->oid_;
+		matched_tracks_[matched_id][index] = 0;
+		matched_tracks_[matched_id][NUM_OF_CAMERAS_]--;
+	}
+
+	void join_matched_tracks() {
+		
+		std::vector<int> matched_ids;
+		std::map<int, std::map<int, double>> corrValues;
+		double score = 0;
+		
+		for (auto & matched_track : matched_tracks_) {
+			matched_ids.push_back(matched_track.first);
+		}
+		std::vector<std::pair<int, int>> matched_pairs = create_pairs(matched_ids);
+		std::vector<std::pair<int, int>> filter_matched_pairs;
+
+		for (auto & matched_pair : matched_pairs) {
+			int first = matched_pair.first;
+			int second = matched_pair.second;
+			bool incompatible_flag = false;
+			for (int i = 0; i < NUM_OF_CAMERAS_; i++) {
+				if (matched_tracks_[first][i] && matched_tracks_[second][i]) {
+					incompatible_flag = true;
+					break;
+				}
+			}
+			if (!incompatible_flag) {
+				filter_matched_pairs.push_back(matched_pair);
+				score = compute_multi_matching_score(first, second);
+				if (score != 0)	{
+					corrValues[first][second] = score;
+				}
+			}
+		}
+
+		for (auto & matched_id : matched_ids) {
+
+			int maxID = -1;
+			double maxValue = -1;
+
+			// for the selected max track in the 2nd camera, we check to see if the track has a higher
+			// cross correlation value with another track in current camera
+
+			while (corrValues[matched_id].size() != 0) {
+				for (auto it : corrValues[matched_id]) {
+					if (maxValue < it.second) {
+						maxID = it.first;
+						maxValue = it.second;
+					}
+				}
+				
+				// search through current camera's tracks again, for the selected track that we wish to re-id with.
+				// we can note that if there is a track in the current camera that has a higher cross correlation value
+				// than the track we wish to match with, then the matching will not occur.
+				bool global_max_flag = false;
+				for (auto & oth_matched_pair : filter_matched_pairs) {
+					if (exists(corrValues[oth_matched_pair.first], maxID) && (corrValues[oth_matched_pair.first][maxID] > maxValue)) {
+						corrValues[matched_id].erase(maxID);
+						global_max_flag = true;
+						break;
+					}
+				}
+
+				if (global_max_flag) {
+					// there existed a value larger than the current maxValue. thus, re-id cannot occur
+					maxID = -1;
+					maxValue = -1;
+					continue;
+				} else {
+					// went through the whole loop without finding any other max, thus it is the maximum value. re-id can occur
+					break;
+				}
+			}
+			// re-id process
+			if (maxID != -1) {
+
+				// add notification message
+				debug_messages.push_back("Matched targets " +  std::to_string(matched_id) + " and " + std::to_string(maxID) + "  with a score of " + std::to_string(maxValue));
+
+				// Move tracks from second id to first id and delete the second id
+				for (int idx = 0; idx < NUM_OF_CAMERAS_; idx++) {
+					if(matched_tracks_[maxID][idx]) {
+						cumulative_tracks_[idx]->track_plots_[maxID]->id_ = matched_id;
+						cumulative_tracks_[idx]->track_plots_[matched_id] = cumulative_tracks_[idx]->track_plots_[maxID];
+						cumulative_tracks_[idx]->track_plots_.erase(maxID);
+						matching_dict_[idx][matched_tracks_[maxID][idx]] = matched_id;
+						matched_tracks_[matched_id][idx] = matched_tracks_[maxID][idx];
+						matched_tracks_[matched_id][NUM_OF_CAMERAS_]++;
+					}
+				}
+				matched_tracks_.erase(maxID);
+			}
+		}
+	}
+
+	/**
+	 * Returns a vector of unique pairs
+	 */
+	std::vector<std::pair<int, int>> create_pairs(std::vector<int> vec) {
+		std::vector<std::pair<int,int>> pairs;
+		while (!vec.empty()) {
+			int cur = vec.back();
+			vec.pop_back();
+			for (auto & rem : vec) {
+				pairs.push_back(std::pair<int,int>(rem, cur));
+			}
+		}
+		return pairs;
+	}
+
+	/**
+	 * Compute the matching score for two matched tracks
+	 */
+	double compute_multi_matching_score(int track_id, int alt_track_id) {
+		std::vector<double> scores;
+
+		for (int idx_a = 0; idx_a < NUM_OF_CAMERAS_; idx_a++) {
+			for (int idx_b = 0; idx_b < NUM_OF_CAMERAS_; idx_b++) {
+				if (matched_tracks_[track_id][idx_a] && matched_tracks_[alt_track_id][idx_b]) {
+					auto track_plot_a = cumulative_tracks_[idx_a]->track_plots_[track_id];
+					auto track_plot_b = cumulative_tracks_[idx_b]->track_plots_[alt_track_id];
+					scores.push_back(compute_matching_score(track_plot_a, track_plot_b, idx_a, idx_b));
+				}
+			}
+		}
+		return *std::max_element(scores.begin(), scores.end());
+	}
+
+
+
 
 	/**
 	 * Normalises the existing track plot based on mean and sd
@@ -406,21 +601,18 @@ namespace mcmt {
 
 	double compute_matching_score(std::shared_ptr<TrackPlot> track_plot_a,
 			std::shared_ptr<TrackPlot> track_plot_b, int idx_a, int idx_b) {
-				
+		
 		// Updating of tracks in the local neighbourhood
 		update_other_tracks(track_plot_a, cumulative_tracks_[idx_a]);
 		update_other_tracks(track_plot_b, cumulative_tracks_[idx_b]);
-
 		// x1: Track feature variable correlation strength based on normalised values
 		double x1 = crossCorrelation(normalise_track_plot(track_plot_a), normalise_track_plot(track_plot_b));
 		// x2: Geometric track matching strength value
 		double x2 = geometric_similarity(track_plot_a->other_tracks_, track_plot_b->other_tracks_);
 		// x3: Heading deviation error value
 		double x3 = heading_score(track_plot_a, track_plot_b);
-
 		// TESTING FOR 3D VELOCITY ORIENTATION
 		auto convolution = crossCorrelation_3D(track_plot_a->vel_orient_, track_plot_b->vel_orient_);
-
 		double score = (W1_ * x1) + (W2_ * x2) + (W3_ * x3);
 
 		// if (idx_a == 0) {

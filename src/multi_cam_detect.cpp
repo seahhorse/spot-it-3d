@@ -65,16 +65,9 @@ namespace mcmt {
 		std::string vid_input, vid_output;
 
 		for (int cam_idx = 0; cam_idx < NUM_OF_CAMERAS_; cam_idx++) {
-			switch (cam_idx) {
-				case 0: 
-					vid_input = VIDEO_INPUT_1_;
-					vid_output = VIDEO_OUTPUT_1_;
-					break;
-				case 1:
-					vid_input = VIDEO_INPUT_2_;
-					vid_output = VIDEO_OUTPUT_2_;
-					break;
-			}
+			
+			vid_input = VIDEO_INPUT_[cam_idx];
+			vid_output = VIDEO_OUTPUT_[cam_idx];
 
 			cameras_.push_back(std::shared_ptr<Camera>(
 				new Camera(cam_idx, IS_REALTIME_, vid_input, VIDEO_FPS_, FRAME_WIDTH_, 
