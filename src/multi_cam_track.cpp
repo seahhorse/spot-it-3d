@@ -294,16 +294,14 @@ namespace mcmt {
 
 			// Extract details from the track
 			track_id = track->id;
-
-			std::map<int, double> maxValues = corrValues[track_id];
 			int maxID = -1;
 			double maxValue = -1;
 
 			// for the selected max track in the 2nd camera, we check to see if the track has a higher
 			// cross correlation value with another track in current camera
 
-			while (maxValues.size() != 0) {
-				for (auto it : maxValues) {
+			while (corrValues[track_id].size() != 0) {
+				for (auto it : corrValues[track_id]) {
 					if (maxValue < it.second) {
 						maxID = it.first;
 						maxValue = it.second;
@@ -316,7 +314,7 @@ namespace mcmt {
 				bool global_max_flag = false;
 				for (auto & oth_idx_track : filter_good_tracks) {
 					if (exists(corrValues[oth_idx_track->id], maxID) && (corrValues[oth_idx_track->id][maxID] > maxValue)) {
-						maxValues.erase(maxID);
+						corrValues[track_id].erase(maxID);
 						global_max_flag = true;
 						break;
 					}
@@ -324,6 +322,8 @@ namespace mcmt {
 
 				if (global_max_flag == true) {
 					// there existed a value larger than the current maxValue. thus, re-id cannot occur
+					maxID = -1;
+					maxValue = -1;
 					continue;
 				} else {
 					// went through the whole loop without finding any other max, thus it is the maximum value. re-id can occur
@@ -331,7 +331,7 @@ namespace mcmt {
 				}
 			}
 			// re-id process
-			if (corrValues[track->id].size()) {
+			if (maxID != -1) {
 
 				track_plot = cumulative_tracks_[idx]->track_new_plots_[track_id];
 
