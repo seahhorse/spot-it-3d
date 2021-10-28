@@ -65,7 +65,7 @@ namespace mcmt {
 	/**
 	 * This function initializes the new tracks for subsequent addition
 	 */
-	void initialize_tracks(cv::Mat sample_frame) {
+	void initialize_tracks() {
 		for (int cam_idx = 0; cam_idx < NUM_OF_CAMERAS_; cam_idx++) {
 			cumulative_tracks_[cam_idx] = std::shared_ptr<CameraTracks>(new CameraTracks(cam_idx));
 		}

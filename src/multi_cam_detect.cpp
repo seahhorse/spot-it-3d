@@ -60,33 +60,13 @@ namespace mcmt {
 	/**
 	 * Constants, variable and functions definition
 	 */
-	std::vector<cv::Mat> initialize_cameras() {
+	std::vector<cv::Mat> initialize_cameras(std::string filename) {
 
 		std::string vid_input, vid_output;
 
-		for (int cam_idx = 0; cam_idx < NUM_OF_CAMERAS_; cam_idx++) {
-			switch (cam_idx) {
-				case 0: 
-					vid_input = VIDEO_INPUT_1_;
-					vid_output = VIDEO_OUTPUT_1_;
-					break;
-				case 1:
-					vid_input = VIDEO_INPUT_2_;
-					vid_output = VIDEO_OUTPUT_2_;
-					break;
-			}
-
-			cameras_.push_back(std::shared_ptr<Camera>(
-				new Camera(cam_idx, IS_REALTIME_, vid_input, VIDEO_FPS_, FRAME_WIDTH_, 
-				FRAME_HEIGHT_, FGBG_HISTORY_, BACKGROUND_RATIO_, NMIXTURES_)));
-
-			if (IS_REALTIME_) {
-				recordings_.push_back(std::shared_ptr<cv::VideoWriter>(new cv::VideoWriter(
-				vid_output, cv::VideoWriter::fourcc('M','J','P','G'), VIDEO_FPS_, 
-				cv::Size(FRAME_WIDTH_, FRAME_HEIGHT_))));
-			}
-			
-		}
+		cameras_.push_back(std::shared_ptr<Camera>(
+			new Camera(0, IS_REALTIME_, filename, VIDEO_FPS_, FRAME_WIDTH_, 
+			FRAME_HEIGHT_, FGBG_HISTORY_, BACKGROUND_RATIO_, NMIXTURES_)));
 
 		std::vector<cv::Mat> sample_frames;
 		cv::Mat sample_frame;

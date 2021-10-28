@@ -38,7 +38,7 @@ namespace mcmt {
 
 	// declare filepaths
 	const bool IS_REALTIME_ = false;
-    const int NUM_OF_CAMERAS_ = 2;
+    const int NUM_OF_CAMERAS_ = 1;
 
     // realtime parameters
     const std::string VIDEO_INPUT_1_ = "data/input/12-10_WCP_2a.avi";

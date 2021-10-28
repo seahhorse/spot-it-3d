@@ -39,6 +39,8 @@
 #include <set>
 #include <eigen3/Eigen/Dense>
 
+#include <regex>
+
 // local header files
 #include "multi_cam_detect.hpp"
 #include "multi_cam_detect_utils.hpp"
@@ -65,9 +67,17 @@ int main(int argc, char * argv[]) {
 	frame_count_ = 1;
 	bool is_disconnected_ = false;
 
-	std::vector<cv::Mat> sample_frames = initialize_cameras();
-	initialize_tracks(sample_frames[0]);
-	initialize_logs();
+	std::string filename(argv[1]);
+
+	std::string output_vid = std::regex_replace(filename, std::regex("input"), "output");
+	std::string output_json = std::regex_replace(output_vid, std::regex(".mp4"), "");
+	output_json = std::regex_replace(output_json, std::regex(".avi"), "");
+
+
+	std::vector<cv::Mat> sample_frames = initialize_cameras(filename);
+	initialize_tracks();
+	initialize_recording(sample_frames[0], std::regex_replace(filename, std::regex("input"), "output"));
+	initialize_logs(output_json + ".json");
 
 	for (int cam_idx = 0; cam_idx < NUM_OF_CAMERAS_; cam_idx++) {
 		cameras_[cam_idx]->cap_ >> cameras_[cam_idx]->frame_store_;
@@ -192,7 +202,7 @@ int main(int argc, char * argv[]) {
 			calculate_3D();
 		}
 
-		print_frame_summary();
+		// print_frame_summary();
 
 		annotate_frames(frames_, cumulative_tracks_);
 
@@ -231,7 +241,7 @@ int main(int argc, char * argv[]) {
 		recording_.write(combined_frame);
 
 		// show cv window
-		imshow_resized("Annotated", combined_frame);
+		// imshow_resized("Annotated", combined_frame);
 		
 		frame_count_ += 1;
 

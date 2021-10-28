@@ -67,10 +67,10 @@ namespace mcmt {
 	Json::Value detections_2d_(Json::arrayValue);
 	Json::Value detections_3d_(Json::arrayValue);
 
-	void initialize_recording(cv::Mat sample_frame) {
+	void initialize_recording(cv::Mat sample_frame, std::string filename) {
 		
 		// intialize video writer
-		recording_ = cv::VideoWriter(VIDEO_OUTPUT_ANNOTATED_, cv::VideoWriter::fourcc('M','P','4','V'), VIDEO_FPS_, 
+		recording_ = cv::VideoWriter(filename, cv::VideoWriter::fourcc('M','P','4','V'), VIDEO_FPS_, 
 			cv::Size(NUM_OF_CAMERAS_ * sample_frame.cols, sample_frame.rows + (360 * NUM_OF_CAMERAS_ * sample_frame.cols / 3840)));
 	}
 
@@ -105,7 +105,7 @@ namespace mcmt {
 					std::vector<int> ys = track.second->ys_;
 					std::vector<int> size = track.second->size_;
 					std::vector<double> xyz = track.second->xyz_;
-					cv::Scalar color = (NUM_OF_CAMERAS_ == 1 || id != track.second->oid_) ? COLORS_[id % 10] : cv::Scalar(150, 150, 150);
+					cv::Scalar color = (NUM_OF_CAMERAS_ == 1 || id != track.second->oid_) ? COLORS_[id % 10] : cv::Scalar(50, 50, 50);
 					bool status = track.second->lastSeen_ == frame_count_;
 					cv::Scalar status_color = status ? cv::Scalar(0, 255, 0) : cv::Scalar(0, 0, 255);
 					
@@ -216,14 +216,14 @@ namespace mcmt {
 
 	}
 
-	void initialize_logs() {
+	void initialize_logs(std::string filename) {
 
 		// initialize logs
 		frame_time_file.open(FRAME_TIME_);
 		frame_time_file << "detect_time, track_time, total_time" << "\n"; 
 		
-		targets_2d_file.open(TARGETS_2D_OUTPUT_);
-		targets_3d_file.open(TARGETS_3D_OUTPUT_);
+		targets_2d_file.open(filename);
+		// targets_3d_file.open(TARGETS_3D_OUTPUT_);
 	}
 
 	/**

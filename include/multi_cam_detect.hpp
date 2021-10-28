@@ -58,7 +58,7 @@ namespace mcmt {
 	extern std::vector<std::shared_ptr<cv::VideoWriter>> recordings_;
 
 	// declare detection and tracking functions
-	std::vector<cv::Mat> initialize_cameras();
+	std::vector<cv::Mat> initialize_cameras(std::string filename);
 	void frame_to_frame_subtraction(std::shared_ptr<Camera> & camera);
 	void apply_env_compensation(std::shared_ptr<Camera> & camera);
 	cv::Mat apply_bg_subtractions(std::shared_ptr<Camera> & camera, int frame_id);

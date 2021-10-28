@@ -81,7 +81,7 @@ namespace mcmt {
 	extern std::array<std::vector<std::shared_ptr<GoodTrack>>, NUM_OF_CAMERAS_> good_tracks_;
 
 	// declare tracking functions	
-	void initialize_tracks(cv::Mat sample_frame);
+	void initialize_tracks();
 	template <typename T1, typename T2>
 	bool exists(std::map<T1, T2> arr, T1 item);
 	void update_cumulative_tracks(int index, std::vector<std::shared_ptr<GoodTrack>> & good_tracks);

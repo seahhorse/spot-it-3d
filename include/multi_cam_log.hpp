@@ -79,7 +79,7 @@ namespace mcmt {
 	extern Json::Value detections_3d_;
 
 	// declare recording functions
-	void initialize_recording(cv::Mat sample_frame);
+	void initialize_recording(cv::Mat sample_frame, std::string filename);
 
 	// declare UI functions
 	void print_frame_summary();
@@ -87,7 +87,7 @@ namespace mcmt {
 	void graphical_UI(cv::Mat combined_frame, std::array<std::shared_ptr<CameraTracks>, NUM_OF_CAMERAS_> cumulative_tracks_, cv::Size frame_size, double actual_fps);
 	
 	// declare logging functions
-	void initialize_logs();
+	void initialize_logs(std::string filename);
 	void log_2D();
 	void log_3D(std::shared_ptr<TrackPlot> track_plot_a, std::shared_ptr<TrackPlot> track_plot_b);
 
