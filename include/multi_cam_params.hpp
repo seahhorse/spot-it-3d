@@ -38,21 +38,30 @@ namespace mcmt {
 
 	// declare filepaths
 	const bool IS_REALTIME_ = false;
-    const int NUM_OF_CAMERAS_ = 1;
-    const std::string VIDEO_INPUT_1_ = "192.168.1.141";
-    const std::string VIDEO_INPUT_2_ = "192.168.1.146";
+    const int NUM_OF_CAMERAS_ = 2;
+
+    // realtime parameters
+    const std::string VIDEO_INPUT_1_ = "data/input/12-10_WCP_2a.avi";
+    const std::string VIDEO_INPUT_2_ = "data/input/12-10_WCP_2b.avi";
 	const std::string VIDEO_OUTPUT_1_ = "data/output/A_out.avi";
     const std::string VIDEO_OUTPUT_2_ = "data/output/B_out.avi";
-	const std::string VIDEO_OUTPUT_ANNOTATED_ = "data/output/test.avi";
+	const std::string VIDEO_OUTPUT_ANNOTATED_ = "data/output/testfolder/12-10_WCP_2.avi";
 	const std::string TARGETS_2D_OUTPUT_ = "data/output/targets_2d_out.json";
     const std::string TARGETS_3D_OUTPUT_ = "data/output/targets_3d_out.json";
     const std::string FRAME_TIME_ = "data/output/frame_time.csv";
     const std::string VILOTA_SRT_PORT_ = "8888";
     const std::string VILOTA_WEBSOCK_PORT_ = "49999";
     
+    // declare display settings
+    const bool GRAPHIC_UI_ = true;
+    const bool SHOW_UNMATCHED_TARGETS_ = true;
+    const bool SHOW_CAM_NUM_ = true;
+    const bool SHOW_ID_ = true;
+    const bool SHOW_3D_COORDINATES_ = true;
+
 	// declare video parameters
-	const int FRAME_WIDTH_ = 1920;
-    const int FRAME_HEIGHT_ = 1080;
+	const int FRAME_WIDTH_ = 640;
+    const int FRAME_HEIGHT_ = 480;
     const int VIDEO_FPS_ = 30;
     const int MAX_TOLERATED_CONSECUTIVE_DROPPED_FRAMES_ = 5;
 
@@ -68,10 +77,10 @@ namespace mcmt {
     const bool USE_HIST_EQUALISE_ = false;
 
     // declare image subtraction parameters
-    const float DELTA_FRAME_PROPORTION_ = 0.85;
+    const float DELTA_FRAME_PROPORTION_ = 0.00;
 
 	// declare background subtractor parameters
-    const bool USE_BG_SUBTRACTOR_ = false;
+    const bool USE_BG_SUBTRACTOR_ = true;
     const int FGBG_HISTORY_ = 5;
     const float BACKGROUND_RATIO_ = 0.05;
     const int NMIXTURES_ = 5;
@@ -81,10 +90,24 @@ namespace mcmt {
     const float REMOVE_GROUND_ITER_ = 5.75;
     const float BACKGROUND_CONTOUR_CIRCULARITY_ = 0.5;
 
+    // declare tracking parameters
+    const int PRUNE_HIST_ = 30;
+
+    // declare re-id parameters
+    const double W1_ = 0.3;
+    const double W2_ = 0.4;
+    const double W3_ = 0.3;
+    const int TRACK_XJ_MAX_ = 120;
+    const int HDG_SCORE_TRACK_HIST_ = 30;
+
 	// declare plotting parameters
 	const int PLOT_HISTORY_ = 200;
 	const double FONT_SCALE_ = 0.5;
-    std::vector<cv::Scalar> COLORS_ = {
+    const bool DISPLAY_MATCHED_ONLY_ = false;
+    const bool DISPLAY_ID_ = true;
+    const bool DISPLAY_3D_ = true;
+    const bool DISPLAY_STATUS_ = true;
+    const std::vector<cv::Scalar> COLORS_{
         cv::Scalar(124, 104, 66), // 1
         cv::Scalar(20, 60, 96), // 2
         cv::Scalar(46, 188, 243), // 3
@@ -97,8 +120,8 @@ namespace mcmt {
         cv::Scalar(147, 226, 255) // 10
     };
 
-    // declare starting frame
-    int frame_count_;
+    extern int frame_count_;
+
 }
 
 #endif    // MULTI_CAM_PARAMS_HPP_

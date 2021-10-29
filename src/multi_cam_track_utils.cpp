@@ -27,6 +27,7 @@
 
 // local header files
 #include "multi_cam_track_utils.hpp"
+#include "multi_cam_params.hpp"
 
 // standard package imports
 #include <stdlib.h>
@@ -55,6 +56,7 @@ namespace mcmt {
 	TrackPlot::TrackPlot(int track_id) {
 		// set the trackid and the mismatch count to initial value of zero
 		id_ = track_id;
+		oid_ = track_id;
 		mismatch_count_ = 0;
 		lastSeen_ = 0;
 	}
@@ -63,10 +65,19 @@ namespace mcmt {
 	 * This function updates the track with the latest track information
 	 */
 	void TrackPlot::update(std::vector<int> & location, int & size, int & frame_no) {
+		update_track(location, size, frame_no);
+		update_track_feature_variable(frame_no);
+		update_3D_velocity_orientation(frame_no);
+	}
+
+	/**
+	 * This function updates the track with the latest track information
+	 */
+	void TrackPlot::update_track(std::vector<int> & location, int & size, int & frame_no) {
 		xs_.push_back(location[0]);
 		ys_.push_back(location[1]);
-		frameNos_.push_back(frame_no);
 		size_.push_back(size);
+		frameNos_.push_back(frame_no);
 		lastSeen_ = frame_no;
 	}
 
@@ -75,7 +86,7 @@ namespace mcmt {
 	 * current frame, and stores the value of the track feature variable inside
 	 * the std::vector track_feature_variable_
 	 */
-	void TrackPlot::calculate_track_feature_variable(int & frame_no, int fps) {
+	void TrackPlot::update_track_feature_variable(int & frame_no) {
 		// checks if there is enough data to calculate the turning angle (at least
 		// 3 points) and that the data is from the current frame
 		if (frameNos_.size() >= 3 && frameNos_.back() == frame_no) {
@@ -96,16 +107,76 @@ namespace mcmt {
 				 */
 
 				// Pace
-				float d = hypot((x[t] - x[t - 1]), (y[t] - y[t - 1]));
-				float pace = d * fps;
-				pace_.push_back(pace);
+				float d = hypot((x[t] - x[t - 1]), (y[t] - y[t - 1]));				
+				// float pace = d * fps;
+				// pace_.push_back(pace);
 
 				// append track feature variable. the current pipeline uses pace as our
 				// track feature variable value
-				track_feature_variable_.push_back(pace);
+				track_feature_variable_.push_back(d);
+
+				// truncates after a certain length
+				if (track_feature_variable_.size() > TRACK_XJ_MAX_) {
+					track_feature_variable_.erase(track_feature_variable_.begin());
+				}
 			}
 		}
 	}
+
+	/**
+	 * This function calculates the track feature variable of the track in the 
+	 * current frame, and stores the value of the track feature variable inside
+	 * the std::vector track_feature_variable_
+	 */
+	void TrackPlot::update_3D_velocity_orientation(int & frame_no) {
+		// checks if there is enough data to calculate the turning angle (at least
+		// 3 points) and that the data is from the current frame
+		if (frameNos_.size() >= 3 && frameNos_.back() == frame_no) {
+			// check if the last 3 frames are consecutive
+			if ((frameNos_.end()[-2] == (frameNos_.end()[-1] - 1)) &&
+					(frameNos_.end()[-3] == (frameNos_.end()[-2] - 1))) {
+
+				// declare camera lens parameters
+    			const int FOV_X_ = 69.5;
+    			const int FOV_Y_ = 42.6;
+
+				const int FRAME_WIDTH_ = 1920;
+    			const int FRAME_HEIGHT_ = 1080;
+				
+				double dx = xs_.end()[-1] - xs_.end()[-2];
+				double dy = ys_.end()[-1] - ys_.end()[-2];
+				double r = (double) size_.end()[-1] / size_.end()[-2];
+
+				std::array<double, 3> velocity;
+
+				double velocity_x = (dx / FRAME_WIDTH_) * 2 * tan(M_PI / 180.0 * FOV_X_ / 2.0);
+				velocity_x += ((1.0 / r) - 1.0) * tan((((double) xs_.end()[-1] / FRAME_WIDTH_) - 0.5) * FOV_X_ * M_PI / 180.0);
+
+				double velocity_y = - (dy / FRAME_HEIGHT_) * 2 * tan(M_PI / 180.0 * FOV_Y_ / 2.0);
+				velocity_y -= ((1.0 / r) - 1.0) * tan((((double) ys_.end()[-1] / FRAME_HEIGHT_) - 0.5) * FOV_Y_ * M_PI / 180.0);
+
+				double velocity_z = (1.0 / r) - 1.0;
+
+				double velocity_length = sqrt(pow(velocity_x, 2) + pow(velocity_y, 2) + pow(velocity_z, 2));
+
+				if (velocity_length != 0) {
+					velocity[0] = velocity_x / velocity_length; 
+					velocity[1] = velocity_y / velocity_length; 
+					velocity[2] = velocity_z / velocity_length; 
+				} else {
+					velocity[0] = 0.0;
+					velocity[1] = 0.0;
+					velocity[2] = 0.0;
+				}
+
+				// std::cout << "Velocity: " << velocity[0] << " " << velocity[1] << " " << velocity[2] << std::endl;
+
+				vel_orient_.push_back(velocity);
+			}
+		}
+	}
+
+
 
 	/**
 	 * This function checks if the current TrackPlot has been stationary for too long,
@@ -139,36 +210,19 @@ namespace mcmt {
 	 * this function updates the current frame's other_tracks list
 	 */
 	void update_other_tracks(std::shared_ptr<TrackPlot> trackplot,
-		std::shared_ptr<CameraTracks> & cumulative_track) {
+		std::shared_ptr<CameraTracks> & cumulative_tracks) {
 		
 		// clear other_tracks vector
 		trackplot->other_tracks_.clear();
 
-		// iterate through the camera's tracks
-		std::map<int, std::shared_ptr<TrackPlot>>::iterator other_track;
-		for (other_track = cumulative_track->track_plots_.begin(); 
-			other_track != cumulative_track->track_plots_.end(); other_track++) {
+		std::map<int, std::shared_ptr<TrackPlot>> all_tracks(cumulative_tracks->track_new_plots_);
+		all_tracks.insert(cumulative_tracks->track_plots_.begin(), cumulative_tracks->track_plots_.end());
 
-			if (other_track->second->xs_.size() != 0 && other_track->second->ys_.size() != 0) {
-				int dx = other_track->second->xs_.end()[-1] - trackplot->xs_.end()[-1];
-				int dy = other_track->second->ys_.end()[-1] - trackplot->ys_.end()[-1];
+		for (auto & other_track : all_tracks) {
 
-				if (dx != 0 && dy != 0) {
-					auto new_other_track = std::shared_ptr<TrackPlot::OtherTrack>(new TrackPlot::OtherTrack());
-					new_other_track->angle = atan2(dy, dx);
-					new_other_track->dist = hypot(dx, dy);
-					new_other_track->dx = dx;
-					new_other_track->dy = dy;
-					trackplot->other_tracks_.push_back(new_other_track);
-				}
-			}
-		}
-
-		for (other_track = cumulative_track->track_new_plots_.begin(); 
-			other_track != cumulative_track->track_new_plots_.end(); other_track++) {
-			if (other_track->second->xs_.size() != 0 && other_track->second->ys_.size() != 0) {
-				int dx = other_track->second->xs_.end()[-1] - trackplot->xs_.end()[-1];
-				int dy = other_track->second->ys_.end()[-1] - trackplot->ys_.end()[-1];
+			if (other_track.second->xs_.size() != 0 && other_track.second->ys_.size() != 0) {
+				int dx = other_track.second->xs_.end()[-1] - trackplot->xs_.end()[-1];
+				int dy = other_track.second->ys_.end()[-1] - trackplot->ys_.end()[-1];
 
 				if (dx != 0 && dy != 0) {
 					auto new_other_track = std::shared_ptr<TrackPlot::OtherTrack>(new TrackPlot::OtherTrack());
@@ -180,51 +234,7 @@ namespace mcmt {
 				}
 			}
 		}
-	}
 
-	void combine_track_plots(
-		int & index,
-		std::shared_ptr<CameraTracks> camera_tracks,
-		std::shared_ptr<TrackPlot> track_plot,
-		int & frame_count) {
-		
-		// append the various variable value vectors
-		camera_tracks->track_plots_[index]->xs_.insert(
-			camera_tracks->track_plots_[index]->xs_.end(),
-			track_plot->xs_.begin(),
-			track_plot->xs_.end());
-		
-		camera_tracks->track_plots_[index]->ys_.insert(
-			camera_tracks->track_plots_[index]->ys_.end(),
-			track_plot->ys_.begin(),
-			track_plot->ys_.end());
-		
-		camera_tracks->track_plots_[index]->frameNos_.insert(
-			camera_tracks->track_plots_[index]->frameNos_.end(),
-			track_plot->frameNos_.begin(),
-			track_plot->frameNos_.end());
-
-		camera_tracks->track_plots_[index]->turning_angle_.insert(
-			camera_tracks->track_plots_[index]->turning_angle_.end(),
-			track_plot->turning_angle_.begin(),
-			track_plot->turning_angle_.end());
-
-		camera_tracks->track_plots_[index]->curvature_.insert(
-			camera_tracks->track_plots_[index]->curvature_.end(),
-			track_plot->curvature_.begin(),
-			track_plot->curvature_.end());
-
-		camera_tracks->track_plots_[index]->pace_.insert(
-			camera_tracks->track_plots_[index]->pace_.end(),
-			track_plot->pace_.begin(),
-			track_plot->pace_.end());
-
-		camera_tracks->track_plots_[index]->track_feature_variable_.insert(
-			camera_tracks->track_plots_[index]->track_feature_variable_.end(),
-			track_plot->track_feature_variable_.begin(),
-			track_plot->track_feature_variable_.end());
-
-		camera_tracks->track_plots_[index]->lastSeen_ = frame_count;
 	}
 
 }
