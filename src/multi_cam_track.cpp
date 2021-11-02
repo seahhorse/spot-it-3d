@@ -100,7 +100,7 @@ namespace mcmt {
 			}
 
 			// Update the TrackPlot
-			track_plot->update(location, size, frame_count_);
+			track_plot->update(location, size, frame_count_, *(frames_[index]));
 		}			
 	}
 
@@ -423,11 +423,10 @@ namespace mcmt {
 
 		double score = (W1_ * x1) + (W2_ * x2) + (W3_ * x3);
 
-		// if (idx_a == 0) {
-		// 	std::vector<double> line{track_plot_a->xs_.back(), track_plot_b->ys_.back(), track_plot_b->xs_.back() + FRAME_WIDTH_, track_plot_b->ys_.back(), score, convolution, 0};
-		// 	lines.push_back(line);
-		// }
-		// std::cout << "R_value: " << r_value << ", Score: " << score << ", 3D conv: " << convolution << std::endl;
+		if (idx_a == 0) {
+			std::vector<double> line{track_plot_a->xs_.back(), track_plot_a->ys_.back(), track_plot_b->xs_.back() + FRAME_WIDTH_, track_plot_b->ys_.back(), score, convolution, 0};
+			lines.push_back(line);
+		}
 
 		return (score > 0.5) ? score : 0;
 	}

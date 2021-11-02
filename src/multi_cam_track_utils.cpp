@@ -29,12 +29,18 @@
 #include "multi_cam_track_utils.hpp"
 #include "multi_cam_params.hpp"
 
+// opencv header files
+#include <opencv2/opencv.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
+#include <opencv2/ximgproc.hpp>
+
 // standard package imports
 #include <stdlib.h>
 #include <math.h>
 #include <memory>
 #include <algorithm>
 #include <functional>
+#include <numeric>
 #include <iostream>
 
 using namespace mcmt;
@@ -59,14 +65,16 @@ namespace mcmt {
 		oid_ = track_id;
 		mismatch_count_ = 0;
 		lastSeen_ = 0;
+
 	}
 
 	/**
 	 * This function updates the track with the latest track information
 	 */
-	void TrackPlot::update(std::vector<int> & location, int & size, int & frame_no) {
+	void TrackPlot::update(std::vector<int> & location, int & size, int & frame_no, cv::Mat frame) {
 		update_track(location, size, frame_no);
 		update_track_feature_variable(frame_no);
+		update_area(frame);
 		update_3D_velocity_orientation(frame_no);
 	}
 
@@ -124,55 +132,70 @@ namespace mcmt {
 	}
 
 	/**
+	 * This function updates the area calculated by thresholding black pixels 
+	 * within the size of detection.
+	 */
+	void TrackPlot::update_area(cv::Mat frame) {
+		cv::Mat local_region;
+		int left = std::max(0, xs_.back() - size_.back());
+		int top = std::max(0, ys_.back() - size_.back());
+		int width = std::min(2 * size_.back(), FRAME_WIDTH_ - left);
+		int height = std::min(2 * size_.back(), FRAME_HEIGHT_ - top);
+		frame(cv::Rect(left, top, width, height)).copyTo(local_region);
+		cv::cvtColor(local_region, local_region, cv::COLOR_BGR2GRAY);
+		cv::threshold(local_region, local_region, cv::mean(local_region)[0] - 10, 255, 0);
+		int area = (4 * size_.back() * size_.back()) - cv::countNonZero(local_region);		
+		area_.push_back(area);
+	}
+
+	/**
 	 * This function calculates the track feature variable of the track in the 
 	 * current frame, and stores the value of the track feature variable inside
 	 * the std::vector track_feature_variable_
 	 */
 	void TrackPlot::update_3D_velocity_orientation(int & frame_no) {
-		// checks if there is enough data to calculate the turning angle (at least
-		// 3 points) and that the data is from the current frame
-		if (frameNos_.size() >= 3 && frameNos_.back() == frame_no) {
-			// check if the last 3 frames are consecutive
-			if ((frameNos_.end()[-2] == (frameNos_.end()[-1] - 1)) &&
-					(frameNos_.end()[-3] == (frameNos_.end()[-2] - 1))) {
+		// checks if the data is from the current frame
+		if (frameNos_.back() == frame_no) {
 
-				// declare camera lens parameters
-    			const int FOV_X_ = 69.5;
-    			const int FOV_Y_ = 42.6;
+			// declare camera lens parameters
+			const int FOV_X_ = 69.5;
+			const int FOV_Y_ = 42.6;
+			
+			double dx = xs_.end()[-1] - xs_.end()[-16];
+			double dy = ys_.end()[-1] - ys_.end()[-16];
 
-				const int FRAME_WIDTH_ = 1920;
-    			const int FRAME_HEIGHT_ = 1080;
-				
-				double dx = xs_.end()[-1] - xs_.end()[-2];
-				double dy = ys_.end()[-1] - ys_.end()[-2];
-				double r = (double) size_.end()[-1] / size_.end()[-2];
+			std::cout << dx << " " << dy << " " << id_ << std::endl;
 
-				std::array<double, 3> velocity;
+			double area = (double) std::accumulate(area_.end() - 15, area_.end(), 0) / 15;
+			double last_area = (double) std::accumulate(area_.end() - 30, area_.end() - 15, 0) / 15;
 
-				double velocity_x = (dx / FRAME_WIDTH_) * 2 * tan(M_PI / 180.0 * FOV_X_ / 2.0);
-				velocity_x += ((1.0 / r) - 1.0) * tan((((double) xs_.end()[-1] / FRAME_WIDTH_) - 0.5) * FOV_X_ * M_PI / 180.0);
+			double r = sqrt(area / last_area);
 
-				double velocity_y = - (dy / FRAME_HEIGHT_) * 2 * tan(M_PI / 180.0 * FOV_Y_ / 2.0);
-				velocity_y -= ((1.0 / r) - 1.0) * tan((((double) ys_.end()[-1] / FRAME_HEIGHT_) - 0.5) * FOV_Y_ * M_PI / 180.0);
+			std::array<double, 3> velocity;
 
-				double velocity_z = (1.0 / r) - 1.0;
+			double velocity_x = (dx / FRAME_WIDTH_) * 2 * tan(M_PI / 180.0 * FOV_X_ / 2.0);
+			velocity_x += ((1.0 / r) - 1.0) * tan((((double) xs_.end()[-1] / FRAME_WIDTH_) - 0.5) * FOV_X_ * M_PI / 180.0);
 
-				double velocity_length = sqrt(pow(velocity_x, 2) + pow(velocity_y, 2) + pow(velocity_z, 2));
+			double velocity_y = - (dy / FRAME_HEIGHT_) * 2 * tan(M_PI / 180.0 * FOV_Y_ / 2.0);
+			velocity_y -= ((1.0 / r) - 1.0) * tan((((double) ys_.end()[-1] / FRAME_HEIGHT_) - 0.5) * FOV_Y_ * M_PI / 180.0);
 
-				if (velocity_length != 0) {
-					velocity[0] = velocity_x / velocity_length; 
-					velocity[1] = velocity_y / velocity_length; 
-					velocity[2] = velocity_z / velocity_length; 
-				} else {
-					velocity[0] = 0.0;
-					velocity[1] = 0.0;
-					velocity[2] = 0.0;
-				}
+			double velocity_z = (1.0 / r) - 1.0;
 
-				// std::cout << "Velocity: " << velocity[0] << " " << velocity[1] << " " << velocity[2] << std::endl;
+			double velocity_length = sqrt(pow(velocity_x, 2) + pow(velocity_y, 2) + pow(velocity_z, 2));
 
-				vel_orient_.push_back(velocity);
+			if (velocity_length != 0) {
+				velocity[0] = velocity_x / velocity_length; 
+				velocity[1] = velocity_y / velocity_length; 
+				velocity[2] = velocity_z / velocity_length; 
+			} else {
+				velocity[0] = 0.0;
+				velocity[1] = 0.0;
+				velocity[2] = 0.0;
 			}
+
+			std::cout << "ID " << id_ << ", dx = " << dx << ", dy = " << dy << ", r = " << r << ", Velocity: " << velocity[0] << " " << velocity[1] << " " << velocity[2] << std::endl;
+
+			vel_orient_.push_back(velocity);
 		}
 	}
 
