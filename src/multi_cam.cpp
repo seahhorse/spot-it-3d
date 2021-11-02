@@ -189,7 +189,7 @@ int main(int argc, char * argv[]) {
 			for (int cam_idx_a = 0; cam_idx_a < NUM_OF_CAMERAS_; cam_idx_a++) {
 				for (int cam_idx_b = 0; cam_idx_b < NUM_OF_CAMERAS_; cam_idx_b++) {
 					if (cam_idx_a != cam_idx_b) {
-						process_new_tracks(2 - cam_idx_a, 2 - cam_idx_b, good_tracks_[2 - cam_idx_a]);
+						process_new_tracks(cam_idx_a, cam_idx_b, good_tracks_[cam_idx_a]);
 					}
 				}
 			}

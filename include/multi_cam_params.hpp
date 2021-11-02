@@ -38,16 +38,18 @@ namespace mcmt {
 
 	// declare filepaths
 	const bool IS_REALTIME_ = false;
-    const int NUM_OF_CAMERAS_ = 3;
+    const int NUM_OF_CAMERAS_ = 4;
 
     // realtime parameters
-    const std::vector<std::string> VIDEO_INPUT_ = {     "data/input/3cam_1.avi",
-                                                        "data/input/3cam_2.avi",
-                                                        "data/input/3cam_3.avi"
+    const std::vector<std::string> VIDEO_INPUT_ = {     "data/input/2-11-WCP_7a_out.avi",
+                                                        "data/input/2-11-WCP_7b_out.avi",
+                                                        "data/input/2-11-WCP_7c_out.avi",
+                                                        "data/input/2-11-WCP_7d_out.avi"
                                                     };
     const std::vector<std::string> VIDEO_OUTPUT_ = {    "data/output/3cam_1_out.avi",
                                                         "data/output/3cam_2_out.avi",
-                                                        "data/output/3cam_3_out.avi"
+                                                        "data/output/3cam_3_out.avi",
+                                                        "data/output/3cam_4_out.avi"
                                                     };
 	const std::string VIDEO_OUTPUT_ANNOTATED_ = "data/output/ABC.avi";
 	const std::string TARGETS_2D_OUTPUT_ = "data/output/targets_2d_out.json";

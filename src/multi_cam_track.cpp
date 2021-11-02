@@ -146,76 +146,6 @@ namespace mcmt {
 			matching_dict_[index].erase(track_id);
 		}
 	}
-
-	/**
-	 * checks matched tracks to see if they are still valid. also checks if multiple tracks
-	 * within each camera are tracking the same target
-	 */
-	// void verify_existing_tracks(int idx_a, int idx_b) {
-
-	// 	for (auto & matched_track : matched_tracks_) {		
-	// 		if (matched_track.second[NUM_OF_CAMERAS_] < 2 )	continue;
-
-	// 		int matched_id = matched_track.first;
-
-	// 		auto track_plot_a = cumulative_tracks_[idx_a]->track_plots_[matched_id];
-	// 		auto track_plot_b = cumulative_tracks_[idx_b]->track_plots_[matched_id];
-
-	// 		if (track_plot_a->lastSeen_ != frame_count_ || track_plot_b->lastSeen_ != frame_count_) continue;
-
-	// 		// x1 : track feature variable correlation strength based on normalised vector
-	// 		double x1 = crossCorrelation(normalise_track_plot(track_plot_a), normalise_track_plot(track_plot_b));
-	// 		// x3 : heading deviation error score
-	// 		double x3 = heading_score(track_plot_a, track_plot_b);
-
-	// 		double score = compute_matching_score(track_plot_a, track_plot_b, idx_a, idx_b);
-
-	// 		// FOR TESTING
-	// 		auto convolution = crossCorrelation_3D(track_plot_a->vel_orient_, track_plot_b->vel_orient_);
-
-	// 		// std::vector<double> line{track_plot_a->xs_.back(), track_plot_a->ys_.back(), track_plot_b->xs_.back() + FRAME_WIDTH_, track_plot_b->ys_.back(), score, convolution, 0};
-	// 		// lines.push_back(line);
-			
-	// 		if (score < 0.5 && track_plot_a->frameNos_.size() > 180 && track_plot_b->frameNos_.size() > 180) {
-	// 		// if (x1 < 0.4 && x3 < 0.8 && track_plot_a->frameNos_.size() > 180 && track_plot_b->frameNos_.size() > 180) {
-				
-	// 			if (track_plot_a->check_stationary() != track_plot_b->check_stationary()) {
-	// 				track_plot_a->mismatch_count_ += 3;
-	// 				track_plot_b->mismatch_count_ += 3;
-	// 			} else {
-	// 				track_plot_a->mismatch_count_ += 1;
-	// 				track_plot_b->mismatch_count_ += 1;
-	// 			}
-			
-	// 		} else {
-	// 			track_plot_a->mismatch_count_ = 0;
-	// 			track_plot_b->mismatch_count_ = 0;
-	// 		}
-
-	// 		if (track_plot_a->mismatch_count_ >= 90 && track_plot_b->mismatch_count_ >= 90) {
-	// 			track_plot_a->mismatch_count_ = 0;
-	// 			track_plot_b->mismatch_count_ = 0;
-
-	// 			debug_messages.push_back("Target ID " +  std::to_string(matched_id)  + " is dropped due to mismatch");
-
-	// 			track_plot_a->id_ = track_plot_a->oid_;
-	// 			track_plot_b->id_ = track_plot_b->oid_;
-
-	// 			cumulative_tracks_[0]->track_new_plots_[track_plot_a->oid_] = track_plot_a;
-	// 			cumulative_tracks_[0]->track_plots_.erase(matched_id);
-
-	// 			cumulative_tracks_[1]->track_new_plots_[track_plot_b->oid_] = track_plot_b;
-	// 			cumulative_tracks_[1]->track_plots_.erase(matched_id);
-
-	// 			matching_dict_[0][track_plot_a->oid_] = track_plot_a->oid_;
-	// 			matching_dict_[1][track_plot_b->oid_] = track_plot_b->oid_;
-
-	// 			matched_tracks_.erase(matched_id);
-	// 		}
-			
-	// 	}
-
-	// }
 	
 	/**
 	 * checks matched tracks to see if they are still valid. also checks if multiple tracks
@@ -264,7 +194,6 @@ namespace mcmt {
 			if (max_score < 0.5 && track_plot->frameNos_.size() > 180) {
 			// if (x1 < 0.4 && x3 < 0.8 && track_plot->frameNos_.size() > 180 && track_plot_b->frameNos_.size() > 180) {
 				track_plot->mismatch_count_ += 1;
-				std::cout << track_plot->id_ << " added 1 to MMC: Total " << track_plot->mismatch_count_ << std::endl;
 			} else {
 				track_plot->mismatch_count_ = 0;
 			}
@@ -806,9 +735,21 @@ namespace mcmt {
 			if (matched_track.second[NUM_OF_CAMERAS_] < 2) continue;
 
 			int matched_id = matched_track.first;
+			int first_cam = -1;
+			int second_cam = -1;
 
-			auto track_plot_a = cumulative_tracks_[0]->track_plots_[matched_id];
-			auto track_plot_b = cumulative_tracks_[1]->track_plots_[matched_id];
+			for (int cam_idx = 0; cam_idx < NUM_OF_CAMERAS_; cam_idx++) {
+				if (first_cam == -1) {
+					if (matched_track.second[cam_idx]) first_cam = cam_idx;
+				} else if (second_cam == -1) {
+					if (matched_track.second[cam_idx]) second_cam = cam_idx;
+				} else {
+					break;
+				}
+			}
+
+			auto track_plot_a = cumulative_tracks_[first_cam]->track_plots_[matched_id];
+			auto track_plot_b = cumulative_tracks_[second_cam]->track_plots_[matched_id];
 
 			if (track_plot_a->lastSeen_ != frame_count_ || track_plot_b->lastSeen_ != frame_count_) continue;
 
