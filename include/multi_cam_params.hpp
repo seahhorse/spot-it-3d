@@ -37,20 +37,18 @@
 namespace mcmt {
 
 	// declare filepaths
-	const bool IS_REALTIME_ = false;
+	const int IS_REALTIME_ = 2;
     const int NUM_OF_CAMERAS_ = 2;
 
     // realtime parameters
-    const std::string VIDEO_INPUT_1_ = "data/input/12-10_WCP_2a.avi";
-    const std::string VIDEO_INPUT_2_ = "data/input/12-10_WCP_2b.avi";
+    const std::string VIDEO_INPUT_1_ = "192.168.1.141";
+    const std::string VIDEO_INPUT_2_ = "192.168.1.146";
 	const std::string VIDEO_OUTPUT_1_ = "data/output/A_out.avi";
     const std::string VIDEO_OUTPUT_2_ = "data/output/B_out.avi";
 	const std::string VIDEO_OUTPUT_ANNOTATED_ = "data/output/testfolder/12-10_WCP_2.avi";
 	const std::string TARGETS_2D_OUTPUT_ = "data/output/targets_2d_out.json";
     const std::string TARGETS_3D_OUTPUT_ = "data/output/targets_3d_out.json";
     const std::string FRAME_TIME_ = "data/output/frame_time.csv";
-    const std::string VILOTA_SRT_PORT_ = "8888";
-    const std::string VILOTA_WEBSOCK_PORT_ = "49999";
     
     // declare display settings
     const bool GRAPHIC_UI_ = true;

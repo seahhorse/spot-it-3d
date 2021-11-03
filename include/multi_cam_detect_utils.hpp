@@ -31,6 +31,7 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/ximgproc.hpp>
 #include <opencv2/tracking.hpp>
+#include <WSrtInterface.hpp>
 
 // standard package imports
 #include <string>
@@ -88,7 +89,7 @@ namespace mcmt {
 		public:
 			Camera(
 				int cam_index,
-				bool is_realtime,
+				int is_realtime,
 				std::string video_input,
 				int fps,
 				int max_frame_width,
@@ -102,6 +103,7 @@ namespace mcmt {
 
 			// declare video parameters
 			cv::VideoCapture cap_;
+			std::shared_ptr<WSrt> edgecam_cap_; // To remove when interface shifts
 			cv::Mat frame_, frame_original_, frame_ec_, gray_, frame_store_;
 			std::array<cv::Mat, 2> masked_, removebg_;
 			std::string video_input_;

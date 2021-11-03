@@ -70,8 +70,10 @@ int main(int argc, char * argv[]) {
 	initialize_tracks(sample_frames[0]);
 	initialize_logs();
 
+	if (IS_REALTIME_ != 2) { // To remove when interface shifts
 	for (int cam_idx = 0; cam_idx < NUM_OF_CAMERAS_; cam_idx++) {
 		cameras_[cam_idx]->cap_ >> cameras_[cam_idx]->frame_store_;
+	}
 	}
 
 	while (true) {
@@ -82,7 +84,29 @@ int main(int argc, char * argv[]) {
 		for (auto & camera : cameras_) {
 
 			// get camera frame
-			camera->cap_ >> camera->frame_;
+			if (IS_REALTIME_ == 2) { // To remove when interface shifts
+				wsrt_output edgecam_data;
+				edgecam_data = camera->edgecam_cap_->extract_data();
+
+				// Get image from edge cam - keep this code when interface shifts!
+				camera->frame_ = edgecam_data.image.clone();
+
+				// Copy frame to masked to avoid downstream errors - to remove when interface shifts
+				for (auto & it : camera->masked_) {
+					it = camera->frame_.clone();
+				}
+
+				// Get detections from edge cam - keep this code when interface shifts!
+				for (auto & detection : edgecam_data.detections) {
+					float size = std::max(float(detection.width), float(detection.height)); // "size" is a diameter!
+					cv::Point2f coords(float(detection.x), float(detection.y));
+					camera->centroids_.push_back(coords);
+					camera->sizes_.push_back(size);
+				}
+			}
+			else {
+				camera->cap_ >> camera->frame_;
+			}
 			camera->frame_original_ = camera->frame_.clone();
 
 			// check if getting frame was successful
@@ -95,6 +119,8 @@ int main(int argc, char * argv[]) {
 			if (IS_REALTIME_) {
 				recordings_[camera->cam_index_]->write(camera->frame_);
 			}
+
+			if (IS_REALTIME_ != 2) { // To remove when interface shifts
 
 			// apply frame by frame subtraction for feature enhancement
 			frame_to_frame_subtraction(camera);
@@ -119,6 +145,8 @@ int main(int argc, char * argv[]) {
 			detect_objects(camera);
 			// cv::imshow("Remove Ground Original", camera->removebg_[0]);
 			// cv::imshow("Remove Ground EC", camera->removebg_[1]);
+
+			} // Edge Cam Interface is currently before KF/DCF. To be shifted
 			
 			// apply state estimation filters
 			predict_new_locations_of_tracks(camera);
@@ -145,15 +173,19 @@ int main(int argc, char * argv[]) {
 			create_new_tracks(camera);
 
 			// convert masked to BGR
+			if (IS_REALTIME_ != 2) { // To remove when interface shifts
 			for (auto & it : camera->masked_) {
 				cv::cvtColor(it, it, cv::COLOR_GRAY2BGR);
+			}
 			}
 
 			// filter the tracks
 			camera->good_tracks_ = filter_tracks(camera);
 			
 			// update the stored t-1 frame 
+			if (IS_REALTIME_ != 2) { // To remove when interface shifts
 			camera->frame_store_ = camera->frame_original_.clone();
+			}
 
 		}
 

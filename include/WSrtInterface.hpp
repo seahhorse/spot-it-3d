@@ -17,10 +17,12 @@
 
 namespace mcmt {
 
+// Detections from edge cam
 struct wsrt_detections {
     int x, y, width, height;
 };
 
+// Output structure containing image data and detections
 struct wsrt_output {
     std::vector<wsrt_detections> detections;
     int imageWidth, imageHeight;
@@ -29,6 +31,10 @@ struct wsrt_output {
     cv::Mat image;
 };
 
+/**
+ * The Wsrt client class to obtain data from edge cam and pass it to the main code
+ * An instance of this class is spawned for each edge cam
+ */
 class WSrt {
     public:
         WSrt(
@@ -51,6 +57,8 @@ class WSrt {
         vilota::WebsocketMessage::Ptr msgWebsocket_;
 
         wsrt_output extract_data();
+        wsrt_output extract_data_callback(vilota::SrtReceiverInterface::MessageQueue &queueSrt,
+                  vilota::WebsocketClientInterface::MessageQueue &queueWebsocket);
         void reset_msgs();
         void reset_receivers();
 

@@ -26,6 +26,7 @@
 
 // local header files
 #include "multi_cam_detect_utils.hpp"
+#include "WSrtInterface.hpp"
 
 // standard package imports
 #include <stdlib.h>
@@ -192,7 +193,7 @@ namespace mcmt {
 	 */
 	Camera::Camera(
 		int index,
-		bool is_realtime,
+		int is_realtime,
 		std::string video_input,
 		int fps,
 		int max_frame_width,
@@ -206,19 +207,28 @@ namespace mcmt {
 		cam_index_ = index;
 
 		// open video capturing or video file
-		if (is_realtime == true) {
+		if (is_realtime == 1) {
 			cap_ = cv::VideoCapture(std::stoi(video_input_), cv::CAP_V4L2);
 			cap_.set(cv::CAP_PROP_FOURCC, cv::VideoWriter::fourcc('M', 'J', 'P', 'G'));
 			cap_.set(cv::CAP_PROP_FRAME_WIDTH, max_frame_width);
 			cap_.set(cv::CAP_PROP_FRAME_HEIGHT, max_frame_height);
 			cap_.set(cv::CAP_PROP_FPS, fps);
+		}
+		else if (is_realtime == 2){ // To remove when interface shifts
+			edgecam_cap_ = std::shared_ptr<WSrt>(new WSrt(cam_index_, video_input_, "8888", "49999", "avdec_h264"));
 		} else {
 			cap_ = cv::VideoCapture(video_input_);
 		}
 
 		// get video parameters
-		frame_w_ = int(cap_.get(cv::CAP_PROP_FRAME_WIDTH));
-		frame_h_ = int(cap_.get(cv::CAP_PROP_FRAME_HEIGHT));
+		if (is_realtime == 2) {// To remove when interface shifts
+			frame_w_ = max_frame_width; // placeholder... how to get frame width/height from edgecam?
+			frame_h_ = max_frame_height;
+		}
+		else {
+			frame_w_ = int(cap_.get(cv::CAP_PROP_FRAME_WIDTH));
+			frame_h_ = int(cap_.get(cv::CAP_PROP_FRAME_HEIGHT));
+		}
 		fps_ = fps;
 		scale_factor_ = (sqrt(pow(frame_w_, 2) + pow(frame_h_, 2))) / (sqrt(pow(848, 2) + pow(480, 2)));
 		aspect_ratio_ = frame_w_ / frame_h_;
@@ -233,11 +243,13 @@ namespace mcmt {
 			scale_factor_ = (sqrt(pow(frame_w_, 2) + pow(frame_h_, 2))) / (sqrt(pow(848, 2) + pow(480, 2)));
 		}
 
-		if (!cap_.isOpened()) {
+		if (is_realtime != 2 && !cap_.isOpened()) { // To remove when interface shifts
 			std::cout << "Error: Cannot open camera! Please check!" << std::endl;
 		} else {
 			std::cout << "Camera opened successful!" << std::endl;
 		}
+		
+		if (is_realtime != 2) { // To remove when interface shifts
 		
 		// initialize blob detector
 		cv::SimpleBlobDetector::Params blob_params;
@@ -253,6 +265,8 @@ namespace mcmt {
 			fgbg_[i] = cv::createBackgroundSubtractorMOG2(hist, varThresh, detectShad);
 			fgbg_[i]->setBackgroundRatio(background_ratio);
 			fgbg_[i]->setNMixtures(nmixtures);
+		}
+
 		}
 	}
 

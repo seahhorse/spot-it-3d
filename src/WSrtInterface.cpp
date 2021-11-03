@@ -41,6 +41,9 @@
 
 namespace mcmt {
 
+/**
+ * WSrt client constructor. Intializes the srt and websocket clients
+ */
 WSrt::WSrt(int cam_index, std::string cam_ip, std::string srtPort, std::string websocketPort, std::string decoder) {
     cam_index_ = cam_index;
     srtAddress_ = "srt://" + cam_ip + ":" + srtPort;
@@ -59,17 +62,31 @@ WSrt::WSrt(int cam_index, std::string cam_ip, std::string srtPort, std::string w
     websocketClient_ = websocketFactory_.getClient(websocketAddress_);
 }
 
+/**
+ * Calls the main handler function and passes in the srt and websocket concurrent queues
+ * For some reason, the queues must be passed as std::ref intead of being declared
+ * directly within the main handler function, otherwise it will not receive data
+ */
 wsrt_output WSrt::extract_data() {
+    wsrt_output output = extract_data_callback(std::ref(srtReceiver_->receiverMessageQueue),
+                 std::ref(websocketClient_->clientMessageQueue));
+    return output;
+}
+
+/**
+ * Main function to obtain image and detections from edge cam
+ * and return them in a wsrt_output structure
+ */
+wsrt_output WSrt::extract_data_callback(vilota::SrtReceiverInterface::MessageQueue &queueSrt,
+                  vilota::WebsocketClientInterface::MessageQueue &queueWebsocket) {
 
     wsrt_output output;
-    
-    auto queueSrt = srtReceiver_->receiverMessageQueue;
-    auto queueWebsocket = websocketClient_->clientMessageQueue;
     reset_msgs();
     
     // cv::namedWindow("Client Visualisation", cv::WINDOW_AUTOSIZE);
 
     queueSrt.pop(msgSrt_);
+    
     // pop until the latest message
     while (queueSrt.try_pop(msgSrt_))
     ;
@@ -127,11 +144,17 @@ wsrt_output WSrt::extract_data() {
     return output;
 }
 
+/**
+ * Reset Srt and Websocket msgs for next iteration
+ */
 void WSrt::reset_msgs() {
     msgSrt_.reset();
     msgWebsocket_.reset();
 }
 
+/**
+ * Reset Srt and Websocket receivers before terminating
+ */
 void WSrt::reset_receivers() {
     srtReceiver_.reset();
     websocketClient_.reset();
