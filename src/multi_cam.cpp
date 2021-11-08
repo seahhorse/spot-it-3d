@@ -85,18 +85,24 @@ int main(int argc, char * argv[]) {
 
 			// get camera frame
 			if (IS_REALTIME_ == 2) { // To remove when interface shifts
+				
+				// here is where data from edge cam is passed to the main detection/tracking pipeline
 				wsrt_output edgecam_data;
 				edgecam_data = camera->edgecam_cap_->extract_data();
 
-				// Get image from edge cam - keep this code when interface shifts!
+				// get image from edge cam - keep this code when interface shifts!
 				camera->frame_ = edgecam_data.image.clone();
 
-				// Copy frame to masked to avoid downstream errors - to remove when interface shifts
+				// copy frame to masked to avoid downstream errors - to remove when interface shifts
 				for (auto & it : camera->masked_) {
 					it = camera->frame_.clone();
 				}
 
-				// Get detections from edge cam - keep this code when interface shifts!
+				// clear detection variable vectors
+				camera->sizes_.clear();
+				camera->centroids_.clear();
+
+				// get detections from edge cam - keep this code when interface shifts!
 				for (auto & detection : edgecam_data.detections) {
 					float size = std::max(float(detection.width), float(detection.height)); // "size" is a diameter!
 					cv::Point2f coords(float(detection.x), float(detection.y));
