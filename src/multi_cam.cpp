@@ -68,6 +68,7 @@ int main(int argc, char * argv[]) {
 
 	std::vector<cv::Mat> sample_frames = initialize_cameras();
 	initialize_tracks(sample_frames[0]);
+	initialize_recording(sample_frames[0]);
 	initialize_logs();
 
 	if (IS_REALTIME_ != 2) { // To remove when interface shifts
