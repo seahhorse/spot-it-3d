@@ -60,6 +60,7 @@ namespace mcmt {
 
 			// declare track information
 			int id_, oid_, lastSeen_, mismatch_count_;
+			int last_vel_mag, last_vel_dir; // Parmeters for cone prediction
 			std::vector<int> xs_, ys_, size_, frameNos_;
 			std::vector<double> xyz_, turning_angle_, curvature_, track_feature_variable_;
 			std::vector<std::array<double, 3>> vel_orient_;

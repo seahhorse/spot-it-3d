@@ -76,6 +76,13 @@ namespace mcmt {
 	void TrackPlot::update_track(std::vector<int> & location, int & size, int & frame_no) {
 		xs_.push_back(location[0]);
 		ys_.push_back(location[1]);
+		
+		//Calculate diffrentials to determine drone velocity and magnitude
+		diff_x = xs_[0] - xs_[1];
+		diff_y = ys_[0] - ys[1];
+		last_vel = sqrt(diff_x, 2) + pow(diff_y, 2));
+		last_vel_dir = atan(diff_y, diff_x);
+
 		size_.push_back(size);
 		frameNos_.push_back(frame_no);
 		lastSeen_ = frame_no;
