@@ -38,6 +38,7 @@
 #include <iostream>
 
 using namespace mcmt;
+using namespace cv;
 
 namespace mcmt {
 
@@ -59,6 +60,7 @@ namespace mcmt {
 		oid_ = track_id;
 		mismatch_count_ = 0;
 		lastSeen_ = 0;
+		vel_angle_leeway = 0.75; // Set to 0.75 radians, ~ 45 degrees
 	}
 
 	/**
@@ -76,10 +78,11 @@ namespace mcmt {
 	void TrackPlot::update_track(std::vector<int> & location, int & size, int & frame_no) {
 		xs_.push_back(location[0]);
 		ys_.push_back(location[1]);
-		
-		//Calculate diffrentials to determine drone velocity and magnitude
-		diff_x = xs_[0] - xs_[1];
-		diff_y = ys_[0] - ys[1];
+
+		// Calculate diffrentials to determine drone velocity and magnitude using the
+		// current and previous points
+		diff_x = xs_[xs_.size() - 1] - xs_[xs_.size() - 2];
+		diff_y = ys_[xs_.size() - 1] - ys_[xs_.size() - 2];
 		last_vel = sqrt(diff_x, 2) + pow(diff_y, 2));
 		last_vel_dir = atan(diff_y, diff_x);
 
@@ -211,6 +214,33 @@ namespace mcmt {
 		} else {
 			return false;
 		}
+	}
+	
+	/**
+	 * This functions calculates the future search polygon for the specific track plot, done only when track is lost
+	 * 
+	 * return structure is an <int, int> tuple, convert to matrix only on interpolation
+	 */
+	void TrackPlot::construct_look_ahead_polygon() {
+		// Return Structure for polygon
+		std::vector<std::tuple<int, int>> search_polygon;
+
+		// Determine Starting point
+		last_x = xs_[xs_.size() - 1];
+		last_y = ys_[ys_.size() - 1];
+		std::tuple<int, int> starting_point = (last_x, last_y);
+
+		//Calculate the upper bound, center bound and lower bound locations, using polar coordinates representation
+		std::tuple<int, int> upper_bound = (last_x + last_vel_mag * cos(last_vel_dir + vel_angle_leeway), last_y + last_vel_mag * sin(last_vel_dir + vel_angle_leeway));
+		std::tuple<int, int> lower_bound = (last_x + last_vel_mag * cos(last_vel_dir - vel_angle_leeway), last_y + last_vel_mag * sin(last_vel_dir - vel_angle_leeway));
+		std::tuple<int, int> center_bound = (last_x + last_vel_mag * cos(last_vel_dir), last_y + last_vel_mag * sin(last_vel_dir));
+
+		search_polygon.push_back(starting_point);
+		search_polygon.push_back(upper_bound);
+		search_polygon.push_back(center_bound);
+		search_polygon.push_back(lower_bound);
+
+		return search_polygon
 	}
 
 	/**

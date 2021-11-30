@@ -60,7 +60,7 @@ namespace mcmt {
 
 			// declare track information
 			int id_, oid_, lastSeen_, mismatch_count_;
-			int last_vel_mag, last_vel_dir; // Parmeters for cone prediction
+			int last_vel_mag, last_vel_dir, vel_angle_leeway; // Parmeters for cone prediction
 			std::vector<int> xs_, ys_, size_, frameNos_;
 			std::vector<double> xyz_, turning_angle_, curvature_, track_feature_variable_;
 			std::vector<std::array<double, 3>> vel_orient_;
@@ -71,6 +71,7 @@ namespace mcmt {
 			void update_track(std::vector<int> & location, int & size, int & frame_no);
 			void update_track_feature_variable(int & frame_no);
 			void update_3D_velocity_orientation(int & frame_no);
+			void construct_look_ahead_polygon();
 			bool check_stationary();
 	};
 
