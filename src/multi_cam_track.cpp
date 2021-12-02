@@ -278,7 +278,6 @@ namespace mcmt {
 
 			// Extract details from the track
 			track_id = track->id;
-
 			int maxID = -1;
 			double maxValue = -1;
 
