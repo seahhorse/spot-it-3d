@@ -144,7 +144,8 @@ namespace mcmt {
 		frame(cv::Rect(left, top, width, height)).copyTo(local_region);
 		cv::cvtColor(local_region, local_region, cv::COLOR_BGR2GRAY);
 		cv::threshold(local_region, local_region, cv::mean(local_region)[0] - 10, 255, 0);
-		int area = (4 * size_.back() * size_.back()) - cv::countNonZero(local_region);		
+		int area = (4 * size_.back() * size_.back()) - cv::countNonZero(local_region);
+		std::cout << area << std::endl;		
 		area_.push_back(area);
 	}
 
@@ -155,21 +156,32 @@ namespace mcmt {
 	 */
 	void TrackPlot::update_3D_velocity_orientation(int & frame_no) {
 		// checks if the data is from the current frame
-		if (frameNos_.back() == frame_no) {
+		if (frameNos_.size() > 15 && frameNos_.back() == frame_no) {
+
+			int history = 15;
 
 			// declare camera lens parameters
+			
+			// Specs for the Creative Camera
 			const int FOV_X_ = 69.5;
 			const int FOV_Y_ = 42.6;
+
+			// Specs for the GOPRO HERO 9 Camera
+			// const int FOV_X_ = 87;
+			// const int FOV_Y_ = 56;
 			
-			double dx = xs_.end()[-1] - xs_.end()[-16];
-			double dy = ys_.end()[-1] - ys_.end()[-16];
+			double dx = xs_.end()[-1] - xs_.end()[-1-history];
+			double dy = ys_.end()[-1] - ys_.end()[-1-history];
 
-			std::cout << dx << " " << dy << " " << id_ << std::endl;
-
-			double area = (double) std::accumulate(area_.end() - 15, area_.end(), 0) / 15;
-			double last_area = (double) std::accumulate(area_.end() - 30, area_.end() - 15, 0) / 15;
-
-			double r = sqrt(area / last_area);
+			int area = area_.end()[-1];
+			int last_area = area_.end()[-1-history];
+			
+			double r;
+			if (!area || !last_area) {
+				r = 1;
+			} else {
+				r = sqrt((double) area / (double) last_area);
+			}
 
 			std::array<double, 3> velocity;
 
@@ -183,7 +195,7 @@ namespace mcmt {
 
 			double velocity_length = sqrt(pow(velocity_x, 2) + pow(velocity_y, 2) + pow(velocity_z, 2));
 
-			if (velocity_length != 0) {
+			if (velocity_length != 0 && velocity_length >= 0.05) {
 				velocity[0] = velocity_x / velocity_length; 
 				velocity[1] = velocity_y / velocity_length; 
 				velocity[2] = velocity_z / velocity_length; 
@@ -192,8 +204,6 @@ namespace mcmt {
 				velocity[1] = 0.0;
 				velocity[2] = 0.0;
 			}
-
-			std::cout << "ID " << id_ << ", dx = " << dx << ", dy = " << dy << ", r = " << r << ", Velocity: " << velocity[0] << " " << velocity[1] << " " << velocity[2] << std::endl;
 
 			vel_orient_.push_back(velocity);
 		}

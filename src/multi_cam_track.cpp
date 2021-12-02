@@ -153,7 +153,10 @@ namespace mcmt {
 	 */
 	void verify_existing_tracks(int idx_a, int idx_b) {
 
-		for (auto & matched_track : matched_tracks_) {		
+		std::vector<int> matched_tracks_erase;
+
+		for (auto & matched_track : matched_tracks_) {	
+				
 			if (matched_track.second[NUM_OF_CAMERAS_] < 2 )	continue;
 
 			int matched_id = matched_track.first;
@@ -163,20 +166,26 @@ namespace mcmt {
 
 			if (track_plot_a->lastSeen_ != frame_count_ || track_plot_b->lastSeen_ != frame_count_) continue;
 
-			// x1 : track feature variable correlation strength based on normalised vector
+			// x1: Track feature variable correlation strength based on normalised values
 			double x1 = crossCorrelation(normalise_track_plot(track_plot_a), normalise_track_plot(track_plot_b));
-			// x3 : heading deviation error score
+			// x3: Heading deviation error value
 			double x3 = heading_score(track_plot_a, track_plot_b);
 
 			double score = compute_matching_score(track_plot_a, track_plot_b, idx_a, idx_b);
 
 			// FOR TESTING
-			auto convolution = crossCorrelation_3D(track_plot_a->vel_orient_, track_plot_b->vel_orient_);
+			auto convolution = (crossCorrelation_3D(track_plot_a->vel_orient_, track_plot_b->vel_orient_) + 1) / 2;
 
-			// std::vector<double> line{track_plot_a->xs_.back(), track_plot_a->ys_.back(), track_plot_b->xs_.back() + FRAME_WIDTH_, track_plot_b->ys_.back(), score, convolution, 0};
-			// lines.push_back(line);
+			if (idx_a == 0) {
+			 	std::vector<double> line{(double) track_plot_a->xs_.back(), (double) track_plot_a->ys_.back(), 
+			 	(double) (track_plot_b->xs_.back() + FRAME_WIDTH_), (double) track_plot_b->ys_.back(), score, convolution, 0};
+			 	lines.push_back(line);
+			 }
+
+			std::vector<double> line{track_plot_a->xs_.back(), track_plot_a->ys_.back(), track_plot_b->xs_.back() + FRAME_WIDTH_, track_plot_b->ys_.back(), score, convolution, 0};
+			lines.push_back(line);
 			
-			if (score < 0.5 && track_plot_a->frameNos_.size() > 180 && track_plot_b->frameNos_.size() > 180) {
+			if (convolution < 0.5 && track_plot_a->frameNos_.size() > 60 && track_plot_b->frameNos_.size() > 60) {
 			// if (x1 < 0.4 && x3 < 0.8 && track_plot_a->frameNos_.size() > 180 && track_plot_b->frameNos_.size() > 180) {
 				
 				if (track_plot_a->check_stationary() != track_plot_b->check_stationary()) {
@@ -210,9 +219,13 @@ namespace mcmt {
 				matching_dict_[0][track_plot_a->oid_] = track_plot_a->oid_;
 				matching_dict_[1][track_plot_b->oid_] = track_plot_b->oid_;
 
-				matched_tracks_.erase(matched_id);
+				matched_tracks_erase.push_back(matched_id);
 			}
 			
+		}
+
+		for (auto & matched_id : matched_tracks_erase) {
+			matched_tracks_.erase(matched_id);
 		}
 
 	}
@@ -419,16 +432,17 @@ namespace mcmt {
 		double x3 = heading_score(track_plot_a, track_plot_b);
 
 		// TESTING FOR 3D VELOCITY ORIENTATION
-		auto convolution = crossCorrelation_3D(track_plot_a->vel_orient_, track_plot_b->vel_orient_);
+		auto convolution = (crossCorrelation_3D(track_plot_a->vel_orient_, track_plot_b->vel_orient_) + 1) / 2;
 
 		double score = (W1_ * x1) + (W2_ * x2) + (W3_ * x3);
 
-		if (idx_a == 0) {
-			std::vector<double> line{track_plot_a->xs_.back(), track_plot_a->ys_.back(), track_plot_b->xs_.back() + FRAME_WIDTH_, track_plot_b->ys_.back(), score, convolution, 0};
-			lines.push_back(line);
-		}
+		// if (idx_a == 0) {
+		// 	std::vector<double> line{(double) track_plot_a->xs_.back(), (double) track_plot_a->ys_.back(), 
+		// 	(double) (track_plot_b->xs_.back() + FRAME_WIDTH_), (double) track_plot_b->ys_.back(), score, convolution, 0};
+		// 	lines.push_back(line);
+		// }
 
-		return (score > 0.5) ? score : 0;
+		return (convolution > 0.7) ? convolution : 0;
 	}
 
 	/**
@@ -484,7 +498,7 @@ namespace mcmt {
 	double crossCorrelation_3D(std::vector<std::array<double, 3>> X, std::vector<std::array<double, 3>> Y)	{
 
 			int length = std::min(X.size(), Y.size());
-			length = std::min(length, 60);
+			length = std::min(length, 120);
 			
 			double sum = 0;
 			double theta = 40;

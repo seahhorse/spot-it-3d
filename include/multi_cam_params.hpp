@@ -36,16 +36,18 @@
 
 namespace mcmt {
 
+    extern std::ofstream reid_3d;
+
 	// declare filepaths
 	const bool IS_REALTIME_ = false;
     const int NUM_OF_CAMERAS_ = 2;
 
     // realtime parameters
-    const std::string VIDEO_INPUT_1_ = "data/input/12-10_WCP_2a.avi";
-    const std::string VIDEO_INPUT_2_ = "data/input/12-10_WCP_2b.avi";
+    const std::string VIDEO_INPUT_1_ = "data/input/9-11-WCP_2a_out.avi";
+    const std::string VIDEO_INPUT_2_ = "data/input/9-11-WCP_2b_out.avi";
     const std::string VIDEO_OUTPUT_1_ = "data/output/A_out.avi";
     const std::string VIDEO_OUTPUT_2_ = "data/output/B_out.avi";
-	const std::string VIDEO_OUTPUT_ANNOTATED_ = "data/output/12-10_WCP_2.avi";
+	const std::string VIDEO_OUTPUT_ANNOTATED_ = "data/output/demo_2.avi";
 	const std::string TARGETS_2D_OUTPUT_ = "data/output/targets_2d_out.json";
     const std::string TARGETS_3D_OUTPUT_ = "data/output/targets_3d_out.json";
     const std::string FRAME_TIME_ = "data/output/frame_time.csv";
