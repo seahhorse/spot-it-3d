@@ -41,17 +41,17 @@ namespace mcmt {
     const int NUM_OF_CAMERAS_ = 4;
 
     // realtime parameters
-    const std::vector<std::string> VIDEO_INPUT_ = {     "data/input/2-11-WCP_7a_out.avi",
-                                                        "data/input/2-11-WCP_7b_out.avi",
-                                                        "data/input/2-11-WCP_7c_out.avi",
-                                                        "data/input/2-11-WCP_7d_out.avi"
+    const std::vector<std::string> VIDEO_INPUT_ = {     "data/input/2-11-WCP_6a_out.avi",
+                                                        "data/input/2-11-WCP_6b_out.avi",
+                                                        "data/input/2-11-WCP_6c_out.avi",
+                                                        "data/input/2-11-WCP_6d_out.avi"
                                                     };
     const std::vector<std::string> VIDEO_OUTPUT_ = {    "data/output/3cam_1_out.avi",
                                                         "data/output/3cam_2_out.avi",
                                                         "data/output/3cam_3_out.avi",
                                                         "data/output/3cam_4_out.avi"
                                                     };
-	const std::string VIDEO_OUTPUT_ANNOTATED_ = "data/output/ABC.avi";
+	const std::string VIDEO_OUTPUT_ANNOTATED_ = "data/output/ABC2.avi";
 	const std::string TARGETS_2D_OUTPUT_ = "data/output/targets_2d_out.json";
     const std::string TARGETS_3D_OUTPUT_ = "data/output/targets_3d_out.json";
     const std::string FRAME_TIME_ = "data/output/frame_time.csv";
@@ -64,8 +64,8 @@ namespace mcmt {
     const bool SHOW_3D_COORDINATES_ = true;
 
 	// declare video parameters
-	const int FRAME_WIDTH_ = 640;
-    const int FRAME_HEIGHT_ = 480;
+	const int FRAME_WIDTH_ = 320;
+    const int FRAME_HEIGHT_ = 240;
     const int VIDEO_FPS_ = 30;
     const int MAX_TOLERATED_CONSECUTIVE_DROPPED_FRAMES_ = 5;
 
@@ -98,6 +98,7 @@ namespace mcmt {
     const int PRUNE_HIST_ = 30;
 
     // declare re-id parameters
+    const bool USE_3D_REID_ = true;
     const double W1_ = 0.3;
     const double W2_ = 0.4;
     const double W3_ = 0.3;

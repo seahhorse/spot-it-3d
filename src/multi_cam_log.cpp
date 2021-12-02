@@ -153,6 +153,12 @@ namespace mcmt {
 							cv::putText(*frames_[i].get(), "Z: " + std::to_string(xyz[2]).substr(0,4),
 								cv::Point(rect_bottom_right.x + 10, rect_top_left.y + 40), cv::FONT_HERSHEY_SIMPLEX,
 								FONT_SCALE_, color, 1, cv::LINE_AA);
+
+							double area = (double) std::accumulate(track.second->area_.end() - 15, track.second->area_.end(), 0) / 15;
+
+							cv::putText(*frames_[i].get(), "A: " + std::to_string(area).substr(0,5),
+								cv::Point(rect_bottom_right.x + 10, rect_top_left.y + 55), cv::FONT_HERSHEY_SIMPLEX,
+								FONT_SCALE_, color, 1, cv::LINE_AA);
 						}
 						if (DISPLAY_STATUS_) {
 							cv::circle(*frames_[i].get(), cv::Point(rect_top_left.x + 5, rect_top_left.y - 10), 5, status_color, -1);

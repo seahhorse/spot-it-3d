@@ -67,6 +67,7 @@ int main(int argc, char * argv[]) {
 
 	std::vector<cv::Mat> sample_frames = initialize_cameras();
 	initialize_tracks(sample_frames[0]);
+	initialize_recording(sample_frames[0]);
 	initialize_logs();
 
 	for (int cam_idx = 0; cam_idx < NUM_OF_CAMERAS_; cam_idx++) {
@@ -201,6 +202,12 @@ int main(int argc, char * argv[]) {
 			calculate_3D();
 		}
 
+		// for (auto & track_plot_a : cumulative_tracks_[0]->track_plots_) {
+		// 	for (auto & track_plot_b : cumulative_tracks_[1]->track_plots_) {
+		// 		compute_matching_score(track_plot_a.second, track_plot_b.second, 0, 1);
+		// 	}
+		// }
+
 		print_frame_summary();
 
 		annotate_frames(frames_, cumulative_tracks_);
@@ -213,14 +220,14 @@ int main(int argc, char * argv[]) {
 			cv::hconcat(combined_frame, *frames_[cam_idx].get(), combined_frame);
 		}
 		
-		// for (auto line : lines) {
-		// 	cv::line(combined_frame, cv::Point((int) line[0], (int)line[1]), cv::Point((int) line[2], (int) line[3]), cv::Scalar(0, (int) (line[4] * 255), (int) ((1 - line[4]) * 255)), 1);
-		// 	std::string scores;
-		// 	scores = std::to_string(line[5]).substr(0,4) + ", " + std::to_string(line[6]).substr(0,4);
-		// 	cv::putText(combined_frame, scores, cv::Point((int) ((line[0] + line[2]) / 2), (int) ((line[1] + line[3]) / 2)),  
-		// 					cv::FONT_HERSHEY_SIMPLEX, FONT_SCALE_ * 1.5, cv::Scalar(0, (int) (line[4] * 255), (int) ((1 - line[4]) * 255)), 3, cv::LINE_AA);
-		// }
-		// lines.clear();
+		for (auto line : lines) {
+			cv::line(combined_frame, cv::Point((int) line[0], (int)line[1]), cv::Point((int) line[2], (int) line[3]), cv::Scalar(0, (int) (line[5] * 255), (int) ((1 - line[5]) * 255)), 1);
+			std::string scores;
+			scores = std::to_string(line[4]).substr(0,4) + ", " + std::to_string(line[5]).substr(0,4);
+			cv::putText(combined_frame, scores, cv::Point((int) ((line[0] + line[2]) / 2), (int) ((line[1] + line[3]) / 2)),  
+							cv::FONT_HERSHEY_SIMPLEX, FONT_SCALE_ * 1, cv::Scalar(0, (int) (line[5] * 255), (int) ((1 - line[5]) * 255)), 2, cv::LINE_AA);
+		}
+		lines.clear();
 
 		auto frame_end = std::chrono::system_clock::now();
 
