@@ -304,7 +304,7 @@ namespace mcmt {
 
 		std::cout << "Matched Tracks: ";
 		for (auto it = matched_tracks_.begin(); it != matched_tracks_.end(); it++) {
-			std::cout << "(" << it->first << ": [" << it->second[0] << ", " << it->second[1] << "]<" << it->second[2] << ">) | ";
+			std::cout << "(" << it->first << ": [" << it->second[0] << ", " << it->second[1] << ", " << it->second[2] << "]<" << it->second[3] << ">) | ";
 		}
 		std::cout << std::endl;
 
