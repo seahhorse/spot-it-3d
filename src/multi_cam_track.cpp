@@ -173,25 +173,15 @@ namespace mcmt {
 					if (track_plot->lastSeen_ != frame_count_ || alt_track_plot->lastSeen_ != frame_count_) continue;
 					if (track_plot->check_stationary() != alt_track_plot->check_stationary()) continue;
 
-					// x1 : track feature variable correlation strength based on normalised vector
-					// double x1 = crossCorrelation(normalise_track_plot(track_plot), normalise_track_plot(alt_track_plot));
-					// x3 : heading deviation error score
-					// double x3 = heading_score(track_plot, alt_track_plot);
-					
 					score = compute_matching_score(track_plot, alt_track_plot, idx, alt);
-
-					convolution = (crossCorrelation_3D(track_plot->vel_orient_, alt_track_plot->vel_orient_) + 1) / 2;
-
 					max_score = (score > max_score) ? score : max_score;
 				}
-			
 			}
 
 			// std::vector<double> line{track_plot_a->xs_.back(), track_plot_a->ys_.back(), track_plot_b->xs_.back() + FRAME_WIDTH_, track_plot_b->ys_.back(), score, convolution, 0};
 			// lines.push_back(line);
 
 			if (max_score < 0.5 && track_plot->frameNos_.size() > 180) {
-			// if (x1 < 0.4 && x3 < 0.8 && track_plot->frameNos_.size() > 180 && track_plot_b->frameNos_.size() > 180) {
 				track_plot->mismatch_count_ += 1;
 			} else {
 				track_plot->mismatch_count_ = 0;
@@ -495,9 +485,6 @@ namespace mcmt {
 		return *std::max_element(scores.begin(), scores.end());
 	}
 
-
-
-
 	/**
 	 * Normalises the existing track plot based on mean and sd
 	 */
@@ -549,7 +536,8 @@ namespace mcmt {
 		// 	lines.push_back(line);
 		// }
 
-		return (convolution > 0.7) ? convolution : 0;
+		if (USE_3D_REID_) return (convolution > 0.7) ? convolution : 0;
+		else return (convolution > 0.5) ? convolution : 0;
 	}
 
 	/**
@@ -608,7 +596,7 @@ namespace mcmt {
 			length = std::min(length, 120);
 			
 			double sum = 0;
-			double theta = 40;
+			double theta = 0;
 			std::vector<std::array<double, 3>> A(X.end() - length, X.end());
 			std::vector<std::array<double, 3>> B(Y.end() - length, Y.end());
 
