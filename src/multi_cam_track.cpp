@@ -178,9 +178,9 @@ namespace mcmt {
 					// x3 : heading deviation error score
 					// double x3 = heading_score(track_plot, alt_track_plot);
 					
-					score = compute_matching_score(track_plot, alt_track_plot, idx, alt) > max_score;
+					score = compute_matching_score(track_plot, alt_track_plot, idx, alt);
 
-					convolution = (crossCorrelation_3D(track_plot_a->vel_orient_, track_plot_b->vel_orient_) + 1) / 2;
+					convolution = (crossCorrelation_3D(track_plot->vel_orient_, alt_track_plot->vel_orient_) + 1) / 2;
 
 					max_score = (score > max_score) ? score : max_score;
 				}

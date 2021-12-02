@@ -247,7 +247,7 @@ int main(int argc, char * argv[]) {
 		recording_.write(combined_frame);
 
 		// show cv window
-		// imshow_resized("Annotated", combined_frame);
+		imshow_resized("Annotated", combined_frame);
 		
 		frame_count_ += 1;
 
