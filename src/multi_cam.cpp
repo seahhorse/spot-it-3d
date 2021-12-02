@@ -185,10 +185,19 @@ int main(int argc, char * argv[]) {
 		}
 
 		if (NUM_OF_CAMERAS_ > 1) {
-			process_new_tracks(0, 1, good_tracks_[0]);
-			process_new_tracks(1, 0, good_tracks_[1]);
 
-			verify_existing_tracks(0, 1);
+			for (int cam_idx_a = 0; cam_idx_a < NUM_OF_CAMERAS_; cam_idx_a++) {
+				for (int cam_idx_b = 0; cam_idx_b < NUM_OF_CAMERAS_; cam_idx_b++) {
+					if (cam_idx_a != cam_idx_b) {
+						process_new_tracks(cam_idx_a, cam_idx_b, good_tracks_[cam_idx_a]);
+					}
+				}
+			}
+			join_matched_tracks();
+			
+			for (int cam_idx = 0; cam_idx < NUM_OF_CAMERAS_; cam_idx++) {
+				verify_existing_tracks(cam_idx);
+			}
 			calculate_3D();
 		}
 
@@ -200,8 +209,8 @@ int main(int argc, char * argv[]) {
 		
 		// show and save video combined tracking frame
 		cv::Mat combined_frame = *frames_[0].get();
-		for (int i = 1; i < NUM_OF_CAMERAS_; i++) {
-			cv::hconcat(combined_frame, *frames_[i].get(), combined_frame);
+		for (int cam_idx = 1; cam_idx < NUM_OF_CAMERAS_; cam_idx++) {
+			cv::hconcat(combined_frame, *frames_[cam_idx].get(), combined_frame);
 		}
 		
 		// for (auto line : lines) {
