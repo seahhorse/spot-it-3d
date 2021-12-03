@@ -247,7 +247,7 @@ namespace mcmt {
 
 		// initialize background subtractor
 		int hist = int(fgbg_history * fps_);
-		float varThresh = float(4 / scale_factor_);
+		float varThresh = float(4 / scale_factor_); // Need to change this based on background colour
 		bool detectShad = false;
 		for (int i = 0; i < fgbg_.size(); i++) {
 			fgbg_[i] = cv::createBackgroundSubtractorMOG2(hist, varThresh, detectShad);
