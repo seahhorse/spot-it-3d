@@ -82,8 +82,6 @@ wsrt_output WSrt::extract_data_callback(vilota::SrtReceiverInterface::MessageQue
 
     wsrt_output output;
     reset_msgs();
-    
-    // cv::namedWindow("Client Visualisation", cv::WINDOW_AUTOSIZE);
 
     queueSrt.pop(msgSrt_);
     
@@ -129,17 +127,8 @@ wsrt_output WSrt::extract_data_callback(vilota::SrtReceiverInterface::MessageQue
                 detections.width = object["w"];
                 detections.height = object["h"];
                 output.detections.push_back(detections);
-                
-                // Draw rectangles for debugging
-                // spdlog::info("object: {}", object.dump());
-                // int x = object["x"];
-                // int y = object["y"];
-                // int w = object["w"];
-                // int h = object["h"];
-                // cv::rectangle(cvImage, {x, y}, {x + w, y + h}, 150, 3);
             }
         }
-        // cv::imshow("Client Visualisation", cvImage);
     }
     return output;
 }

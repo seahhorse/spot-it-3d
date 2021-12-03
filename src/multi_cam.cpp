@@ -100,8 +100,13 @@ int main(int argc, char * argv[]) {
 				}
 
 				// clear detection variable vectors
-				camera->sizes_.clear();
-				camera->centroids_.clear();
+				// if no detections are present, keep the existing vectors
+				// this is temporary fix for timesync issue between websocket and srt that causes data flickering
+				// will be removed when timesync root cause is fixed
+				if (!edgecam_data.detections.empty()){
+					camera->sizes_.clear();
+					camera->centroids_.clear();
+				}
 
 				// get detections from edge cam - keep this code when interface shifts!
 				for (auto & detection : edgecam_data.detections) {
@@ -110,6 +115,14 @@ int main(int argc, char * argv[]) {
 					camera->centroids_.push_back(coords);
 					camera->sizes_.push_back(size);
 				}
+
+				// display raw detections for debug purpose
+				// cv::Mat srt_frame = camera->frame_.clone();
+				// for (int i = 0; i < camera->centroids_.size(); i++) {
+				// 	cv::rectangle(srt_frame, {camera->centroids_[i].x, camera->centroids_[i].y}, 
+				// 	{camera->centroids_[i].x + camera->sizes_[i], camera->centroids_[i].y + camera->sizes_[i]}, 150, 3);
+				// }
+				// cv::imshow("SRT raw detections", srt_frame);
 			}
 			else {
 				camera->cap_ >> camera->frame_;
