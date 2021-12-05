@@ -139,37 +139,35 @@ namespace mcmt {
 		cv::bitwise_and(camera->frame_ec_, camera->frame_ec_, non_sky, mask);
 		// cv::imshow("non sky", non_sky);
 
-		// Scale the saturation and contrast in the sky frame based on pixel brightness (V channel of HSV)
-		for (int row = 0; row < sky.rows; row++) {
+		// Again, split the sky into 3 channels (HSV)
+		std::vector<cv::Mat> sky_channels;
+		cv::split(sky, sky_channels);
 
-			// raw pointer with helper method is used to iterate through pixels
-			// see https://longstryder.com/2014/07/which-way-of-accessing-pixels-in-opencv-is-the-fastest/
-			uchar *ptr = sky.ptr(row);
-		
-        	for (int col = 0; col < sky.cols; col++) {
+		// Only apply following transformations to pixels with V > 0
+		cv::Mat sky_mask(1920, 1080, CV_8UC1);
+		cv::Mat sky_mask_f(1920, 1080, CV_32FC1);
+		cv::threshold(sky_channels[2], sky_mask, 1, 0, 2);
+		sky_mask.convertTo(sky_mask_f, CV_32FC1);
 
-				uchar *pixel = ptr;
+		// Convert value channel to float matrix	
+		cv::Mat value_f(1920, 1080, CV_32FC1);
+		sky_channels[2].convertTo(value_f, CV_32FC1);
+	
+		// Decrease saturation based on how bright the pixel is
+		// The brighter the pixel, the greater the decrease
+		// The formula used is our own model that assumes linear relationship
+		// between saturation scale factor (sat) and pixel brightness
+		// Formula: pixel[sat] *= 1 - 0.7 * pixel[val] / 255
+		value_f = sky_mask_f - (value_f * (0.7/255));
+		cv::multiply(sky_channels[1], value_f, sky_channels[1], 1, CV_8UC1);
 
-				// ignore black pixels (these are areas which are masked out)
-				if (pixel[2] > 0) {
+		// If the pixel is too dark, max its value to provide contrast
+		cv::Mat dark;
+		cv::inRange(sky_channels[2], 1, 149, dark);
+		cv::add(sky_channels[2], dark, sky_channels[2]);
+		// Merge to combine back to sky
+		cv::merge(sky_channels, sky);
 
-					// Decrease saturation based on how bright the pixel is
-					// The brighter the pixel, the greater the decrease
-					// The formula used is our own model that assumes linear relationship
-					// between saturation scale factor (sat) and pixel brightness
-					float sat = 1 - 0.7 * pixel[2] / 255;
-					pixel[1] *= sat;
-
-					// If the pixel is too dark, max its value to provide contrast
-                	if (pixel[2] < 150) {
-                    	pixel[2] = 255;
-                	}
-            	}
-
-				// increment by 3 along the row (because there are 3 channels in hsv)
-				ptr += 3;
-        	}
-    	}
 		cv::cvtColor(sky, sky, cv::COLOR_HSV2BGR);
 
 		// Treeline (non-sky) enhancements using histogram equalisation on intensity channel
