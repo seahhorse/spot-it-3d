@@ -58,9 +58,16 @@ namespace mcmt {
 		is_goodtrack_ = false;
 		outOfSync_ = false;
 
+		// Fixed Polygon prediction parameters
+		vel_angle_leeway = 0.75; // The angle of the search cone from the tip
+		frame_step = 4; // Number of frame steps to check the search zone
+		circle_step = 16; // Radius of search circle
+		search_frame_counter = 0; // Initialise counter
+
 		// initialize centroid location
 		centroid_ = centroid;
 		predicted_ = cv::Point2f(0.0, 0.0);
+		previous = cv::Point2f(0.0, 0.0); // Keep track of previous location
 		
 		// initialize kf. We define the KF's parameters for constant velocity model,
 		// and inputs detected target's location into the KF tracker.
@@ -138,17 +145,66 @@ namespace mcmt {
 
 	/**
 	 * This function uses the kalman filter of the track to update the filter with the measured
-	 * location of the detected blob in the current frame.
+	 * location of the detected blob in the current frame. Also updates the previous centroid positions
+	 * and velocity as variables
 	 */
 	void Track::updateKF(cv::Point2f & measurement)	{
 		cv::Mat measure = cv::Mat::zeros(2, 1, CV_32F);
 		measure.at<float>(0) = measurement.x;
 		measure.at<float>(1) = measurement.y;
 
+		// Update the datapoints of the previous locations and velocity if detections are sucessful
+		previous.x = centroid_.x;
+		previous.y = centroid_.y;
+
+		vel_mag = sqrt(pow(mesurement.x - previous.x, 2) + pow(measurement.y - previous.y, 2));
+		vel_angle = atan2(measurement.y - previous.y, mesurement.x - previous.x);
+
 		// update
 		cv::Mat prediction = kf_->correct(measure);
-		centroid_.x = prediction.at<float>(0);
+		centroid_.x = prediction.at<float>(0); 
 		centroid_.y = prediction.at<float>(1);
+	}
+
+	/**
+	 * This function constructs the track specific search polygon to do reassignment, assisting DCF tracking
+	 * returns the points required to form the current search polygon
+	 * Output: search polygon, vector of elements tuple<int, int> will convert to point2f during searching phase
+	 */
+	void Track::search_polygon() {
+		// Return Structure for polygon
+		std::vector<cv::Point2f> search_polygon;
+
+		// If the drone is travelling fast, use cone to track drone
+		if (last_vel_mag > vel_threshold) { 
+			last_x = centroid_.x; //Last known location of x
+			last_y = centroid_.y; //Last known locations of y
+			cv::Point2f starting_point(last_x, last_y);
+
+			//Calculate the upper bound, center bound and lower bound locations, using polar local coordinates representation 
+			//converted to Cartesian local coordinates
+			cv::Point2f upper_bound(last_x + last_vel_mag * cos(last_vel_dir + vel_angle_leeway), last_y + last_vel_mag * sin(last_vel_dir + vel_angle_leeway));
+			cv::Point2f lower_bound(last_x + last_vel_mag * cos(last_vel_dir - vel_angle_leeway), last_y + last_vel_mag * sin(last_vel_dir - vel_angle_leeway));
+			cv::Point2f center_bound(last_x + last_vel_mag * cos(last_vel_dir), last_y + last_vel_mag * sin(last_vel_dir));
+
+			search_polygon.push_back(starting_point);
+			search_polygon.push_back(upper_bound);
+			search_polygon.push_back(center_bound);
+			search_polygon.push_back(lower_bound);
+
+			return search_polygon
+		}
+
+		else { // else use Circular polygon  to find the drone 
+			for (i = 0, i < 2*M_PI, i += M_PI/8) {
+				global_x = centroid_.x + circle_step*cos(i);
+				global_y = centroid_.y + circle_step*sin(i);
+				cv::Point2f circle_point(global_x, global_y);
+				search_polygon.push_back(circle _point);
+			}
+
+			return search_polygon
+		}
 	}
 
 	/**

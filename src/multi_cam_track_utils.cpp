@@ -81,13 +81,6 @@ namespace mcmt {
 		xs_.push_back(location[0]);
 		ys_.push_back(location[1]);
 
-		// Calculate diffrentials to determine drone velocity and magnitude using the
-		// current and previous points
-		diff_x = xs_[xs_.size() - 1] - xs_[xs_.size() - 2];
-		diff_y = ys_[xs_.size() - 1] - ys_[xs_.size() - 2];
-		last_vel = sqrt(diff_x, 2) + pow(diff_y, 2));
-		last_vel_dir = atan(diff_y, diff_x);
-
 		size_.push_back(size);
 		frameNos_.push_back(frame_no);
 		lastSeen_ = frame_no;
@@ -215,46 +208,6 @@ namespace mcmt {
 			return true;
 		} else {
 			return false;
-		}
-	}
-	
-	/**
-	 * This functions calculates the future search polygon for the specific track plot, done only when track is lost
-	 * 
-	 * return structure is a vector with element <int, int> tuple, convert to matrix only on search
-	 */
-	void TrackPlot::construct_look_ahead_polygon() {
-		// Return Structure for polygon
-		std::vector<std::tuple<int, int>> search_polygon;
-
-		// If the drone is travelling fast, use cone to track drone
-		if (last_vel_mag > vel_threshold) { 
-			last_x = xs_[xs_.size() - 1];
-			last_y = ys_[ys_.size() - 1];
-			std::tuple<int, int> starting_point = (last_x, last_y);
-
-			//Calculate the upper bound, center bound and lower bound locations, using polar coordinates representation
-			std::tuple<int, int> upper_bound = (last_x + last_vel_mag * cos(last_vel_dir + vel_angle_leeway), last_y + last_vel_mag * sin(last_vel_dir + vel_angle_leeway));
-			std::tuple<int, int> lower_bound = (last_x + last_vel_mag * cos(last_vel_dir - vel_angle_leeway), last_y + last_vel_mag * sin(last_vel_dir - vel_angle_leeway));
-			std::tuple<int, int> center_bound = (last_x + last_vel_mag * cos(last_vel_dir), last_y + last_vel_mag * sin(last_vel_dir));
-
-			search_polygon.push_back(starting_point);
-			search_polygon.push_back(upper_bound);
-			search_polygon.push_back(center_bound);
-			search_polygon.push_back(lower_bound);
-
-			return search_polygon
-		}
-
-		else { // else use Circular polygon  to find the drone 
-			for (i = 0, i < 2*M_PI, i += M_PI/8) {
-				global_x = xs_[xs_.size() - 1] + circle_step*cos(i);
-				global_y = ys_[ys_.size() - 1] + circle_step*sin(i);
-				std::tuple<int, int> circle_point = (global_x, global_y);
-				search_polygon.push_back(circle _point);
-			}
-
-			return search_polygon
 		}
 	}
 

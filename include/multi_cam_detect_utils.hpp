@@ -50,6 +50,7 @@ namespace mcmt {
 				cv::Point2f centroid,
 				int video_fps,
 				float sec_filter_delay);
+
 			
 		virtual ~Track() {}
 			
@@ -59,6 +60,16 @@ namespace mcmt {
 
 			// variable to store predicted and actual locations from kf
 			cv::Point2f centroid_, predicted_;
+
+			// Variabless to store each detection's velocity, its directions and the detection's previous position
+			cv::Point2f previous; // Previous position variable
+			int vel_mag, vel_angle; // veolcity variables
+
+			// Prediction steps for polygons
+			int vel_angle_leeway; // Angle of search cone for high velocity movements
+			int circle_step; // Radius of search circle for low velocity movements
+			int frame_step; // How long to keep looking for detections
+			int search_frame_counter; // The counter to keep track of number of frames searched since missing
 
 			// declare DCF bool variable
 			bool is_dcf_init_, outOfSync_;
@@ -73,6 +84,7 @@ namespace mcmt {
 			// declare class functions
 			void predictKF();
 			void updateKF(cv::Point2f & measurement);
+			void search_polygon();
 			void predictDCF(cv::Mat & frame);
 			void checkDCF(cv::Point2f & measurement, cv::Mat & frame);
 

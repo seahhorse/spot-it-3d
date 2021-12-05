@@ -142,8 +142,8 @@ namespace mcmt {
 		// Extract the treeline and put it in non_sky frame
 		// The mask for the treeline is the inversion of the sky mask
 		// Convert treeline back to RGB using bitwise_and
-		cv::bitwise_not(mask, mask);
-		cv::bitwise_and(camera->frame_ec_, camera->frame_ec_, non_sky, mask);
+		cv::bitwise_not(mask, mask); // flip the mask, changing it to the ground (anti-sky)
+		cv::bitwise_and(camera->frame_ec_, camera->frame_ec_, non_sky, mask); // Take out the ground using anti-sky mask
 		// cv::imshow("non sky", non_sky);
 
 		// Scale the saturation and contrast in the sky frame based on pixel brightness (V channel of HSV)
@@ -767,10 +767,45 @@ namespace mcmt {
 			std::shared_ptr<Track> track = camera->tracks_[track_index];
 			track->age_++;
 			track->consecutiveInvisibleCount_++;
-			
-			float visibility = float(track->totalVisibleCount_) / float(track->age_);
 
-			// if invisible for too long, append track to be removed
+			// Do the search for within stipulated number of frames,else dont do search, let track die
+			if (track->search_frame_counter > track->frame_step) {
+				// Try to search using the last known velocity location, reassign any found blob as the new detection
+				search_area = track->search_polygon(); // Use appropiate search zone
+				std::vector<cv::Point2f, int, int> eligible_points; // Placeholder for eligible detections and its distance from the center of the search zone
+
+				for (auto& unassigned_detection : camera->unassigned_detections_) { // For every unassgined point, check if in search zone
+					cv::Point2f cur_cen = camera->centroids_[unassigned_detection]; //Find an unassinged point
+					double pointPolygondistance = cv::pointPolygonTest(search_area, cur_cen, true);
+					if (pointPolygondistance < 0) {
+						eligible_points.push_back(pointPolygondistance, track_index, unassigned_detection);
+					}
+				}
+
+
+				// Find the detection with the smallest distance
+				int min_index = NULL; // Index of min distance
+				double min_distance = -1; // Minimum distance
+				auto min_detection; // detection parameter
+				for (auto& eligible_point : eligible_points) {
+					if  (eligible_point[0] > min_distance) {
+						min_distance = eligible_point[0];
+						min_index = eligible_point[1];
+						min_detection = eligilble[2];
+					}
+				}
+
+				// Reassign unassigned detection to the track if there is a suitable candidate 
+				if (min_index != NULL) {
+					std::vector<int> reinitialized_assignment(2, 0);
+					reinitialized_assignment[0] = min_index;
+					reinitialized_assignment[1] = min_detection;
+					camera->assignments_.push_back(reinitialized_assignment);
+				}
+			}
+				float visibility = float(track->totalVisibleCount_) / float(track->age_);
+
+				// if invisible for too long, append track to be removed
 			if ((track->age_ < age_threshold && visibility < VISIBILITY_RATIO_) ||
 					(track->consecutiveInvisibleCount_ >= invisible_for_too_long) ||
 					(track->outOfSync_ == true)) {
