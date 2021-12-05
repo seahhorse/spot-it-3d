@@ -770,14 +770,17 @@ namespace mcmt {
 
 			// Do the search for within stipulated number of frames,else dont do search, let track die
 			if (track->search_frame_counter > track->frame_step) {
+				// add to the search frame counter to count the current check as step 
+				track->search_frame_counter += 1;
+
 				// Try to search using the last known velocity location, reassign any found blob as the new detection
 				search_area = track->search_polygon(); // Use appropiate search zone
 				std::vector<cv::Point2f, int, int> eligible_points; // Placeholder for eligible detections and its distance from the center of the search zone
 
 				for (auto& unassigned_detection : camera->unassigned_detections_) { // For every unassgined point, check if in search zone
 					cv::Point2f cur_cen = camera->centroids_[unassigned_detection]; //Find an unassinged point
-					double pointPolygondistance = cv::pointPolygonTest(search_area, cur_cen, true);
-					if (pointPolygondistance < 0) {
+					double pointPolygondistance = cv::pointPolygonTest(search_area, cur_cen, true); // Check distances of point to polygon
+					if (pointPolygondistance >= 0) { // Positve distance if inside polygon, 0 if one edge(will still count)
 						eligible_points.push_back(pointPolygondistance, track_index, unassigned_detection);
 					}
 				}
@@ -787,8 +790,8 @@ namespace mcmt {
 				int min_index = NULL; // Index of min distance
 				double min_distance = -1; // Minimum distance
 				auto min_detection; // detection parameter
-				for (auto& eligible_point : eligible_points) {
-					if  (eligible_point[0] > min_distance) {
+				for (auto& eligible_point : eligible_points) { // For every eligible point
+					if  (eligible_point[0] > min_distance) { // Find the index with the largest distance from polygon edge(closest to the center)
 						min_distance = eligible_point[0];
 						min_index = eligible_point[1];
 						min_detection = eligilble[2];
@@ -797,10 +800,13 @@ namespace mcmt {
 
 				// Reassign unassigned detection to the track if there is a suitable candidate 
 				if (min_index != NULL) {
-					std::vector<int> reinitialized_assignment(2, 0);
-					reinitialized_assignment[0] = min_index;
-					reinitialized_assignment[1] = min_detection;
-					camera->assignments_.push_back(reinitialized_assignment);
+					std::vector<int> reinitialized_assignment(2, 0); // Data structure for assignment
+					reinitialized_assignment[0] = min_index;  // track index assigned
+					reinitialized_assignment[1] = min_detection; // track detection assigned
+					camera->assignments_.push_back(reinitialized_assignment); // set as new assignment
+					track->search_frame_counter = 0; // Reset frame counter to see for future assignments
+
+					// Dont need to remove from unassigned tracks as these variables are removed at every frame check
 				}
 			}
 				float visibility = float(track->totalVisibleCount_) / float(track->age_);
