@@ -96,17 +96,6 @@ int main(int argc, char * argv[]) {
 				recordings_[camera->cam_index_]->write(camera->frame_);
 			}
 
-			// apply frame by frame subtraction for feature enhancement
-			frame_to_frame_subtraction(camera);
-
-			// correct for environmental effects
-			apply_env_compensation(camera);
-
-			// apply background subtraction
-			for (int i = 0; i < camera->masked_.size(); i++){
-				camera->masked_[i] = apply_bg_subtractions(camera, i);
-			}
-
 			// clear detection variable vectors
 			camera->sizes_.clear();
 			camera->centroids_.clear();
@@ -114,11 +103,21 @@ int main(int argc, char * argv[]) {
 				camera->sizes_temp_[i].clear();
 				camera->centroids_temp_[i].clear();
 			}
+
+			// apply frame by frame subtraction for feature enhancement
+			frame_to_frame_subtraction(camera);
+
+			// correct for environmental effects
+			apply_env_compensation(camera);
+
+			// apply background subtractor
+			if (USE_BG_SUBTRACTOR_){
+				remove_ground(camera, 0);
+				remove_ground(camera, 1);
+			}
 			
 			// get detections
 			detect_objects(camera);
-			// cv::imshow("Remove Ground Original", camera->removebg_[0]);
-			// cv::imshow("Remove Ground EC", camera->removebg_[1]);
 			
 			// apply state estimation filters
 			predict_new_locations_of_tracks(camera);

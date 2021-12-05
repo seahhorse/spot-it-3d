@@ -186,27 +186,44 @@ namespace mcmt {
 		// cv::imshow("After sun compensation", camera->frame_ec_);
 	}
 
-	/**
-	 * This function applies background subtraction to the raw image frames to obtain 
-	 * thresholded mask image.
+	/** 
+	 * This function uses the background subtractor to subtract the history from the current frame.
 	 */
-	cv::Mat apply_bg_subtractions(std::shared_ptr<Camera> & camera, int frame_id)	{
-		cv::Mat masked, converted_mask;
+	void remove_ground(std::shared_ptr<Camera> & camera, int masked_id)	{
+
+		cv::Mat masked;
 		
 		// Apply contrast and brightness gains
 		// To-do: Explain how the formula for calculating brightness in the 2nd line works
-		if (frame_id == 1){
-			cv::convertScaleAbs(camera->frame_ec_, masked);
-		}
-		else{
-			cv::convertScaleAbs(camera->frame_, masked);
-		}
-		cv::convertScaleAbs(masked, masked, 1, (256 - average_brightness(camera) + BRIGHTNESS_GAIN_));
+		cv::convertScaleAbs((masked_id ? camera->frame_ec_ : camera->frame_), masked, 1, (256 - average_brightness(camera) + BRIGHTNESS_GAIN_));
 		
 		// subtract background
-		camera->fgbg_[frame_id]->apply(masked, masked, FGBG_LEARNING_RATE_);
-		masked.convertTo(converted_mask, CV_8UC1);
-		return converted_mask;
+		camera->fgbg_[masked_id]->apply(masked, masked, FGBG_LEARNING_RATE_);
+		masked.convertTo(camera->masked_[masked_id], CV_8UC1);
+
+		// declare variables
+		std::vector<std::vector<cv::Point>> contours;
+		std::vector<std::vector<cv::Point>> background_contours;
+
+		// number of iterations determines how close objects need to be to be considered background
+		cv::Mat dilated;
+		cv::dilate(camera->masked_[masked_id], dilated, element_, cv::Point(), int(REMOVE_GROUND_ITER_ * camera->scale_factor_));
+		findContours(dilated, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
+
+		for (auto & it : contours) {
+			float circularity = 4 * M_PI * cv::contourArea(it) / (pow(cv::arcLength(it, true), 2));
+			if (circularity <= BACKGROUND_CONTOUR_CIRCULARITY_) {
+				background_contours.push_back(it);
+			}
+		}
+		
+		// show removed background on raw image frames
+		// cv::Mat bg_removed = masked_id ? camera->frame_ec_.clone() : camera->frame_.clone();
+		// cv::drawContours(bg_removed, background_contours, -1, cv::Scalar(0, 255, 0), 3);
+		// cv::imshow("bg_removed", bg_removed);
+
+		// draw contours on masked frame using solid shape to remove background
+		cv::drawContours(camera->masked_[masked_id], background_contours, -1, cv::Scalar(0, 0, 0), -1);
 	}
 
 	/**
@@ -216,11 +233,6 @@ namespace mcmt {
 		
 		// Loop through both original and env compensated frames
 		for (int i = 0; i < camera->masked_.size(); i++) {
-		
-			// apply background subtractor
-			if (USE_BG_SUBTRACTOR_){
-				camera->removebg_[i] = remove_ground(camera, i);
-			}
 		
 			// apply morphological transformation
 			cv::dilate(camera->masked_[i], camera->masked_[i], element_, cv::Point(), DILATION_ITER_);
@@ -254,43 +266,6 @@ namespace mcmt {
 				}
 			}
 		}
-	}
-
-	/** 
-	 * This function uses the background subtractor to subtract the history from the current frame.
-	 * It is implemented inside the "detect_object()" function pipeline.
-	 */
-	cv::Mat remove_ground(std::shared_ptr<Camera> & camera, int masked_id)	{
-		// declare variables
-		std::vector<std::vector<cv::Point>> contours;
-		std::vector<std::vector<cv::Point>> background_contours;
-
-		// number of iterations determines how close objects need to be to be considered background
-		cv::Mat dilated;
-		cv::dilate(camera->masked_[masked_id], dilated, element_, cv::Point(), int(REMOVE_GROUND_ITER_ * camera->scale_factor_));
-		findContours(dilated, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
-
-		for (auto & it : contours) {
-			float circularity = 4 * M_PI * cv::contourArea(it) / (pow(cv::arcLength(it, true), 2));
-			if (circularity <= BACKGROUND_CONTOUR_CIRCULARITY_) {
-				background_contours.push_back(it);
-			}
-		}
-		
-		// show removed background on raw image frames
-		cv::Mat bg_removed;
-		if (masked_id == 1){
-			bg_removed = camera->frame_ec_.clone();
-		}
-		else{
-			bg_removed = camera->frame_.clone();
-		}
-		cv::drawContours(bg_removed, background_contours, -1, cv::Scalar(0, 255, 0), 3);
-
-		// draw contours on masked frame to remove background
-		cv::drawContours(camera->masked_[masked_id], background_contours, -1, cv::Scalar(0, 0, 0), -1);
-
-		return bg_removed;
 	}
 
 	/**
