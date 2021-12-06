@@ -160,6 +160,16 @@ int main(int argc, char * argv[]) {
 				camera->sizes_temp_[i].clear();
 				camera->centroids_temp_[i].clear();
 			}
+
+			// apply frame by frame subtraction for feature enhancement
+			frame_to_frame_subtraction(camera);
+
+			// correct for environmental effects
+			apply_env_compensation(camera);
+
+			// apply background subtractor
+			remove_ground(camera, 0);
+			remove_ground(camera, 1);
 			
 			// get detections
 			detect_objects(camera);
@@ -238,31 +248,45 @@ int main(int argc, char * argv[]) {
 		}
 
 		if (NUM_OF_CAMERAS_ > 1) {
-			process_new_tracks(0, 1, good_tracks_[0]);
-			process_new_tracks(1, 0, good_tracks_[1]);
 
-			verify_existing_tracks(0, 1);
+			for (int cam_idx_a = 0; cam_idx_a < NUM_OF_CAMERAS_; cam_idx_a++) {
+				for (int cam_idx_b = 0; cam_idx_b < NUM_OF_CAMERAS_; cam_idx_b++) {
+					if (cam_idx_a != cam_idx_b) {
+						process_new_tracks(cam_idx_a, cam_idx_b, good_tracks_[cam_idx_a]);
+					}
+				}
+			}
+			join_matched_tracks();
+			
+			for (int cam_idx = 0; cam_idx < NUM_OF_CAMERAS_; cam_idx++) {
+				verify_existing_tracks(cam_idx);
+			}
 			calculate_3D();
 		}
 
-		print_frame_summary();
+		// for (auto & track_plot_a : cumulative_tracks_[0]->track_plots_) {
+		// 	for (auto & track_plot_b : cumulative_tracks_[1]->track_plots_) {
+		// 		compute_matching_score(track_plot_a.second, track_plot_b.second, 0, 1);
+		// 	}
+		// }
 
+		print_frame_summary();
 		annotate_frames(frames_, cumulative_tracks_);
 
 		auto track_end = std::chrono::system_clock::now();
 		
 		// show and save video combined tracking frame
 		cv::Mat combined_frame = *frames_[0].get();
-		for (int i = 1; i < NUM_OF_CAMERAS_; i++) {
-			cv::hconcat(combined_frame, *frames_[i].get(), combined_frame);
+		for (int cam_idx = 1; cam_idx < NUM_OF_CAMERAS_; cam_idx++) {
+			cv::hconcat(combined_frame, *frames_[cam_idx].get(), combined_frame);
 		}
 		
 		// for (auto line : lines) {
-		// 	cv::line(combined_frame, cv::Point((int) line[0], (int)line[1]), cv::Point((int) line[2], (int) line[3]), cv::Scalar(0, (int) (line[4] * 255), (int) ((1 - line[4]) * 255)), 1);
+		// 	cv::line(combined_frame, cv::Point((int) line[0], (int)line[1]), cv::Point((int) line[2], (int) line[3]), cv::Scalar(0, (int) (line[5] * 255), (int) ((1 - line[5]) * 255)), 1);
 		// 	std::string scores;
-		// 	scores = std::to_string(line[5]).substr(0,4) + ", " + std::to_string(line[6]).substr(0,4);
+		// 	scores = std::to_string(line[4]).substr(0,4) + ", " + std::to_string(line[5]).substr(0,4);
 		// 	cv::putText(combined_frame, scores, cv::Point((int) ((line[0] + line[2]) / 2), (int) ((line[1] + line[3]) / 2)),  
-		// 					cv::FONT_HERSHEY_SIMPLEX, FONT_SCALE_ * 1.5, cv::Scalar(0, (int) (line[4] * 255), (int) ((1 - line[4]) * 255)), 3, cv::LINE_AA);
+		// 					cv::FONT_HERSHEY_SIMPLEX, FONT_SCALE_ * 1, cv::Scalar(0, (int) (line[5] * 255), (int) ((1 - line[5]) * 255)), 2, cv::LINE_AA);
 		// }
 		// lines.clear();
 

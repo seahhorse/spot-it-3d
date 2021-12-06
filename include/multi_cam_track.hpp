@@ -86,9 +86,9 @@ namespace mcmt {
 	bool exists(std::map<T1, T2> arr, T1 item);
 	void update_cumulative_tracks(int index, std::vector<std::shared_ptr<GoodTrack>> & good_tracks);
 	void prune_tracks(int index);
-	void verify_existing_tracks(int idx_a, int idx_b);
+	void verify_existing_tracks(int idx);
 	void process_new_tracks(int idx, int alt, std::vector<std::shared_ptr<GoodTrack>> & good_tracks);
-	void get_total_number_of_tracks();
+	void join_matched_tracks();
 	std::vector<double> normalise_track_plot(std::shared_ptr<TrackPlot> track_plot);
 	double compute_matching_score(std::shared_ptr<TrackPlot> track_plot_a, std::shared_ptr<TrackPlot> track_plot_b, int idx_a, int idx_b);
 	double crossCorrelation(std::vector<double> X, std::vector<double> Y);
@@ -98,6 +98,9 @@ namespace mcmt {
 	double crossCorrelation_3D(std::vector<std::array<double, 3>> X, std::vector<std::array<double, 3>> Y);
 	void generate_matched_ids(int idx_a, int idx_b);
 	void promote_to_matched(int index, std::shared_ptr<TrackPlot> track_plot, int matched_id, int old_id);
+	void demote_to_unmatched(int index, std::shared_ptr<TrackPlot> track_plot, int matched_id, int old_id);
+	std::vector<std::pair<int, int>> create_pairs(std::vector<int> vec);
+	double compute_multi_matching_score(int track_id, int alt_track_id);
 	void calculate_3D();
 	void imshow_resized_dual(std::string & window_name, cv::Mat & img);
 

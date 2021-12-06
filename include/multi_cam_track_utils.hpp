@@ -30,6 +30,11 @@
 // local header files
 // #include "multi_cam_params.hpp"
 
+// opencv header files
+#include <opencv2/opencv.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
+#include <opencv2/ximgproc.hpp>
+
 // standard package imports
 #include <string>
 #include <map>
@@ -60,15 +65,16 @@ namespace mcmt {
 
 			// declare track information
 			int id_, oid_, lastSeen_, mismatch_count_;
-			std::vector<int> xs_, ys_, size_, frameNos_;
+			std::vector<int> xs_, ys_, size_, frameNos_, area_;
 			std::vector<double> xyz_, turning_angle_, curvature_, track_feature_variable_;
 			std::vector<std::array<double, 3>> vel_orient_;
 			std::vector<std::shared_ptr<OtherTrack>> other_tracks_;
 
 			// declare methods
-			void update(std::vector<int> & location, int & size, int & frame_no);
+			void update(std::vector<int> & location, int & size, int & frame_no, cv::Mat frame);
 			void update_track(std::vector<int> & location, int & size, int & frame_no);
 			void update_track_feature_variable(int & frame_no);
+			void update_area(cv::Mat frame);
 			void update_3D_velocity_orientation(int & frame_no);
 			bool check_stationary();
 	};
