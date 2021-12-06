@@ -63,6 +63,7 @@ namespace mcmt {
 		frame_step = 4; // Number of frame steps to check the search zone
 		circle_step = 16; // Radius of search circle
 		search_frame_counter = 0; // Initialise counter
+		vel_threshold = 16; // Initialise velocity threshold
 
 		// initialize centroid location
 		centroid_ = centroid;
@@ -176,16 +177,16 @@ namespace mcmt {
 		std::vector<cv::Point2f> search_polygon;
 
 		// If the drone is travelling fast, use cone to track drone
-		if (last_vel_mag > vel_threshold) { 
+		if (vel_mag > vel_threshold) { 
 			last_x = centroid_.x; //Last known location of x
 			last_y = centroid_.y; //Last known locations of y
 			cv::Point2f starting_point(last_x, last_y);
 
 			//Calculate the upper bound, center bound and lower bound locations, using polar local coordinates representation 
 			//converted to Cartesian local coordinates
-			cv::Point2f upper_bound(last_x + last_vel_mag * cos(last_vel_dir + vel_angle_leeway), last_y + last_vel_mag * sin(last_vel_dir + vel_angle_leeway));
-			cv::Point2f lower_bound(last_x + last_vel_mag * cos(last_vel_dir - vel_angle_leeway), last_y + last_vel_mag * sin(last_vel_dir - vel_angle_leeway));
-			cv::Point2f center_bound(last_x + last_vel_mag * cos(last_vel_dir), last_y + last_vel_mag * sin(last_vel_dir));
+			cv::Point2f upper_bound(last_x + frame_step * vel_mag * cos(vel_angle + vel_angle_leeway), last_y + frame_step * vel_mag * sin(vel_angle + vel_angle_leeway));
+			cv::Point2f lower_bound(last_x + frame_step * vel_mag * cos(vel_angle - vel_angle_leeway), last_y + frame_step *vel_mag * sin(vel_angle - vel_angle_leeway));
+			cv::Point2f center_bound(last_x + frame_step *vel_mag f* cos(vel_angle), last_y + frame_step * vel_mag * sin(vel_angle));
 
 			search_polygon.push_back(starting_point);
 			search_polygon.push_back(upper_bound);

@@ -70,6 +70,7 @@ namespace mcmt {
 			int circle_step; // Radius of search circle for low velocity movements
 			int frame_step; // How long to keep looking for detections
 			int search_frame_counter; // The counter to keep track of number of frames searched since missing
+			int vel_threshold; // Threshold value for velocity to determine type of search zone
 
 			// declare DCF bool variable
 			bool is_dcf_init_, outOfSync_;
