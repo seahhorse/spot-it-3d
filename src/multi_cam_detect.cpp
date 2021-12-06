@@ -140,18 +140,18 @@ namespace mcmt {
 		// cv::imshow("non sky", non_sky);
 
 		// Again, split the sky into 3 channels (HSV)
-		std::vector<cv::Mat> sky_channels;
-		cv::split(sky, sky_channels);
+		channels.clear();
+		cv::split(sky, channels);
 
 		// Only apply following transformations to pixels with V > 0
 		cv::Mat sky_mask(FRAME_WIDTH_, FRAME_HEIGHT_, CV_8UC1);
 		cv::Mat sky_mask_f(FRAME_WIDTH_, FRAME_HEIGHT_, CV_32FC1);
-		cv::threshold(sky_channels[2], sky_mask, 1, 0, 2);
+		cv::threshold(channels[2], sky_mask, 1, 0, 2);
 		sky_mask.convertTo(sky_mask_f, CV_32FC1);
 
 		// Convert value channel to float matrix	
 		cv::Mat value_f(FRAME_WIDTH_, FRAME_HEIGHT_, CV_32FC1);
-		sky_channels[2].convertTo(value_f, CV_32FC1);
+		channels[2].convertTo(value_f, CV_32FC1);
 	
 		// Decrease saturation based on how bright the pixel is
 		// The brighter the pixel, the greater the decrease
@@ -159,14 +159,14 @@ namespace mcmt {
 		// between saturation scale factor (sat) and pixel brightness
 		// Formula: pixel[sat] *= 1 - 0.7 * pixel[val] / 255
 		value_f = sky_mask_f - (value_f * (0.7/255));
-		cv::multiply(sky_channels[1], value_f, sky_channels[1], 1, CV_8UC1);
+		cv::multiply(channels[1], value_f, channels[1], 1, CV_8UC1);
 
 		// If the pixel is too dark, max its value to provide contrast
 		cv::Mat dark;
-		cv::inRange(sky_channels[2], 1, 149, dark);
-		cv::add(sky_channels[2], dark, sky_channels[2]);
+		cv::inRange(channels[2], 1, 149, dark);
+		cv::add(channels[2], dark, channels[2]);
 		// Merge to combine back to sky
-		cv::merge(sky_channels, sky);
+		cv::merge(channels, sky);
 
 		cv::cvtColor(sky, sky, cv::COLOR_HSV2BGR);
 
@@ -183,7 +183,7 @@ namespace mcmt {
 
 		// Recombine the sky and treeline
 		cv::add(sky, non_sky, camera->frame_ec_);
-		// cv::imshow("After sun compensation", camera->frame_ec_);
+		cv::imshow("After sun compensation", camera->frame_ec_);
 	}
 
 	/** 
