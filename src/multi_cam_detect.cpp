@@ -139,37 +139,35 @@ namespace mcmt {
 		cv::bitwise_and(camera->frame_ec_, camera->frame_ec_, non_sky, mask);
 		// cv::imshow("non sky", non_sky);
 
-		// Scale the saturation and contrast in the sky frame based on pixel brightness (V channel of HSV)
-		for (int row = 0; row < sky.rows; row++) {
+		// Again, split the sky into 3 channels (HSV)
+		channels.clear();
+		cv::split(sky, channels);
 
-			// raw pointer with helper method is used to iterate through pixels
-			// see https://longstryder.com/2014/07/which-way-of-accessing-pixels-in-opencv-is-the-fastest/
-			uchar *ptr = sky.ptr(row);
-		
-        	for (int col = 0; col < sky.cols; col++) {
+		// Only apply following transformations to pixels with V > 0
+		cv::Mat sky_mask(FRAME_WIDTH_, FRAME_HEIGHT_, CV_8UC1);
+		cv::Mat sky_mask_f(FRAME_WIDTH_, FRAME_HEIGHT_, CV_32FC1);
+		cv::threshold(channels[2], sky_mask, 1, 0, 2);
+		sky_mask.convertTo(sky_mask_f, CV_32FC1);
 
-				uchar *pixel = ptr;
+		// Convert value channel to float matrix	
+		cv::Mat value_f(FRAME_WIDTH_, FRAME_HEIGHT_, CV_32FC1);
+		channels[2].convertTo(value_f, CV_32FC1);
+	
+		// Decrease saturation based on how bright the pixel is
+		// The brighter the pixel, the greater the decrease
+		// The formula used is our own model that assumes linear relationship
+		// between saturation scale factor (sat) and pixel brightness
+		// Formula: pixel[sat] *= 1 - 0.7 * pixel[val] / 255
+		value_f = sky_mask_f - (value_f * (0.7/255));
+		cv::multiply(channels[1], value_f, channels[1], 1, CV_8UC1);
 
-				// ignore black pixels (these are areas which are masked out)
-				if (pixel[2] > 0) {
+		// If the pixel is too dark, max its value to provide contrast
+		cv::Mat dark;
+		cv::inRange(channels[2], 1, 149, dark);
+		cv::add(channels[2], dark, channels[2]);
+		// Merge to combine back to sky
+		cv::merge(channels, sky);
 
-					// Decrease saturation based on how bright the pixel is
-					// The brighter the pixel, the greater the decrease
-					// The formula used is our own model that assumes linear relationship
-					// between saturation scale factor (sat) and pixel brightness
-					float sat = 1 - 0.7 * pixel[2] / 255;
-					pixel[1] *= sat;
-
-					// If the pixel is too dark, max its value to provide contrast
-                	if (pixel[2] < 150) {
-                    	pixel[2] = 255;
-                	}
-            	}
-
-				// increment by 3 along the row (because there are 3 channels in hsv)
-				ptr += 3;
-        	}
-    	}
 		cv::cvtColor(sky, sky, cv::COLOR_HSV2BGR);
 
 		// Treeline (non-sky) enhancements using histogram equalisation on intensity channel
@@ -185,30 +183,47 @@ namespace mcmt {
 
 		// Recombine the sky and treeline
 		cv::add(sky, non_sky, camera->frame_ec_);
-		// cv::imshow("After sun compensation", camera->frame_ec_);
+		cv::imshow("After sun compensation", camera->frame_ec_);
 	}
 
-	/**
-	 * This function applies background subtraction to the raw image frames to obtain 
-	 * thresholded mask image.
+	/** 
+	 * This function uses the background subtractor to subtract the history from the current frame.
 	 */
-	cv::Mat apply_bg_subtractions(std::shared_ptr<Camera> & camera, int frame_id)	{
-		cv::Mat masked, converted_mask;
+	void remove_ground(std::shared_ptr<Camera> & camera, int masked_id)	{
+
+		cv::Mat masked;
 		
 		// Apply contrast and brightness gains
 		// To-do: Explain how the formula for calculating brightness in the 2nd line works
-		if (frame_id == 1){
-			cv::convertScaleAbs(camera->frame_ec_, masked);
-		}
-		else{
-			cv::convertScaleAbs(camera->frame_, masked);
-		}
-		cv::convertScaleAbs(masked, masked, 1, (256 - average_brightness(camera) + BRIGHTNESS_GAIN_));
+		cv::convertScaleAbs((masked_id ? camera->frame_ec_ : camera->frame_), masked, 1, (256 - average_brightness(camera) + BRIGHTNESS_GAIN_));
 		
 		// subtract background
-		camera->fgbg_[frame_id]->apply(masked, masked, FGBG_LEARNING_RATE_);
-		masked.convertTo(converted_mask, CV_8UC1);
-		return converted_mask;
+		camera->fgbg_[masked_id]->apply(masked, masked, FGBG_LEARNING_RATE_);
+		masked.convertTo(camera->masked_[masked_id], CV_8UC1);
+
+		// declare variables
+		std::vector<std::vector<cv::Point>> contours;
+		std::vector<std::vector<cv::Point>> background_contours;
+
+		// number of iterations determines how close objects need to be to be considered background
+		cv::Mat dilated;
+		cv::dilate(camera->masked_[masked_id], dilated, element_, cv::Point(), int(REMOVE_GROUND_ITER_ * camera->scale_factor_));
+		findContours(dilated, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
+
+		for (auto & it : contours) {
+			float circularity = 4 * M_PI * cv::contourArea(it) / (pow(cv::arcLength(it, true), 2));
+			if (circularity <= BACKGROUND_CONTOUR_CIRCULARITY_) {
+				background_contours.push_back(it);
+			}
+		}
+		
+		// show removed background on raw image frames
+		// cv::Mat bg_removed = masked_id ? camera->frame_ec_.clone() : camera->frame_.clone();
+		// cv::drawContours(bg_removed, background_contours, -1, cv::Scalar(0, 255, 0), 3);
+		// cv::imshow("bg_removed", bg_removed);
+
+		// draw contours on masked frame using solid shape to remove background
+		cv::drawContours(camera->masked_[masked_id], background_contours, -1, cv::Scalar(0, 0, 0), -1);
 	}
 
 	/**
@@ -218,11 +233,6 @@ namespace mcmt {
 		
 		// Loop through both original and env compensated frames
 		for (int i = 0; i < camera->masked_.size(); i++) {
-		
-			// apply background subtractor
-			if (USE_BG_SUBTRACTOR_){
-				camera->removebg_[i] = remove_ground(camera, i);
-			}
 		
 			// apply morphological transformation
 			cv::dilate(camera->masked_[i], camera->masked_[i], element_, cv::Point(), DILATION_ITER_);
@@ -256,43 +266,6 @@ namespace mcmt {
 				}
 			}
 		}
-	}
-
-	/** 
-	 * This function uses the background subtractor to subtract the history from the current frame.
-	 * It is implemented inside the "detect_object()" function pipeline.
-	 */
-	cv::Mat remove_ground(std::shared_ptr<Camera> & camera, int masked_id)	{
-		// declare variables
-		std::vector<std::vector<cv::Point>> contours;
-		std::vector<std::vector<cv::Point>> background_contours;
-
-		// number of iterations determines how close objects need to be to be considered background
-		cv::Mat dilated;
-		cv::dilate(camera->masked_[masked_id], dilated, element_, cv::Point(), int(REMOVE_GROUND_ITER_ * camera->scale_factor_));
-		findContours(dilated, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
-
-		for (auto & it : contours) {
-			float circularity = 4 * M_PI * cv::contourArea(it) / (pow(cv::arcLength(it, true), 2));
-			if (circularity <= BACKGROUND_CONTOUR_CIRCULARITY_) {
-				background_contours.push_back(it);
-			}
-		}
-		
-		// show removed background on raw image frames
-		cv::Mat bg_removed;
-		if (masked_id == 1){
-			bg_removed = camera->frame_ec_.clone();
-		}
-		else{
-			bg_removed = camera->frame_.clone();
-		}
-		cv::drawContours(bg_removed, background_contours, -1, cv::Scalar(0, 255, 0), 3);
-
-		// draw contours on masked frame to remove background
-		cv::drawContours(camera->masked_[masked_id], background_contours, -1, cv::Scalar(0, 0, 0), -1);
-
-		return bg_removed;
 	}
 
 	/**
