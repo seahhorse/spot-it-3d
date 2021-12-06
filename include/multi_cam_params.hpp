@@ -38,18 +38,14 @@ namespace mcmt {
 
 	// declare filepaths
 	const bool IS_REALTIME_ = false;
-    const int NUM_OF_CAMERAS_ = 4;
+    const int NUM_OF_CAMERAS_ = 2;
 
     // realtime parameters
-    const std::vector<std::string> VIDEO_INPUT_ = {     "data/input/2-11-WCP_6a_out.avi",
-                                                        "data/input/2-11-WCP_6b_out.avi",
-                                                        "data/input/2-11-WCP_6c_out.avi",
-                                                        "data/input/2-11-WCP_6d_out.avi"
+    const std::vector<std::string> VIDEO_INPUT_ = {     "data/input/munich_5a_raw.avi",
+                                                        "data/input/munich_5b_raw.avi"
                                                     };
     const std::vector<std::string> VIDEO_OUTPUT_ = {    "data/output/3cam_1_out.avi",
-                                                        "data/output/3cam_2_out.avi",
-                                                        "data/output/3cam_3_out.avi",
-                                                        "data/output/3cam_4_out.avi"
+                                                        "data/output/3cam_2_out.avi"
                                                     };
 	const std::string VIDEO_OUTPUT_ANNOTATED_ = "data/output/ABC2.avi";
 	const std::string TARGETS_2D_OUTPUT_ = "data/output/targets_2d_out.json";
@@ -64,8 +60,8 @@ namespace mcmt {
     const bool SHOW_3D_COORDINATES_ = true;
 
 	// declare video parameters
-	const int FRAME_WIDTH_ = 320;
-    const int FRAME_HEIGHT_ = 240;
+	const int FRAME_WIDTH_ = 640;
+    const int FRAME_HEIGHT_ = 480;
     const int VIDEO_FPS_ = 30;
     const int MAX_TOLERATED_CONSECUTIVE_DROPPED_FRAMES_ = 5;
 

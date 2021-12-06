@@ -81,7 +81,11 @@ namespace mcmt {
 
 			// declare dcf variables
 			cv::Ptr<cv::Tracker> tracker_;
-			cv::Rect2d box_;
+			#if CV_VERSION_MAJOR >= 4 && CV_VERSION_MINOR > 2 // OpenCV 4.5.2 uses cv::Rect
+				cv::Rect box_;
+			#else
+				cv::Rect2d box_;
+			#endif
 	};
 
 	class Camera {
