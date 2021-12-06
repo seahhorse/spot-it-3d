@@ -545,8 +545,7 @@ namespace mcmt {
 	 * of detections to tracks. We obtain the final assignments, unassigned_tracks, and unassigned
 	 * detections vectors from this function.
 	 */
-	void compare_cost_matrices(std::shared_ptr<Camera> & camera)
-	{
+	void compare_cost_matrices(std::shared_ptr<Camera> & camera) {
 		// check to see if it is the case where there are no assignments in the current frame
 		if (camera->assignments_kf_.size() == 0 && camera->assignments_dcf_.size() == 0) {
 				camera->assignments_ = camera->assignments_kf_;
@@ -721,6 +720,58 @@ namespace mcmt {
 				}
 				camera->unassigned_detections_.push_back(unassigned_detection);
 			}
+
+			// Last check, see if for all unassigned tracks and detections, apply search polygon
+			for (auto & track_index : camera->unassigned_tracks_) {
+				std::shared_ptr<Track> track = camera->tracks_[track_index];
+
+				// Do the search for within stipulated number of frames,else dont do search, let track die
+				if (track->search_frame_counter > track->frame_step) {
+				// add to the search frame counter to count the current check as step 
+					track->search_frame_counter += 1;
+
+					// Try to search using the last known velocity location, reassign any found blob as the new detection
+					search_area = track->search_polygon(); // Use appropiate search zone
+					std::vector<cv::Point2f, int, int> eligible_points; // Placeholder for eligible detections and its distance from the center of the search zone
+
+					for (auto& unassigned_detection : camera->unassigned_detections_) { // For every unassgined point, check if in search zone
+						cv::Point2f cur_cen = camera->centroids_[unassigned_detection]; //Find an unassinged point
+						double pointPolygondistance = cv::pointPolygonTest(search_area, cur_cen, true); // Check distances of point to polygon
+						if (pointPolygondistance >= 0) { // Positve distance if inside polygon, 0 if one edge(will still count)
+							eligible_points.push_back(pointPolygondistance, track_index, unassigned_detection);
+						}
+					}
+
+
+				// Find the detection with the smallest distance
+					int min_index = NULL; // Index of min distance
+					double min_distance = -1; // Minimum distance
+					auto min_detection; // detection parameter
+					for (auto& eligible_point : eligible_points) { // For every eligible point
+						if  (eligible_point[0] > min_distance) { // Find the index with the largest distance from polygon edge(closest to the center)
+							min_distance = eligible_point[0];
+							min_index = eligible_point[1];
+							min_detection = eligilble[2];
+						}
+					}
+
+					// Reassign unassigned detection to the track if there is a suitable candidate 
+					if (min_index != NULL) {
+						std::vector<int> reinitialized_assignment(2, 0); // Data structure for assignment
+						reinitialized_assignment[0] = min_index;  // track index assigned
+						reinitialized_assignment[1] = min_detection; // track detection assigned
+						camera->assignments_.push_back(reinitialized_assignment); // set as new assignment
+						track->search_frame_counter = 0; // Reset frame counter to see for future assignments
+
+						// Dont need to remove from unassigned tracks as these variables are removed at every frame check
+					}
+					else {
+						track->search_frame_counter++;
+					}
+				}
+
+				
+			}
 		}
 	}
 
@@ -767,51 +818,10 @@ namespace mcmt {
 			std::shared_ptr<Track> track = camera->tracks_[track_index];
 			track->age_++;
 			track->consecutiveInvisibleCount_++;
+		
+			float visibility = float(track->totalVisibleCount_) / float(track->age_);
 
-			// Do the search for within stipulated number of frames,else dont do search, let track die
-			if (track->search_frame_counter > track->frame_step) {
-				// add to the search frame counter to count the current check as step 
-				track->search_frame_counter += 1;
-
-				// Try to search using the last known velocity location, reassign any found blob as the new detection
-				search_area = track->search_polygon(); // Use appropiate search zone
-				std::vector<cv::Point2f, int, int> eligible_points; // Placeholder for eligible detections and its distance from the center of the search zone
-
-				for (auto& unassigned_detection : camera->unassigned_detections_) { // For every unassgined point, check if in search zone
-					cv::Point2f cur_cen = camera->centroids_[unassigned_detection]; //Find an unassinged point
-					double pointPolygondistance = cv::pointPolygonTest(search_area, cur_cen, true); // Check distances of point to polygon
-					if (pointPolygondistance >= 0) { // Positve distance if inside polygon, 0 if one edge(will still count)
-						eligible_points.push_back(pointPolygondistance, track_index, unassigned_detection);
-					}
-				}
-
-
-				// Find the detection with the smallest distance
-				int min_index = NULL; // Index of min distance
-				double min_distance = -1; // Minimum distance
-				auto min_detection; // detection parameter
-				for (auto& eligible_point : eligible_points) { // For every eligible point
-					if  (eligible_point[0] > min_distance) { // Find the index with the largest distance from polygon edge(closest to the center)
-						min_distance = eligible_point[0];
-						min_index = eligible_point[1];
-						min_detection = eligilble[2];
-					}
-				}
-
-				// Reassign unassigned detection to the track if there is a suitable candidate 
-				if (min_index != NULL) {
-					std::vector<int> reinitialized_assignment(2, 0); // Data structure for assignment
-					reinitialized_assignment[0] = min_index;  // track index assigned
-					reinitialized_assignment[1] = min_detection; // track detection assigned
-					camera->assignments_.push_back(reinitialized_assignment); // set as new assignment
-					track->search_frame_counter = 0; // Reset frame counter to see for future assignments
-
-					// Dont need to remove from unassigned tracks as these variables are removed at every frame check
-				}
-			}
-				float visibility = float(track->totalVisibleCount_) / float(track->age_);
-
-				// if invisible for too long, append track to be removed
+			// if invisible for too long, append track to be removed
 			if ((track->age_ < age_threshold && visibility < VISIBILITY_RATIO_) ||
 					(track->consecutiveInvisibleCount_ >= invisible_for_too_long) ||
 					(track->outOfSync_ == true)) {
