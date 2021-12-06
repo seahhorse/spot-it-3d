@@ -144,13 +144,13 @@ namespace mcmt {
 		cv::split(sky, sky_channels);
 
 		// Only apply following transformations to pixels with V > 0
-		cv::Mat sky_mask(1920, 1080, CV_8UC1);
-		cv::Mat sky_mask_f(1920, 1080, CV_32FC1);
+		cv::Mat sky_mask(FRAME_WIDTH_, FRAME_HEIGHT_, CV_8UC1);
+		cv::Mat sky_mask_f(FRAME_WIDTH_, FRAME_HEIGHT_, CV_32FC1);
 		cv::threshold(sky_channels[2], sky_mask, 1, 0, 2);
 		sky_mask.convertTo(sky_mask_f, CV_32FC1);
 
 		// Convert value channel to float matrix	
-		cv::Mat value_f(1920, 1080, CV_32FC1);
+		cv::Mat value_f(FRAME_WIDTH_, FRAME_HEIGHT_, CV_32FC1);
 		sky_channels[2].convertTo(value_f, CV_32FC1);
 	
 		// Decrease saturation based on how bright the pixel is
@@ -201,29 +201,31 @@ namespace mcmt {
 		camera->fgbg_[masked_id]->apply(masked, masked, FGBG_LEARNING_RATE_);
 		masked.convertTo(camera->masked_[masked_id], CV_8UC1);
 
-		// declare variables
-		std::vector<std::vector<cv::Point>> contours;
-		std::vector<std::vector<cv::Point>> background_contours;
+		if (USE_BG_SUBTRACTOR_){
+			// declare variables
+			std::vector<std::vector<cv::Point>> contours;
+			std::vector<std::vector<cv::Point>> background_contours;
 
-		// number of iterations determines how close objects need to be to be considered background
-		cv::Mat dilated;
-		cv::dilate(camera->masked_[masked_id], dilated, element_, cv::Point(), int(REMOVE_GROUND_ITER_ * camera->scale_factor_));
-		findContours(dilated, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
+			// number of iterations determines how close objects need to be to be considered background
+			cv::Mat dilated;
+			cv::dilate(camera->masked_[masked_id], dilated, element_, cv::Point(), int(REMOVE_GROUND_ITER_ * camera->scale_factor_));
+			findContours(dilated, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
 
-		for (auto & it : contours) {
-			float circularity = 4 * M_PI * cv::contourArea(it) / (pow(cv::arcLength(it, true), 2));
-			if (circularity <= BACKGROUND_CONTOUR_CIRCULARITY_) {
-				background_contours.push_back(it);
+			for (auto & it : contours) {
+				float circularity = 4 * M_PI * cv::contourArea(it) / (pow(cv::arcLength(it, true), 2));
+				if (circularity <= BACKGROUND_CONTOUR_CIRCULARITY_) {
+					background_contours.push_back(it);
+				}
 			}
-		}
-		
-		// show removed background on raw image frames
-		// cv::Mat bg_removed = masked_id ? camera->frame_ec_.clone() : camera->frame_.clone();
-		// cv::drawContours(bg_removed, background_contours, -1, cv::Scalar(0, 255, 0), 3);
-		// cv::imshow("bg_removed", bg_removed);
+			
+			// show removed background on raw image frames
+			// cv::Mat bg_removed = masked_id ? camera->frame_ec_.clone() : camera->frame_.clone();
+			// cv::drawContours(bg_removed, background_contours, -1, cv::Scalar(0, 255, 0), 3);
+			// cv::imshow("bg_removed", bg_removed);
 
-		// draw contours on masked frame using solid shape to remove background
-		cv::drawContours(camera->masked_[masked_id], background_contours, -1, cv::Scalar(0, 0, 0), -1);
+			// draw contours on masked frame using solid shape to remove background
+			cv::drawContours(camera->masked_[masked_id], background_contours, -1, cv::Scalar(0, 0, 0), -1);
+		}
 	}
 
 	/**
@@ -785,35 +787,15 @@ namespace mcmt {
 		int min_track_age = int(std::max((AGE_THRESH_ * VIDEO_FPS_), float(30.0)));
 		int min_visible_count = int(std::max((VISIBILITY_THRESH_ * VIDEO_FPS_), float(30.0)));
 
-		if (camera->tracks_.size() != 0) {
-			for (auto & track : camera->tracks_) {
-				if (track->age_ > min_track_age && track->totalVisibleCount_ > min_visible_count) {
-					// requirement for track to be considered in re-identification
-					// note that min no. of frames being too small may lead to loss of continuous tracking
-					if (track->consecutiveInvisibleCount_ <= 5) {
-						track->is_goodtrack_ = true;
-						good_tracks.push_back(track);
-					}
-					cv::Point2i rect_top_left((track->centroid_.x - (track->size_)), 
-																		(track->centroid_.y - (track->size_)));
-					
-					cv::Point2i rect_bottom_right((track->centroid_.x + (track->size_)), 
-																				(track->centroid_.y + (track->size_)));
-					
-					if (track->consecutiveInvisibleCount_ == 0) {
-						// green color bounding box if track is detected in the current frame
-						// rectangle(camera->frame_, rect_top_left, rect_bottom_right, cv::Scalar(0, 255, 0), 2);
-						for (auto & mask : camera->masked_) {
-							cv::rectangle(mask, rect_top_left, rect_bottom_right, cv::Scalar(0, 255, 0), 1);
-						}
-					} else {
-						// red color bounding box if track is not detected in the current frame
-						// rectangle(camera->frame_, rect_top_left, rect_bottom_right, cv::Scalar(0, 0, 255), 2);
-						for (auto & mask : camera->masked_) {
-							cv::rectangle(mask, rect_top_left, rect_bottom_right, cv::Scalar(0, 0, 255), 1);
-						}
-					}
-				}
+		for (auto & track : camera->tracks_) {
+			// requirement for track to be considered in re-identification
+			// note that min no. of frames being too small may lead to loss of continuous tracking
+			if (track->age_ > min_track_age && track->totalVisibleCount_ > min_visible_count
+			&& track->consecutiveInvisibleCount_ <= 5 && track->centroid_.x >= 0 && track->centroid_.x <= FRAME_WIDTH_ 
+			&& track->centroid_.y >= 0 && track->centroid_.y <= FRAME_HEIGHT_) {
+				
+				track->is_goodtrack_ = true;
+				good_tracks.push_back(track);			
 			}
 		}
 		return good_tracks;

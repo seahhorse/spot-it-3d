@@ -137,15 +137,14 @@ namespace mcmt {
 	 */
 	void TrackPlot::update_area(cv::Mat frame) {
 		cv::Mat local_region;
-		int left = std::max(0, xs_.back() - size_.back());
-		int top = std::max(0, ys_.back() - size_.back());
+		int left = std::min(FRAME_WIDTH_, std::max(0, xs_.back() - size_.back()));
+		int top = std::min(FRAME_HEIGHT_, std::max(0, ys_.back() - size_.back()));
 		int width = std::min(2 * size_.back(), FRAME_WIDTH_ - left);
 		int height = std::min(2 * size_.back(), FRAME_HEIGHT_ - top);
 		frame(cv::Rect(left, top, width, height)).copyTo(local_region);
 		cv::cvtColor(local_region, local_region, cv::COLOR_BGR2GRAY);
 		cv::threshold(local_region, local_region, cv::mean(local_region)[0] - 10, 255, 0);
-		int area = (4 * size_.back() * size_.back()) - cv::countNonZero(local_region);
-		std::cout << area << std::endl;		
+		int area = (4 * size_.back() * size_.back()) - cv::countNonZero(local_region);	
 		area_.push_back(area);
 	}
 

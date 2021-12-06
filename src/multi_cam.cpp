@@ -111,10 +111,8 @@ int main(int argc, char * argv[]) {
 			apply_env_compensation(camera);
 
 			// apply background subtractor
-			if (USE_BG_SUBTRACTOR_){
-				remove_ground(camera, 0);
-				remove_ground(camera, 1);
-			}
+			remove_ground(camera, 0);
+			remove_ground(camera, 1);
 			
 			// get detections
 			detect_objects(camera);
@@ -208,7 +206,6 @@ int main(int argc, char * argv[]) {
 		// }
 
 		print_frame_summary();
-
 		annotate_frames(frames_, cumulative_tracks_);
 
 		auto track_end = std::chrono::system_clock::now();
@@ -219,14 +216,14 @@ int main(int argc, char * argv[]) {
 			cv::hconcat(combined_frame, *frames_[cam_idx].get(), combined_frame);
 		}
 		
-		for (auto line : lines) {
-			cv::line(combined_frame, cv::Point((int) line[0], (int)line[1]), cv::Point((int) line[2], (int) line[3]), cv::Scalar(0, (int) (line[5] * 255), (int) ((1 - line[5]) * 255)), 1);
-			std::string scores;
-			scores = std::to_string(line[4]).substr(0,4) + ", " + std::to_string(line[5]).substr(0,4);
-			cv::putText(combined_frame, scores, cv::Point((int) ((line[0] + line[2]) / 2), (int) ((line[1] + line[3]) / 2)),  
-							cv::FONT_HERSHEY_SIMPLEX, FONT_SCALE_ * 1, cv::Scalar(0, (int) (line[5] * 255), (int) ((1 - line[5]) * 255)), 2, cv::LINE_AA);
-		}
-		lines.clear();
+		// for (auto line : lines) {
+		// 	cv::line(combined_frame, cv::Point((int) line[0], (int)line[1]), cv::Point((int) line[2], (int) line[3]), cv::Scalar(0, (int) (line[5] * 255), (int) ((1 - line[5]) * 255)), 1);
+		// 	std::string scores;
+		// 	scores = std::to_string(line[4]).substr(0,4) + ", " + std::to_string(line[5]).substr(0,4);
+		// 	cv::putText(combined_frame, scores, cv::Point((int) ((line[0] + line[2]) / 2), (int) ((line[1] + line[3]) / 2)),  
+		// 					cv::FONT_HERSHEY_SIMPLEX, FONT_SCALE_ * 1, cv::Scalar(0, (int) (line[5] * 255), (int) ((1 - line[5]) * 255)), 2, cv::LINE_AA);
+		// }
+		// lines.clear();
 
 		auto frame_end = std::chrono::system_clock::now();
 
