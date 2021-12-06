@@ -6,8 +6,8 @@ cmake_minimum_required(VERSION 2.8)
 project( SPOT_IT_3D )
 
 # opencv - specify which version we want to use (e.g. 4.2.0 or 4.5.2?)
-# find_package( OpenCV REQUIRED )
-find_package( OpenCV 4.5.2 REQUIRED )
+find_package( OpenCV 4 REQUIRED )
+# find_package( OpenCV 4.5.2 REQUIRED )
 message(STATUS "Found OpenCV version ${OpenCV_VERSION}")
 include_directories( ${OpenCV_INCLUDE_DIRS} )
 
