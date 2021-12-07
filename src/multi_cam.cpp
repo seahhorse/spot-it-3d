@@ -142,17 +142,6 @@ int main(int argc, char * argv[]) {
 
 			if (IS_REALTIME_ != 2) { // To remove when interface shifts
 
-			// apply frame by frame subtraction for feature enhancement
-			frame_to_frame_subtraction(camera);
-
-			// correct for environmental effects
-			apply_env_compensation(camera);
-
-			// apply background subtraction
-			for (int i = 0; i < camera->masked_.size(); i++){
-				camera->masked_[i] = apply_bg_subtractions(camera, i);
-			}
-
 			// clear detection variable vectors
 			camera->sizes_.clear();
 			camera->centroids_.clear();
