@@ -731,35 +731,39 @@ namespace mcmt {
 					track->search_frame_counter += 1;
 
 					// Try to search using the last known velocity location, reassign any found blob as the new detection
-					search_area = track->search_polygon(); // Use appropiate search zone
-					std::vector<cv::Point2f, int, int> eligible_points; // Placeholder for eligible detections and its distance from the center of the search zone
+					std::vector<cv::Point2f> search_area = track->search_polygon(); // Use appropiate search zone
+					std::vector<double> eligible_points_distance; // Placeholder for eligible detections' distance from the center of the search zone
+					std::vector<int> eligible_unassigned_detections;
 
 					for (auto& unassigned_detection : camera->unassigned_detections_) { // For every unassgined point, check if in search zone
 						cv::Point2f cur_cen = camera->centroids_[unassigned_detection]; //Find an unassinged point
 						double pointPolygondistance = cv::pointPolygonTest(search_area, cur_cen, true); // Check distances of point to polygon
 						if (pointPolygondistance >= 0) { // Positve distance if inside polygon, 0 if one edge(will still count)
-							eligible_points.push_back(pointPolygondistance, track_index, unassigned_detection);
+							eligible_points_distance.push_back(pointPolygondistance);
+							eligible_unassigned_detections.push_back(unassigned_detection);
 						}
 					}
 
 
-				// Find the detection with the smallest distance
-					int min_index = NULL; // Index of min distance
+					// Find the detection with the smallest distance
 					double min_distance = -1; // Minimum distance
-					auto min_detection; // detection parameter
-					for (auto& eligible_point : eligible_points) { // For every eligible point
-						if  (eligible_point[0] > min_distance) { // Find the index with the largest distance from polygon edge(closest to the center)
-							min_distance = eligible_point[0];
-							min_index = eligible_point[1];
-							min_detection = eligilble[2];
+					int min_detection; // detection parameter
+					int eligible_pointer = 0;
+					int best_detection = -1;
+
+					for (double eligible_point_distance : eligible_points_distance) { // For every eligible point
+						if  (eligible_point_distance > min_distance) { // Find the index with the largest distance from polygon edge(closest to the center)
+							min_distance = eligible_point_distance;
+							best_detection = eligible_unassigned_detections[eligible_pointer];
+							eligible_pointer++;
 						}
 					}
 
 					// Reassign unassigned detection to the track if there is a suitable candidate 
-					if (min_index != NULL) {
-						std::vector<int> reinitialized_assignment(2, 0); // Data structure for assignment
-						reinitialized_assignment[0] = min_index;  // track index assigned
-						reinitialized_assignment[1] = min_detection; // track detection assigned
+					if (min_distance > 0) {
+						std::vector<int> reinitialized_assignment{-1, -1}; // Data structure for assignment
+						reinitialized_assignment[0] = track_index;  // track index assigned
+						reinitialized_assignment[1] = best_detection; // track detection assigned
 						camera->assignments_.push_back(reinitialized_assignment); // set as new assignment
 						track->search_frame_counter = 0; // Reset frame counter to see for future assignments
 
