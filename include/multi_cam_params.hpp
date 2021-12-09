@@ -41,11 +41,13 @@ namespace mcmt {
     const int NUM_OF_CAMERAS_ = 2;
 
     // realtime parameters
-    const std::string VIDEO_INPUT_1_ = "data/input/12-10_WCP_2a.avi";
-    const std::string VIDEO_INPUT_2_ = "data/input/12-10_WCP_2b.avi";
-	const std::string VIDEO_OUTPUT_1_ = "data/output/A_out.avi";
-    const std::string VIDEO_OUTPUT_2_ = "data/output/B_out.avi";
-	const std::string VIDEO_OUTPUT_ANNOTATED_ = "data/output/testfolder/12-10_WCP_2.avi";
+    const std::vector<std::string> VIDEO_INPUT_ = {     "data/input/munich_5a_raw.avi",
+                                                        "data/input/munich_5b_raw.avi"
+                                                    };
+    const std::vector<std::string> VIDEO_OUTPUT_ = {    "data/output/3cam_1_out.avi",
+                                                        "data/output/3cam_2_out.avi"
+                                                    };
+	const std::string VIDEO_OUTPUT_ANNOTATED_ = "data/output/ABC2.avi";
 	const std::string TARGETS_2D_OUTPUT_ = "data/output/targets_2d_out.json";
     const std::string TARGETS_3D_OUTPUT_ = "data/output/targets_3d_out.json";
     const std::string FRAME_TIME_ = "data/output/frame_time.csv";
@@ -92,6 +94,7 @@ namespace mcmt {
     const int PRUNE_HIST_ = 30;
 
     // declare re-id parameters
+    const bool USE_3D_REID_ = true;
     const double W1_ = 0.3;
     const double W2_ = 0.4;
     const double W3_ = 0.3;

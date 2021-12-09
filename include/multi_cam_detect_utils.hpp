@@ -94,7 +94,11 @@ namespace mcmt {
 
 			// declare dcf variables
 			cv::Ptr<cv::Tracker> tracker_;
-			cv::Rect2d box_;
+			#if CV_VERSION_MAJOR >= 4 && CV_VERSION_MINOR > 2 // OpenCV 4.5.2 uses cv::Rect
+				cv::Rect box_;
+			#else
+				cv::Rect2d box_;
+			#endif
 	};
 
 	class Camera {
@@ -116,7 +120,7 @@ namespace mcmt {
 			// declare video parameters
 			cv::VideoCapture cap_;
 			cv::Mat frame_, frame_original_, frame_ec_, gray_, frame_store_;
-			std::array<cv::Mat, 2> masked_, removebg_;
+			std::array<cv::Mat, 2> masked_;
 			std::string video_input_;
 			int cam_index_, frame_w_, frame_h_, fps_, next_id_;
 			float scale_factor_, aspect_ratio_;

@@ -153,6 +153,12 @@ namespace mcmt {
 							cv::putText(*frames_[i].get(), "Z: " + std::to_string(xyz[2]).substr(0,4),
 								cv::Point(rect_bottom_right.x + 10, rect_top_left.y + 40), cv::FONT_HERSHEY_SIMPLEX,
 								FONT_SCALE_, color, 1, cv::LINE_AA);
+
+							double area = (double) std::accumulate(track.second->area_.end() - 15, track.second->area_.end(), 0) / 15;
+
+							cv::putText(*frames_[i].get(), "A: " + std::to_string(area).substr(0,5),
+								cv::Point(rect_bottom_right.x + 10, rect_top_left.y + 55), cv::FONT_HERSHEY_SIMPLEX,
+								FONT_SCALE_, color, 1, cv::LINE_AA);
 						}
 						if (DISPLAY_STATUS_) {
 							cv::circle(*frames_[i].get(), cv::Point(rect_top_left.x + 5, rect_top_left.y - 10), 5, status_color, -1);
@@ -298,7 +304,11 @@ namespace mcmt {
 
 		std::cout << "Matched Tracks: ";
 		for (auto it = matched_tracks_.begin(); it != matched_tracks_.end(); it++) {
-			std::cout << "(" << it->first << ": [" << it->second[0] << ", " << it->second[1] << "]<" << it->second[2] << ">) | ";
+			std::cout << "(" << it->first << ": [";
+			for (int i = 0; i < NUM_OF_CAMERAS_ - 1; i++) {
+				std::cout << it->second[i] << ", ";
+			}
+			std::cout << it->second[NUM_OF_CAMERAS_ - 1] << "]<" << it->second[NUM_OF_CAMERAS_] << ">) | ";
 		}
 		std::cout << std::endl;
 

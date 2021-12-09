@@ -61,9 +61,9 @@ namespace mcmt {
 	std::vector<cv::Mat> initialize_cameras();
 	void frame_to_frame_subtraction(std::shared_ptr<Camera> & camera);
 	void apply_env_compensation(std::shared_ptr<Camera> & camera);
-	cv::Mat apply_bg_subtractions(std::shared_ptr<Camera> & camera, int frame_id);
+	void apply_bg_subtractions(std::shared_ptr<Camera> & camera, int frame_id);
 	void detect_objects(std::shared_ptr<Camera> & camera);
-	cv::Mat remove_ground(std::shared_ptr<Camera> & camera, int masked_id);
+	void remove_ground(std::shared_ptr<Camera> & camera, int masked_id);
 	void remove_overlapped_detections(std::shared_ptr<Camera> & camera);
 	void predict_new_locations_of_tracks(std::shared_ptr<Camera> & camera);
 	void clear_track_variables(std::shared_ptr<Camera> & camera);

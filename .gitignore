@@ -57,3 +57,9 @@ Thumbs.db
 # ignore csv and json data files
 *.csv
 *.json
+
+# CMake build folder
+build/
+
+# spot-it-3d executable
+spot-it-3d
