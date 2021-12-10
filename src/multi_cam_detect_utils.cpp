@@ -172,14 +172,15 @@ namespace mcmt {
 	 * returns the points required to form the current search polygon
 	 * Output: search polygon, vector of elements tuple<int, int> will convert to point2f during searching phase
 	 */
-	void Track::search_polygon() {
+	std::vector<cv::Point2f>> Track::search_polygon() {
 		// Return Structure for polygon
 		std::vector<cv::Point2f> search_polygon;
+		search_polygon.clear(); // Clear just in case
 
 		// If the drone is travelling fast, use cone to track drone
 		if (vel_mag > vel_threshold) { 
-			last_x = centroid_.x; //Last known location of x
-			last_y = centroid_.y; //Last known locations of y
+			float last_x = centroid_.x; //Last known location of x
+			float last_y = centroid_.y; //Last known locations of y
 			cv::Point2f starting_point(last_x, last_y);
 
 			//Calculate the upper bound, center bound and lower bound locations, using polar local coordinates representation 

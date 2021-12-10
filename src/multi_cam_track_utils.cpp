@@ -66,9 +66,6 @@ namespace mcmt {
 		oid_ = track_id;
 		mismatch_count_ = 0;
 		lastSeen_ = 0;
-		vel_angle_leeway = 0.75; // Set to 0.75 radians, ~ 45 degrees
-		vel_threshold = 16; // Set the threshold for velocity to be half the bounding box size
-		circle_step = 16; // Resolution for circle polygon in low velocity search
 	}
 
 	/**
