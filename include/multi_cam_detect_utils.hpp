@@ -85,7 +85,7 @@ namespace mcmt {
 			// declare class functions
 			void predictKF();
 			void updateKF(cv::Point2f & measurement);
-			void search_polygon();
+			std::vector<cv::Point2f> search_polygon();
 			void predictDCF(cv::Mat & frame);
 			void checkDCF(cv::Point2f & measurement, cv::Mat & frame);
 

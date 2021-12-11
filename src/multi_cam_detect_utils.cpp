@@ -158,8 +158,8 @@ namespace mcmt {
 		previous.x = centroid_.x;
 		previous.y = centroid_.y;
 
-		vel_mag = sqrt(pow(mesurement.x - previous.x, 2) + pow(measurement.y - previous.y, 2));
-		vel_angle = atan2(measurement.y - previous.y, mesurement.x - previous.x);
+		vel_mag = sqrt(pow(measurement.x - previous.x, 2) + pow(measurement.y - previous.y, 2));
+		vel_angle = atan2(measurement.y - previous.y, measurement.x - previous.x);
 
 		// update
 		cv::Mat prediction = kf_->correct(measure);
@@ -172,10 +172,11 @@ namespace mcmt {
 	 * returns the points required to form the current search polygon
 	 * Output: search polygon, vector of elements tuple<int, int> will convert to point2f during searching phase
 	 */
-	std::vector<cv::Point2f>> Track::search_polygon() {
+	std::vector<cv::Point2f> Track::search_polygon() {
 		// Return Structure for polygon
-		std::vector<cv::Point2f> search_polygon;
-		search_polygon.clear(); // Clear just in case
+		std::vector<cv::Point2f> search_area;
+		float circle_pointer = 0;
+		search_area.clear(); // Clear just in case
 
 		// If the drone is travelling fast, use cone to track drone
 		if (vel_mag > vel_threshold) { 
@@ -187,25 +188,26 @@ namespace mcmt {
 			//converted to Cartesian local coordinates
 			cv::Point2f upper_bound(last_x + frame_step * vel_mag * cos(vel_angle + vel_angle_leeway), last_y + frame_step * vel_mag * sin(vel_angle + vel_angle_leeway));
 			cv::Point2f lower_bound(last_x + frame_step * vel_mag * cos(vel_angle - vel_angle_leeway), last_y + frame_step *vel_mag * sin(vel_angle - vel_angle_leeway));
-			cv::Point2f center_bound(last_x + frame_step *vel_mag f* cos(vel_angle), last_y + frame_step * vel_mag * sin(vel_angle));
+			cv::Point2f center_bound(last_x + frame_step *vel_mag * cos(vel_angle), last_y + frame_step * vel_mag * sin(vel_angle));
 
-			search_polygon.push_back(starting_point);
-			search_polygon.push_back(upper_bound);
-			search_polygon.push_back(center_bound);
-			search_polygon.push_back(lower_bound);
+			search_area.push_back(starting_point);
+			search_area.push_back(upper_bound);
+			search_area.push_back(center_bound);
+			search_area.push_back(lower_bound);
 
-			return search_polygon
+			return search_area;
 		}
 
 		else { // else use Circular polygon  to find the drone 
-			for (i = 0, i < 2*M_PI, i += M_PI/8) {
-				global_x = centroid_.x + circle_step*cos(i);
-				global_y = centroid_.y + circle_step*sin(i);
+			while( circle_pointer < M_PI*2) {
+				float global_x = centroid_.x + circle_step*cos(circle_pointer);
+				float global_y = centroid_.y + circle_step*sin(circle_pointer);
 				cv::Point2f circle_point(global_x, global_y);
-				search_polygon.push_back(circle _point);
+				search_area.push_back(circle_point);
+				circle_pointer += M_PI / 8;
 			}
 
-			return search_polygon
+			return search_area;
 		}
 	}
 
