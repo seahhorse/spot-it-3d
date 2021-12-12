@@ -70,8 +70,13 @@ namespace mcmt {
 	void initialize_recording(cv::Mat sample_frame) {
 		
 		// intialize video writer
-		recording_ = cv::VideoWriter(VIDEO_OUTPUT_ANNOTATED_, cv::VideoWriter::fourcc('M','P','4','V'), VIDEO_FPS_, 
-			cv::Size(NUM_OF_CAMERAS_ * sample_frame.cols, sample_frame.rows + (360 * NUM_OF_CAMERAS_ * sample_frame.cols / 3840)));
+		if (GRAPHIC_UI_) {
+			recording_ = cv::VideoWriter("data/output/" + SESSION_NAME_ + "_ann.avi", cv::VideoWriter::fourcc('M','P','4','V'), VIDEO_FPS_, 
+				cv::Size(NUM_OF_CAMERAS_ * sample_frame.cols, sample_frame.rows + (360 * NUM_OF_CAMERAS_ * sample_frame.cols / 3840)));
+		} else {
+			recording_ = cv::VideoWriter("data/output/" + SESSION_NAME_ + "_ann.avi", cv::VideoWriter::fourcc('M','P','4','V'), VIDEO_FPS_, 
+				cv::Size(NUM_OF_CAMERAS_ * sample_frame.cols, sample_frame.rows));
+		}
 	}
 
 	void annotate_frames(std::array<std::shared_ptr<cv::Mat>, NUM_OF_CAMERAS_> frames_, std::array<std::shared_ptr<CameraTracks>, NUM_OF_CAMERAS_> cumulative_tracks_) {
@@ -80,14 +85,16 @@ namespace mcmt {
 		// lopp through each camera frame
 		for (int i = 0; i < NUM_OF_CAMERAS_; i++) {
 
-			cv::putText(*frames_[i].get(), "CAM " + std::to_string(i), cv::Point(20, 30),
-				cv::FONT_HERSHEY_SIMPLEX, FONT_SCALE_ * 1, cv::Scalar(255, 0, 0), 2, cv::LINE_AA);
+			if (SHOW_CAM_NUM_) {
+				cv::putText(*frames_[i].get(), "CAM " + std::to_string(i), cv::Point(20, 30),
+					cv::FONT_HERSHEY_SIMPLEX, FONT_SCALE_ * 1, cv::Scalar(255, 0, 0), 2, cv::LINE_AA);
+			}
 
 			std::map<int, std::shared_ptr<TrackPlot>> display_tracks;
 
 			if (NUM_OF_CAMERAS_ == 1) {
 				display_tracks = cumulative_tracks_[i]->track_new_plots_;
-			} else if (DISPLAY_MATCHED_ONLY_) {
+			} else if (!SHOW_UNMATCHED_TARGETS_) {
 				display_tracks = cumulative_tracks_[i]->track_plots_;
 			} else {
 				display_tracks.insert(cumulative_tracks_[i]->track_new_plots_.begin(), cumulative_tracks_[i]->track_new_plots_.end());
@@ -136,12 +143,12 @@ namespace mcmt {
 
 					// put ID, status and XYZ coordinates on opencv GUI
 					if (annotate_flag) {
-						if (DISPLAY_ID_) {
+						if (SHOW_ID_) {
 							cv::putText(*frames_[i].get(), "ID: " + std::to_string(id), 
 								cv::Point(rect_top_left.x + 20, rect_top_left.y - 5), cv::FONT_HERSHEY_SIMPLEX,
 								FONT_SCALE_, color, 1, cv::LINE_AA);
 						}
-						if (!xyz.empty() && DISPLAY_3D_) {
+						if (!xyz.empty() && SHOW_3D_COORDINATES_) {
 							cv::putText(*frames_[i].get(), "X: " + std::to_string(xyz[0]).substr(0,4),
 								cv::Point(rect_bottom_right.x + 10, rect_top_left.y + 10), cv::FONT_HERSHEY_SIMPLEX,
 								FONT_SCALE_, color, 1, cv::LINE_AA);
@@ -160,7 +167,7 @@ namespace mcmt {
 								cv::Point(rect_bottom_right.x + 10, rect_top_left.y + 55), cv::FONT_HERSHEY_SIMPLEX,
 								FONT_SCALE_, color, 1, cv::LINE_AA);
 						}
-						if (DISPLAY_STATUS_) {
+						if (SHOW_DISPLAY_STATUS_) {
 							cv::circle(*frames_[i].get(), cv::Point(rect_top_left.x + 5, rect_top_left.y - 10), 5, status_color, -1);
 						}
 					}
@@ -208,15 +215,30 @@ namespace mcmt {
 		std::string s(21, '\0');
 		std::strftime(&s[0], s.size(), "%Y/%m/%d %H:%M:%S", std::localtime(&now));
 		// Diagnostics
-		cv::rectangle(ui, cv::Point(1930, 20), cv::Point(3000, 340), cv::Scalar(200,200,200), -1);
-		cv::putText(ui, "Resolution: " + std::to_string(frame_size.width) + " x " + std::to_string(frame_size.height), cv::Point(1950, 80), cv::FONT_HERSHEY_SIMPLEX,
-					FONT_SCALE_ * 2.5, cv::Scalar(0,0,0), 3, cv::LINE_AA);
-		cv::putText(ui, "Actual FPS: " + std::to_string(actual_fps).substr(0,4), cv::Point(1950, 140), cv::FONT_HERSHEY_SIMPLEX,
-					FONT_SCALE_ * 2.5, cv::Scalar(0,0,0), 3, cv::LINE_AA);
-		cv::putText(ui, "Frame Count: " + std::to_string(frame_count_), cv::Point(1950, 200), cv::FONT_HERSHEY_SIMPLEX,
-					FONT_SCALE_ * 2.5, cv::Scalar(0,0,0), 3, cv::LINE_AA);
-		cv::putText(ui, "Current Time: " + s.substr(0,19), cv::Point(1950, 260), cv::FONT_HERSHEY_SIMPLEX,
-					FONT_SCALE_ * 2.5, cv::Scalar(0,0,0), 3, cv::LINE_AA);
+		cv::rectangle(ui, cv::Point(1930, 20), cv::Point(2700, 340), cv::Scalar(200,200,200), -1);
+		cv::putText(ui, "Session: " + SESSION_NAME_, cv::Point(1950, 70), cv::FONT_HERSHEY_SIMPLEX,
+					FONT_SCALE_ * 2, cv::Scalar(0,0,0), 2, cv::LINE_AA);
+		cv::putText(ui, "Resolution: " + std::to_string(frame_size.width) + " x " + std::to_string(frame_size.height), cv::Point(1950, 120), cv::FONT_HERSHEY_SIMPLEX,
+					FONT_SCALE_ * 2, cv::Scalar(0,0,0), 2, cv::LINE_AA);
+		cv::putText(ui, "Actual FPS: " + std::to_string(actual_fps).substr(0,4), cv::Point(1950, 170), cv::FONT_HERSHEY_SIMPLEX,
+					FONT_SCALE_ * 2, cv::Scalar(0,0,0), 2, cv::LINE_AA);
+		cv::putText(ui, "Frame Count: " + std::to_string(frame_count_), cv::Point(1950, 220), cv::FONT_HERSHEY_SIMPLEX,
+					FONT_SCALE_ * 2, cv::Scalar(0,0,0), 2, cv::LINE_AA);
+		cv::putText(ui, "Current Time: " + s.substr(0,19), cv::Point(1950, 270), cv::FONT_HERSHEY_SIMPLEX,
+					FONT_SCALE_ * 2, cv::Scalar(0,0,0), 2, cv::LINE_AA);
+		
+		// Status
+		cv::rectangle(ui, cv::Point(2720, 20), cv::Point(2940, 340), cv::Scalar(200,200,200), -1);
+		cv::putText(ui, "DETECT", cv::Point(2750, 70), cv::FONT_HERSHEY_SIMPLEX,
+					FONT_SCALE_ * 2, RUN_DETECT_TRACK_ ? cv::Scalar(0,100,0) : cv::Scalar(0,0,100), 3, cv::LINE_AA);
+		cv::putText(ui, "UNMATCH", cv::Point(2750, 120), cv::FONT_HERSHEY_SIMPLEX,
+					FONT_SCALE_ * 2, SHOW_UNMATCHED_TARGETS_ && RUN_DETECT_TRACK_ ? cv::Scalar(0,100,0) : cv::Scalar(0,0,100), 3, cv::LINE_AA);
+		cv::putText(ui, "BKG-SUB", cv::Point(2750, 170), cv::FONT_HERSHEY_SIMPLEX,
+					FONT_SCALE_ * 2, USE_BG_SUBTRACTOR_ && RUN_DETECT_TRACK_ ? cv::Scalar(0,100,0) : cv::Scalar(0,0,100), 3, cv::LINE_AA);
+		cv::putText(ui, "HIST-EQ", cv::Point(2750, 220), cv::FONT_HERSHEY_SIMPLEX,
+					FONT_SCALE_ * 2, USE_HIST_EQUALISE_ && RUN_DETECT_TRACK_ ? cv::Scalar(0,100,0) : cv::Scalar(0,0,100), 3, cv::LINE_AA);
+		cv::putText(ui, "3D-REID", cv::Point(2750, 270), cv::FONT_HERSHEY_SIMPLEX,
+					FONT_SCALE_ * 2, USE_3D_REID_ && RUN_DETECT_TRACK_ ? cv::Scalar(0,100,0) : cv::Scalar(0,0,100), 3, cv::LINE_AA);
 
 		cv::resize(ui, ui_, cv::Size(combined_frame.cols, ui_height * combined_frame.cols / ui_width), 0, 0, cv::INTER_CUBIC);
 
@@ -225,11 +247,11 @@ namespace mcmt {
 	void initialize_logs() {
 
 		// initialize logs
-		frame_time_file.open(FRAME_TIME_);
+		frame_time_file.open("data/log/" + SESSION_NAME_ + "_frame-time.csv");
 		frame_time_file << "detect_time, track_time, total_time" << "\n"; 
 		
-		targets_2d_file.open(TARGETS_2D_OUTPUT_);
-		targets_3d_file.open(TARGETS_3D_OUTPUT_);
+		targets_2d_file.open("data/log/" + SESSION_NAME_ + "_targets-2d-out.json");
+		targets_3d_file.open("data/log/" + SESSION_NAME_ + "_targets-3d-out.json");
 	}
 
 	/**
