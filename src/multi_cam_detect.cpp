@@ -183,7 +183,7 @@ namespace mcmt {
 
 		// Recombine the sky and treeline
 		cv::add(sky, non_sky, camera->frame_ec_);
-		cv::imshow("After sun compensation", camera->frame_ec_);
+		// cv::imshow("After sun compensation", camera->frame_ec_);
 	}
 
 	/** 
@@ -235,6 +235,7 @@ namespace mcmt {
 		
 		// Loop through both original and env compensated frames
 		for (int i = 0; i < camera->masked_.size(); i++) {
+			string detection_masked = "Detection from " + to_string(i);
 		
 			// apply morphological transformation
 			cv::dilate(camera->masked_[i], camera->masked_[i], element_, cv::Point(), DILATION_ITER_);
@@ -245,6 +246,7 @@ namespace mcmt {
 			// apply blob detection
 			std::vector<cv::KeyPoint> keypoints;
 			camera->detector_->detect(camera->masked_[i], keypoints);
+			cv::imshow(detection_masked, camera->masked_[i]);
 
 			// clear vectors to store sizes and centroids of current frame's detected targets
 			for (auto & it : keypoints) {
