@@ -38,24 +38,24 @@ namespace mcmt {
 
 	// declare filepaths
 	const bool IS_REALTIME_ = false;
-    const int NUM_OF_CAMERAS_ = 2;
+    const int NUM_OF_CAMERAS_ = 1;
 
     // realtime parameters
-    const std::vector<std::string> VIDEO_INPUT_ = {     "data/input/munich_5a_raw.avi",
+    const std::vector<std::string> VIDEO_INPUT_ = {     "Downloads/1_raw.avi",
                                                         "data/input/munich_5b_raw.avi"
                                                     };
-    const std::vector<std::string> VIDEO_OUTPUT_ = {    "data/output/3cam_1_out.avi",
+    const std::vector<std::string> VIDEO_OUTPUT_ = {    "Downloads/1_raw_out.avi",
                                                         "data/output/3cam_2_out.avi"
                                                     };
-	const std::string VIDEO_OUTPUT_ANNOTATED_ = "data/output/ABC2.avi";
-	const std::string TARGETS_2D_OUTPUT_ = "data/output/targets_2d_out.json";
-    const std::string TARGETS_3D_OUTPUT_ = "data/output/targets_3d_out.json";
-    const std::string FRAME_TIME_ = "data/output/frame_time.csv";
+	const std::string VIDEO_OUTPUT_ANNOTATED_ = "Downloads/1_raw_annotated.avi";
+	const std::string TARGETS_2D_OUTPUT_ = "Downloads/1_raw_2d.json";
+    const std::string TARGETS_3D_OUTPUT_ = "Downloads/1_raw_3d.json";
+    const std::string FRAME_TIME_ = "Downloads/1_raw_frame.csv";
     
     // declare display settings
-    const bool GRAPHIC_UI_ = true;
+    const bool GRAPHIC_UI_ = false;
     const bool SHOW_UNMATCHED_TARGETS_ = true;
-    const bool SHOW_CAM_NUM_ = true;
+    const bool SHOW_CAM_NUM_ = false;
     const bool SHOW_ID_ = true;
     const bool SHOW_3D_COORDINATES_ = true;
 
@@ -80,7 +80,7 @@ namespace mcmt {
     const float DELTA_FRAME_PROPORTION_ = 0.00;
 
 	// declare background subtractor parameters
-    const bool USE_BG_SUBTRACTOR_ = true;
+    const bool USE_BG_SUBTRACTOR_ = false;
     const int FGBG_HISTORY_ = 30;
     const float BACKGROUND_RATIO_ = 0.05;
     const int NMIXTURES_ = 5;
