@@ -198,7 +198,7 @@ namespace mcmt {
 		cv::convertScaleAbs((masked_id ? camera->frame_ec_ : camera->frame_), masked, 1, (256 - average_brightness(camera) + BRIGHTNESS_GAIN_));
 		
 		// subtract background
-		camera->fgbg_[masked_id]->apply(masked, masked, FGBG_LEARNING_RATE_);
+		camera->fgbg_[masked_id]->apply(masked, masked);
 		masked.convertTo(camera->masked_[masked_id], CV_8UC1);
 
 		if (USE_BG_SUBTRACTOR_){
@@ -696,13 +696,16 @@ namespace mcmt {
 				std::shared_ptr<Track> track = camera->tracks_[track_index];
 
 				// Do the search for within stipulated number of frames,else dont do search, let track die
-				std::cout << "Beginning Search";
 				if (track->search_frame_counter < track->frame_step) {
 				// add to the search frame counter to count the current check as step 
 					track->search_frame_counter += 1;
 
 					// Try to search using the last known velocity location, reassign any found blob as the new detection
 					std::vector<cv::Point2f> search_area = track->search_polygon(); // Use appropiate search zone
+					for (auto & poly_point : search_area) {
+						std::cout << to_string(poly_point.x) + " " + to_string(poly_point.y) + "\n";
+					}
+					std::cout << "Polygon for Track" + to_string(track_index);
 					std::vector<double> eligible_points_distance; // Placeholder for eligible detections' distance from the center of the search zone
 					std::vector<int> eligible_unassigned_detections;
 
@@ -732,7 +735,7 @@ namespace mcmt {
 
 					// Reassign unassigned detection to the track if there is a suitable candidate 
 					if (min_distance > 0) {
-						std::cout << "Reassgined track";
+						std::cout << "Reassigned track for Track " + to_string(track_index);
 						std::vector<int> reinitialized_assignment{-1, -1}; // Data structure for assignment
 						reinitialized_assignment[0] = track_index;  // track index assigned
 						reinitialized_assignment[1] = best_detection; // track detection assigned
