@@ -74,14 +74,14 @@ namespace mcmt {
     const float SEC_FILTER_DELAY_ = 1.0;
 
     // declare environment compensation parameters
-    const bool USE_HIST_EQUALISE_ = false;
+    const bool USE_HIST_EQUALISE_ = true;
 
     // declare image subtraction parameters
     const float DELTA_FRAME_PROPORTION_ = 0.00;
 
 	// declare background subtractor parameters
-    const bool USE_BG_SUBTRACTOR_ = false;
-    const int FGBG_HISTORY_ = 30;
+    const bool USE_BG_SUBTRACTOR_ = true;
+    const int FGBG_HISTORY_ = 5;
     const float BACKGROUND_RATIO_ = 0.05;
     const int NMIXTURES_ = 5;
     const int BRIGHTNESS_GAIN_ = 15;
