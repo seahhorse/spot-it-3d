@@ -60,7 +60,7 @@ namespace mcmt {
 
 		// Fixed Polygon prediction parameters
 		vel_angle_leeway = 0.75; // The angle of the search cone from the tip
-		frame_step = 4; // Number of frame steps to check the search zone
+		frame_step = 30; // Number of frame steps to check the search zone
 		circle_step = 16; // Radius of search circle
 		search_frame_counter = 0; // Initialise counter
 		vel_threshold = 16; // Initialise velocity threshold

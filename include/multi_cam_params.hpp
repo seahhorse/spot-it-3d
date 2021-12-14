@@ -41,16 +41,16 @@ namespace mcmt {
     const int NUM_OF_CAMERAS_ = 1;
 
     // realtime parameters
-    const std::vector<std::string> VIDEO_INPUT_ = {     "Downloads/1_raw.avi",
+    const std::vector<std::string> VIDEO_INPUT_ = {     "Downloads/07-09_6a_raw.avi",
                                                         "data/input/munich_5b_raw.avi"
                                                     };
-    const std::vector<std::string> VIDEO_OUTPUT_ = {    "Downloads/1_raw_out.avi",
+    const std::vector<std::string> VIDEO_OUTPUT_ = {    "Downloads/07-09_6a_raw_out.avi",
                                                         "data/output/3cam_2_out.avi"
                                                     };
-	const std::string VIDEO_OUTPUT_ANNOTATED_ = "Downloads/1_raw_annotated.avi";
-	const std::string TARGETS_2D_OUTPUT_ = "Downloads/1_raw_2d.json";
-    const std::string TARGETS_3D_OUTPUT_ = "Downloads/1_raw_3d.json";
-    const std::string FRAME_TIME_ = "Downloads/1_raw_frame.csv";
+	const std::string VIDEO_OUTPUT_ANNOTATED_ = "Downloads/07-09_6a_raw_anno.avi";
+	const std::string TARGETS_2D_OUTPUT_ = "Downloads/07-09_6a_raw_2d.json";
+    const std::string TARGETS_3D_OUTPUT_ = "Downloads/07-09_6a_raw_3d.json";
+    const std::string FRAME_TIME_ = "Downloads/07-09_6a_raw_frame.csv";
     
     // declare display settings
     const bool GRAPHIC_UI_ = false;
@@ -74,14 +74,14 @@ namespace mcmt {
     const float SEC_FILTER_DELAY_ = 1.0;
 
     // declare environment compensation parameters
-    const bool USE_HIST_EQUALISE_ = true;
+    const bool USE_HIST_EQUALISE_ = false;
 
     // declare image subtraction parameters
     const float DELTA_FRAME_PROPORTION_ = 0.00;
 
 	// declare background subtractor parameters
     const bool USE_BG_SUBTRACTOR_ = true;
-    const int FGBG_HISTORY_ = 5;
+    const int FGBG_HISTORY_ = 30;
     const float BACKGROUND_RATIO_ = 0.05;
     const int NMIXTURES_ = 5;
     const int BRIGHTNESS_GAIN_ = 15;

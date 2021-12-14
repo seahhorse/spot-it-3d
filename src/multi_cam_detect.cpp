@@ -696,7 +696,8 @@ namespace mcmt {
 				std::shared_ptr<Track> track = camera->tracks_[track_index];
 
 				// Do the search for within stipulated number of frames,else dont do search, let track die
-				if (track->search_frame_counter > track->frame_step) {
+				std::cout << "Beginning Search";
+				if (track->search_frame_counter < track->frame_step) {
 				// add to the search frame counter to count the current check as step 
 					track->search_frame_counter += 1;
 
@@ -731,6 +732,7 @@ namespace mcmt {
 
 					// Reassign unassigned detection to the track if there is a suitable candidate 
 					if (min_distance > 0) {
+						std::cout << "Reassgined track";
 						std::vector<int> reinitialized_assignment{-1, -1}; // Data structure for assignment
 						reinitialized_assignment[0] = track_index;  // track index assigned
 						reinitialized_assignment[1] = best_detection; // track detection assigned
