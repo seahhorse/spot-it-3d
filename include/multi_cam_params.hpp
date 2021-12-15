@@ -37,18 +37,18 @@
 namespace mcmt {
 
 	// declare filepaths
-	const bool IS_REALTIME_ = true;
-    const int NUM_OF_CAMERAS_ = 2;
+	const bool IS_REALTIME_ = false;
+    const int NUM_OF_CAMERAS_ = 1;
 
     // declare session and camera parameters
     // follow convention: "DD-MM_<location>_<session no>"
     // input files should be named in the format "<SESSION_NAME>_<cam no>.<file ext>"
-    const std::string SESSION_NAME_ = "13-12_WCP_1"; 
+    const std::string SESSION_NAME_ = "4_2D1C720pB"; 
     const std::vector<std::string> CAMERA_INPUT_ = {"0", "1"};
     const std::string INPUT_FILE_EXTENSION_ = "avi";
 
     // declare master switch
-    const bool RUN_DETECT_TRACK_ = false;
+    const bool RUN_DETECT_TRACK_ = true;
     
     // declare display settings
     const bool GRAPHIC_UI_ = true;
@@ -59,8 +59,8 @@ namespace mcmt {
     const bool SHOW_DISPLAY_STATUS_ = true;
 
 	// declare video parameters
-	const int FRAME_WIDTH_ = 1920;
-    const int FRAME_HEIGHT_ = 1080;
+	const int FRAME_WIDTH_ = 1280;
+    const int FRAME_HEIGHT_ = 720;
     const int VIDEO_FPS_ = 30;
     const int MAX_TOLERATED_CONSECUTIVE_DROPPED_FRAMES_ = 5;
 
