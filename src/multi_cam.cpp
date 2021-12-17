@@ -99,11 +99,8 @@ int main(int argc, char * argv[]) {
 					it = camera->frame_.clone();
 				}
 
-				// clear detection variable vectors
-				// if no detections are present, keep the existing vectors
-				// this is temporary fix for timesync issue between websocket and srt that causes data flickering
-				// will be removed when timesync root cause is fixed
-				if (!edgecam_data.detections.empty()){
+				// clear detection variable vectors for next batch of detections if no delay is required
+				if (!edgecam_data.delay_required){
 					camera->sizes_.clear();
 					camera->centroids_.clear();
 				}

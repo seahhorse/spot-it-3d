@@ -4,6 +4,7 @@
 #ifndef WSRTINTERFACE_HPP_
 #define WSRTINTERFACE_HPP_
 
+#include <queue>
 #include <string>
 #include <vector>
 
@@ -29,6 +30,13 @@ struct wsrt_output {
     std::string imagePixelFormat;
     uint64_t imageTimestamp;
     cv::Mat image;
+    bool delay_required;
+};
+
+// Structure to temporarily store detections to be placed in a waiting queue
+struct saved_detection {
+    std::vector<wsrt_detections> detections;
+    uint64_t timestamp;
 };
 
 /**
@@ -36,6 +44,8 @@ struct wsrt_output {
  * An instance of this class is spawned for each edge cam
  */
 class WSrt {
+    private:
+        std::queue<saved_detection> detection_queue_; // detection waiting queue, used for time syncing
     public:
         WSrt(
             int cam_index,

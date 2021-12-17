@@ -28,6 +28,7 @@
 
 #include <thread>
 #include <chrono>
+#include <queue>
 
 #include <opencv2/core.hpp>
 #include <opencv2/highgui.hpp>
@@ -95,6 +96,19 @@ wsrt_output WSrt::extract_data_callback(vilota::SrtReceiverInterface::MessageQue
 
     if (queueWebsocket.try_pop(msgWebsocket_)) {
         spdlog::info("got websocket message!");
+        // Save the detections and their timestamps in the waiting queue
+        auto &json = msgWebsocket_->json["objects"];
+        saved_detection saved;
+        saved.timestamp = msgWebsocket_->json["timestamp-buffer-pts"];
+        for (auto &object : json) {
+            wsrt_detections detections;
+            detections.x = object["x"];
+            detections.y = object["y"];
+            detections.width = object["w"];
+            detections.height = object["h"];
+            saved.detections.push_back(detections);
+        }
+        detection_queue_.push(saved);
         while (queueWebsocket.try_pop(msgWebsocket_))
         ;
     }
@@ -114,19 +128,37 @@ wsrt_output WSrt::extract_data_callback(vilota::SrtReceiverInterface::MessageQue
         output.imageTimestamp = msgSrt_->imageTimestamp;
         output.imagePixelFormat = msgSrt_->imagePixelFormat;
 
-        // TODO: no time sync features implemented yet
-        if (msgWebsocket_ && msgWebsocket_->hasJson) {
+        // compare SRT image and websocket detection timestamps to make sure they are time-synced
+        // detection_queue_ stores pending detections from websocket that are not synced with an image
+        while (!detection_queue_.empty()) {
+            auto latest_detection = detection_queue_.front();
+            uint64_t detection_timestamp = latest_detection.timestamp;
 
-            auto &json = msgWebsocket_->json["objects"];
-            spdlog::debug("json: {}", json.dump());
-            spdlog::debug(json.size());
-            for (auto &object : json) {
-                wsrt_detections detections;
-                detections.x = object["x"];
-                detections.y = object["y"];
-                detections.width = object["w"];
-                detections.height = object["h"];
-                output.detections.push_back(detections);
+            // if detection is later than image, release image without detections
+            // let the main loop know that delay is required
+            if (detection_timestamp > msgSrt_->imageTimestamp) {
+                spdlog::warn("Detection is later than image, delaying release of detection");
+                output.delay_required = true;
+                break;
+            }
+            else if (detection_timestamp == msgSrt_->imageTimestamp) {
+                spdlog::info("Detection and Image timestamps in sync");
+                for (auto &object : latest_detection.detections) {
+                    wsrt_detections detections;
+                    detections.x = object.x;
+                    detections.y = object.y;
+                    detections.width = object.width;
+                    detections.height = object.height;
+                    output.detections.push_back(detections);
+                }
+                detection_queue_.pop();
+                output.delay_required = false;
+                break;
+            }
+            else {
+                spdlog::warn("Detection is earlier than timestamp, dropping detection");
+                detection_queue_.pop();
+                output.delay_required = true;
             }
         }
     }
