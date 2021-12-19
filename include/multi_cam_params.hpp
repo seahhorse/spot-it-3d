@@ -41,19 +41,19 @@ namespace mcmt {
     const int NUM_OF_CAMERAS_ = 1;
 
     // realtime parameters
-    const std::vector<std::string> VIDEO_INPUT_ = {     "Downloads/07-09_6a_raw.avi",
-                                                        "data/input/munich_5b_raw.avi"
+    const std::vector<std::string> VIDEO_INPUT_ = {     "Downloads/12-10_WCP_2b.avi",
+                                                        "Downloads/12-10_WCP_2b.avi"
                                                     };
-    const std::vector<std::string> VIDEO_OUTPUT_ = {    "Downloads/07-09_6a_raw_out.avi",
-                                                        "data/output/3cam_2_out.avi"
+    const std::vector<std::string> VIDEO_OUTPUT_ = {    "Downloads/12-10_WCP_2b_out.avi",
+                                                        "Downloads/12-10_WCP_2b.avi"
                                                     };
-	const std::string VIDEO_OUTPUT_ANNOTATED_ = "Downloads/07-09_6a_raw_anno.avi";
-	const std::string TARGETS_2D_OUTPUT_ = "Downloads/07-09_6a_raw_2d.json";
-    const std::string TARGETS_3D_OUTPUT_ = "Downloads/07-09_6a_raw_3d.json";
-    const std::string FRAME_TIME_ = "Downloads/07-09_6a_raw_frame.csv";
+	const std::string VIDEO_OUTPUT_ANNOTATED_ = "Downloads/12-10_WCP_2b_anno.avi";
+	const std::string TARGETS_2D_OUTPUT_ = "Downloads/12-10_WCP_3b_2d.json";
+    const std::string TARGETS_3D_OUTPUT_ = "Downloads/12-10_WCP_3b_3d.json";
+    const std::string FRAME_TIME_ = "Downloads/12-10_WCP_2b_frame.csv";
     
     // declare display settings
-    const bool GRAPHIC_UI_ = false;
+    const bool GRAPHIC_UI_ = true;
     const bool SHOW_UNMATCHED_TARGETS_ = true;
     const bool SHOW_CAM_NUM_ = false;
     const bool SHOW_ID_ = true;
@@ -66,9 +66,9 @@ namespace mcmt {
     const int MAX_TOLERATED_CONSECUTIVE_DROPPED_FRAMES_ = 5;
 
 	// declare filter parameters
-    const float VISIBILITY_RATIO_ = 0.8;
+    const float VISIBILITY_RATIO_ = 0.5;
     const float VISIBILITY_THRESH_ = 1.0;
-    const float CONSECUTIVE_THRESH_ = 1.0;
+    const float CONSECUTIVE_THRESH_ = 5.0;
     const float AGE_THRESH_ = 2.0;
     const int SECONDARY_FILTER_ = 2;
     const float SEC_FILTER_DELAY_ = 1.0;
@@ -82,13 +82,13 @@ namespace mcmt {
 	// declare background subtractor parameters
     const bool USE_BG_SUBTRACTOR_ = true;
     const int FGBG_HISTORY_ = 30;
-    const float BACKGROUND_RATIO_ = 0.05;
+    const float BACKGROUND_RATIO_ = 0.4;
     const int NMIXTURES_ = 5;
     const int BRIGHTNESS_GAIN_ = 15;
-    const float FGBG_LEARNING_RATE_ = 0.2;
+    const float FGBG_LEARNING_RATE_ = 0.5;
     const int DILATION_ITER_ = 2;
-    const float REMOVE_GROUND_ITER_ = 5.75;
-    const float BACKGROUND_CONTOUR_CIRCULARITY_ = 0.5;
+    const float REMOVE_GROUND_ITER_ = 3;
+    const float BACKGROUND_CONTOUR_CIRCULARITY_ = 0.4;
 
     // declare tracking parameters
     const int PRUNE_HIST_ = 30;

@@ -60,8 +60,8 @@ namespace mcmt {
 
 		// Fixed Polygon prediction parameters
 		vel_angle_leeway = 0.75; // The angle of the search cone from the tip
-		frame_step = 5; // Number of frame steps to check the search zone
-		circle_step = 16; // Radius of search circle
+		frame_step = 1; // Number of frame steps to check the search zone
+		circle_step = 32; // Radius of search circle
 		search_frame_counter = 0; // Initialise counter
 		vel_threshold = 16; // Initialise velocity threshold
 
@@ -204,7 +204,7 @@ namespace mcmt {
 				float global_y = centroid_.y + circle_step*sin(circle_pointer);
 				cv::Point2f circle_point(global_x, global_y);
 				search_area.push_back(circle_point);
-				circle_pointer += M_PI / 8;
+				circle_pointer += M_PI / 4;
 			}
 
 			return search_area;
@@ -240,7 +240,7 @@ namespace mcmt {
 						(measurement.x > (box_.x + (2 * box_.width)))) &&
 					((measurement.y < (box_.y - (1 * box_.height))) ||
 						(measurement.y > (box_.y - (2 * box_.height))))) {
-				outOfSync_ = true;
+				outOfSync_ = false;
 			} else {
 				outOfSync_ = false;
 			}
@@ -303,17 +303,22 @@ namespace mcmt {
 		cv::SimpleBlobDetector::Params blob_params;
 		blob_params.filterByConvexity = false;
 		blob_params.filterByCircularity = false;
+		blob_params.filterByArea = true; // Filter by area size, background changes result in only small movements
+		blob_params.minArea = 15; // Minimum area for blob to count as detection
 		detector_ = cv::SimpleBlobDetector::create(blob_params);
 
 		// initialize background subtractor
-		int hist = int(fgbg_history * fps_);
-		float varThresh = float(4 / scale_factor_); // Need to change this based on background colour
+		int hist = 50;
+		float varThresh = 50; // Need to change this based on background colour
 		bool detectShad = false;
 		for (int i = 0; i < fgbg_.size(); i++) {
 			fgbg_[i] = cv::createBackgroundSubtractorMOG2(hist, varThresh, detectShad);
 			fgbg_[i]->setBackgroundRatio(background_ratio);
 			fgbg_[i]->setNMixtures(nmixtures);
 		}
+
+		// Simpler background subtractor, uses full background instead of background split 
+		simple_MOG2 = cv::createBackgroundSubtractorMOG2(hist, varThresh, detectShad);
 	}
 
 }

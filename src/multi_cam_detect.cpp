@@ -89,10 +89,68 @@ namespace mcmt {
 		}
 		
 		// initialize kernel used for morphological transformations
-		element_ = cv::getStructuringElement(0, cv::Size(5, 5));
+		element_ = cv::getStructuringElement(0, cv::Size(3, 3));
 
 		return sample_frames;
 	}
+
+	/**
+	 * Applies only MOG2 to the tracking sequence, removing sky compensation, relying only on motion detection matching
+	 * 
+	 */
+	void simpler_background_subtraction(std::shared_ptr<Camera> & camera, int masked_id) {
+		cv::Mat cur_frame = camera->frame_;
+		camera->simple_MOG2->apply(cur_frame, camera->foreground_mask); // Apply the MOG2 algorithm
+
+		camera->foreground_mask.convertTo(camera->masked_[masked_id], CV_8UC1);
+		
+	}
+
+	/**
+	 * Find the contours in current scene, detection based on size of contours
+	 * 
+	 *  
+	 */
+	void contour_detection(std::shared_ptr<Camera>& camera) {
+		for (int i = 0; i < camera->masked_.size(); i++) {
+
+			// Dilate to increase size of contours, making them more visible
+			cv::dilate(camera->masked_[i], camera->masked_[i], element_, cv::Point(), DILATION_ITER_);
+
+			string cur_bg_id = "Background sub on " + to_string(i);
+
+			// Find the contours in current 
+			cv::findContours(camera->masked_[i], camera->current_frame_contours, cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE);
+
+			cv::imshow(cur_bg_id, camera->masked_[i]);
+
+			for (int j = 0; j < camera->current_frame_contours.size(); j++) {
+				if (cv::contourArea(camera->current_frame_contours[j]) > 20) {
+					cv::minEnclosingCircle(camera->current_frame_contours[j], camera->contour_center, camera->contour_radius);
+					camera->centroids_temp_[i].push_back(camera->contour_center);
+					camera->sizes_temp_[i].push_back(cv::contourArea(camera->current_frame_contours[j]));
+				}
+			}
+		}
+
+		remove_overlapped_detections(camera);
+
+		// add final sizes and centroids after filtering out overlaps
+		for (int i = 0; i < camera->centroids_temp_.size(); i++) {
+			for (auto & it : camera->centroids_temp_[i]) {
+				if (it.x >= 0 && it.y >= 0) {
+					camera->centroids_.push_back(it);
+				}
+			}
+			for (auto & it : camera->sizes_temp_[i]) {
+				if (it >= 0) {
+					camera->sizes_.push_back(it);
+				}
+			}
+		}
+
+	}
+	
 
 	/**
 	 * Takes the difference between frames at t and t-1 to extract out moving objects.
@@ -183,7 +241,7 @@ namespace mcmt {
 
 		// Recombine the sky and treeline
 		cv::add(sky, non_sky, camera->frame_ec_);
-		// cv::imshow("After sun compensation", camera->frame_ec_);
+		cv::imshow("After sun compensation", camera->frame_ec_);
 	}
 
 	/** 
@@ -242,7 +300,7 @@ namespace mcmt {
 
 			// invert frame such that black pixels are foreground
 			cv::bitwise_not(camera->masked_[i], camera->masked_[i]);
-
+			
 			// apply blob detection
 			std::vector<cv::KeyPoint> keypoints;
 			camera->detector_->detect(camera->masked_[i], keypoints);
@@ -250,6 +308,7 @@ namespace mcmt {
 
 			// clear vectors to store sizes and centroids of current frame's detected targets
 			for (auto & it : keypoints) {
+				std::cout << "Detection at Point (" + to_string(it.pt.x) + "," + to_string(it.pt.y) + ")\n";
 				camera->centroids_temp_[i].push_back(it.pt);
 				camera->sizes_temp_[i].push_back(it.size);
 			}
@@ -705,7 +764,7 @@ namespace mcmt {
 					for (auto & poly_point : search_area) {
 						std::cout << to_string(poly_point.x) + " " + to_string(poly_point.y) + "\n";
 					}
-					std::cout << "Polygon for Track" + to_string(track_index);
+					std::cout << "Polygon for Track" + to_string(track_index) + "\n";
 					std::vector<double> eligible_points_distance; // Placeholder for eligible detections' distance from the center of the search zone
 					std::vector<int> eligible_unassigned_detections;
 
@@ -735,14 +794,14 @@ namespace mcmt {
 
 					// Reassign unassigned detection to the track if there is a suitable candidate 
 					if (min_distance > 0) {
-						std::cout << "Reassigned track for Track " + to_string(track_index);
+						std::cout << "Reassigned track for Track " + to_string(track_index) + "\n";
 						std::vector<int> reinitialized_assignment{-1, -1}; // Data structure for assignment
 						reinitialized_assignment[0] = track_index;  // track index assigned
 						reinitialized_assignment[1] = best_detection; // track detection assigned
 						camera->assignments_.push_back(reinitialized_assignment); // set as new assignment
 						track->search_frame_counter = 0; // Reset frame counter to see for future assignments
 
-						// Dont need to remove from unassigned tracks as these variables are removed at every frame check
+						// Dont need to remove unassigned assignments, overlap will take care of that
 					}
 					else {
 						track->search_frame_counter++;

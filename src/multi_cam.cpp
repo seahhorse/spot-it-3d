@@ -105,17 +105,21 @@ int main(int argc, char * argv[]) {
 			}
 
 			// apply frame by frame subtraction for feature enhancement
-			frame_to_frame_subtraction(camera);
+			// frame_to_frame_subtraction(camera);
 
 			// correct for environmental effects
-			apply_env_compensation(camera);
+			// apply_env_compensation(camera);
 
 			// apply background subtractor
-			remove_ground(camera, 0);
-			remove_ground(camera, 1);
+			// remove_ground(camera, 0);
+			// remove_ground(camera, 1);
+
+			simpler_background_subtraction(camera, 0);
+			simpler_background_subtraction(camera, 1);
 			
 			// get detections
-			detect_objects(camera);
+			// detect_objects(camera);
+			contour_detection(camera);
 			
 			// apply state estimation filters
 			predict_new_locations_of_tracks(camera);

@@ -77,6 +77,9 @@ namespace mcmt {
 	std::vector<std::shared_ptr<Track>> filter_tracks(std::shared_ptr<Camera> & camera);
 	void close_cameras();
 
+	void simpler_background_subtraction(std::shared_ptr<Camera>& camera, int masked_id);
+	void contour_detection(std::shared_ptr<Camera>& camera);
+
 	// declare utility functions
 	float euclideanDist(cv::Point2f & p, cv::Point2f & q);
 	std::vector<int> apply_hungarian_algo(std::vector<std::vector<double>> & cost_matrix);
