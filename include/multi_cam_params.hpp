@@ -41,16 +41,16 @@ namespace mcmt {
     const int NUM_OF_CAMERAS_ = 1;
 
     // realtime parameters
-    const std::vector<std::string> VIDEO_INPUT_ = {     "Downloads/12-10_WCP_2b.avi",
+    const std::vector<std::string> VIDEO_INPUT_ = {     "Downloads/17-12_OHR_50m-1_0.avi",
                                                         "Downloads/12-10_WCP_2b.avi"
                                                     };
-    const std::vector<std::string> VIDEO_OUTPUT_ = {    "Downloads/12-10_WCP_2b_out.avi",
+    const std::vector<std::string> VIDEO_OUTPUT_ = {    "Downloads/17-12_OHR_50m-1_0_out.avi",
                                                         "Downloads/12-10_WCP_2b.avi"
                                                     };
-	const std::string VIDEO_OUTPUT_ANNOTATED_ = "Downloads/12-10_WCP_2b_anno.avi";
+	const std::string VIDEO_OUTPUT_ANNOTATED_ = "Downloads/17-12_OHR_50m-1_0_anno.avi";
 	const std::string TARGETS_2D_OUTPUT_ = "Downloads/12-10_WCP_3b_2d.json";
     const std::string TARGETS_3D_OUTPUT_ = "Downloads/12-10_WCP_3b_3d.json";
-    const std::string FRAME_TIME_ = "Downloads/12-10_WCP_2b_frame.csv";
+    const std::string FRAME_TIME_ = "Downloads/17-12_OHR_50m-1_0_frame.csv";
     
     // declare display settings
     const bool GRAPHIC_UI_ = true;
@@ -69,7 +69,7 @@ namespace mcmt {
     const float VISIBILITY_RATIO_ = 0.5;
     const float VISIBILITY_THRESH_ = 1.0;
     const float CONSECUTIVE_THRESH_ = 5.0;
-    const float AGE_THRESH_ = 2.0;
+    const float AGE_THRESH_ = 1.0;
     const int SECONDARY_FILTER_ = 2;
     const float SEC_FILTER_DELAY_ = 1.0;
 
@@ -86,7 +86,7 @@ namespace mcmt {
     const int NMIXTURES_ = 5;
     const int BRIGHTNESS_GAIN_ = 15;
     const float FGBG_LEARNING_RATE_ = 0.5;
-    const int DILATION_ITER_ = 2;
+    const int DILATION_ITER_ = 1;
     const float REMOVE_GROUND_ITER_ = 3;
     const float BACKGROUND_CONTOUR_CIRCULARITY_ = 0.4;
 

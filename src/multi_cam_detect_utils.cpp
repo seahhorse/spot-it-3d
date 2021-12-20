@@ -302,13 +302,16 @@ namespace mcmt {
 		// initialize blob detector
 		cv::SimpleBlobDetector::Params blob_params;
 		blob_params.filterByConvexity = false;
-		blob_params.filterByCircularity = false;
+		blob_params.filterByCircularity = true;
+		blob_params.filterByInertia = false;
+		blob_params.maxInertiaRatio = 0.3;
 		blob_params.filterByArea = true; // Filter by area size, background changes result in only small movements
 		blob_params.minArea = 15; // Minimum area for blob to count as detection
+		blob_params.minCircularity = 0.5;
 		detector_ = cv::SimpleBlobDetector::create(blob_params);
 
 		// initialize background subtractor
-		int hist = 50;
+		int hist = 100;
 		float varThresh = 50; // Need to change this based on background colour
 		bool detectShad = false;
 		for (int i = 0; i < fgbg_.size(); i++) {

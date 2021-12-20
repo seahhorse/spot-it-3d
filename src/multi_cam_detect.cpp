@@ -55,6 +55,7 @@ namespace mcmt {
 	// declare Camera variables
 	std::vector<std::shared_ptr<Camera>> cameras_;
 	cv::Mat element_;
+	cv::Mat dilate_element;
 	std::vector<std::shared_ptr<cv::VideoWriter>> recordings_;
 
 	/**
@@ -89,7 +90,8 @@ namespace mcmt {
 		}
 		
 		// initialize kernel used for morphological transformations
-		element_ = cv::getStructuringElement(0, cv::Size(3, 3));
+		element_ = cv::getStructuringElement(0, cv::Size(3, 1));
+		dilate_element = cv::getStructuringElement(0, cv::Size(1, 3));
 
 		return sample_frames;
 	}
@@ -115,7 +117,8 @@ namespace mcmt {
 		for (int i = 0; i < camera->masked_.size(); i++) {
 
 			// Dilate to increase size of contours, making them more visible
-			cv::dilate(camera->masked_[i], camera->masked_[i], element_, cv::Point(), DILATION_ITER_);
+			cv::erode(camera->masked_[i], camera->masked_[i], element_, cv::Point(), DILATION_ITER_);
+			cv::dilate(camera->masked_[i], camera->masked_[i], dilate_element, cv::Point(), DILATION_ITER_);
 
 			string cur_bg_id = "Background sub on " + to_string(i);
 
@@ -125,7 +128,7 @@ namespace mcmt {
 			cv::imshow(cur_bg_id, camera->masked_[i]);
 
 			for (int j = 0; j < camera->current_frame_contours.size(); j++) {
-				if (cv::contourArea(camera->current_frame_contours[j]) > 20) {
+				if (cv::contourArea(camera->current_frame_contours[j]) > 10) {
 					cv::minEnclosingCircle(camera->current_frame_contours[j], camera->contour_center, camera->contour_radius);
 					camera->centroids_temp_[i].push_back(camera->contour_center);
 					camera->sizes_temp_[i].push_back(cv::contourArea(camera->current_frame_contours[j]));
