@@ -41,16 +41,16 @@ namespace mcmt {
     const int NUM_OF_CAMERAS_ = 1;
 
     // realtime parameters
-    const std::vector<std::string> VIDEO_INPUT_ = {     "Downloads/17-12_OHR_50m-1_0.avi",
-                                                        "Downloads/12-10_WCP_2b.avi"
+    const std::vector<std::string> VIDEO_INPUT_ = {     "data/output/17-12_OHR_OldWebcam1_1.avi",
+                                                        "6"
                                                     };
-    const std::vector<std::string> VIDEO_OUTPUT_ = {    "Downloads/17-12_OHR_50m-1_0_out.avi",
-                                                        "Downloads/12-10_WCP_2b.avi"
+    const std::vector<std::string> VIDEO_OUTPUT_ = {    "data/output/20-12_WCP_1a.avi",
+                                                        "data/output/20-12_WCP_1b.avi"
                                                     };
-	const std::string VIDEO_OUTPUT_ANNOTATED_ = "Downloads/17-12_OHR_50m-1_0_anno.avi";
-	const std::string TARGETS_2D_OUTPUT_ = "Downloads/12-10_WCP_3b_2d.json";
-    const std::string TARGETS_3D_OUTPUT_ = "Downloads/12-10_WCP_3b_3d.json";
-    const std::string FRAME_TIME_ = "Downloads/17-12_OHR_50m-1_0_frame.csv";
+	const std::string VIDEO_OUTPUT_ANNOTATED_ = "data/output/17-12_OHR_OldWebcam1_1_out.avi";
+	const std::string TARGETS_2D_OUTPUT_ = "data/output/20-12_WCP_1_targets_2d_out.json";
+    const std::string TARGETS_3D_OUTPUT_ = "data/output/20-12_WCP_1_targets_3d_out.json";
+    const std::string FRAME_TIME_ = "data/output/17-12_OHR_OldWebcam1_1_frame_time_.csv";
     
     // declare display settings
     const bool GRAPHIC_UI_ = true;

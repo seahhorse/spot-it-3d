@@ -299,7 +299,8 @@ namespace mcmt {
 			string detection_masked = "Detection from " + to_string(i);
 		
 			// apply morphological transformation
-			cv::dilate(camera->masked_[i], camera->masked_[i], element_, cv::Point(), DILATION_ITER_);
+			cv::erode(camera->masked_[i], camera->masked_[i], element_, cv::Point(), DILATION_ITER_);
+			cv::dilate(camera->masked_[i], camera->masked_[i], dilate_element, cv::Point(), DILATION_ITER_);
 
 			// invert frame such that black pixels are foreground
 			cv::bitwise_not(camera->masked_[i], camera->masked_[i]);
