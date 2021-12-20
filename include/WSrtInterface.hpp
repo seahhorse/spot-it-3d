@@ -57,6 +57,7 @@ class WSrt {
     virtual ~WSrt() {}
 
         int cam_index_;
+        int detection_delays_; // number of times detections are delayed
         std::string srtAddress_, websocketAddress_, decoder_;
 
         vilota::SrtReceiverFactory srtFactory_;

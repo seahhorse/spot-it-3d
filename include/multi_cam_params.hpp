@@ -79,6 +79,9 @@ namespace mcmt {
     // declare image subtraction parameters
     const float DELTA_FRAME_PROPORTION_ = 0.00;
 
+    // declare edge cam parameters
+    const float MAX_DETECTION_DELAY_ = 10;
+
 	// declare background subtractor parameters
     const bool USE_BG_SUBTRACTOR_ = true;
     const int FGBG_HISTORY_ = 5;

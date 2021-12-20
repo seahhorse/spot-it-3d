@@ -50,6 +50,7 @@ WSrt::WSrt(int cam_index, std::string cam_ip, std::string srtPort, std::string w
     srtAddress_ = "srt://" + cam_ip + ":" + srtPort;
     websocketAddress_ = "http://" + cam_ip + ":" + websocketPort;
     decoder_ = decoder;
+    detection_delays_ = 0;
 
     // NOTE: this seems needed, and contains glib main loop logics
     gst_init(nullptr, nullptr);
@@ -127,6 +128,7 @@ wsrt_output WSrt::extract_data_callback(vilota::SrtReceiverInterface::MessageQue
         output.imageHeight = msgSrt_->imageHeight;
         output.imageTimestamp = msgSrt_->imageTimestamp;
         output.imagePixelFormat = msgSrt_->imagePixelFormat;
+        output.delay_required = false;
 
         // compare SRT image and websocket detection timestamps to make sure they are time-synced
         // detection_queue_ stores pending detections from websocket that are not synced with an image
