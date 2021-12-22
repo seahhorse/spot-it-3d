@@ -95,12 +95,13 @@ wsrt_output WSrt::extract_data_callback(vilota::SrtReceiverInterface::MessageQue
         return output;
     spdlog::info("got srt message!");
 
-    if (queueWebsocket.try_pop(msgWebsocket_)) {
+    while (queueWebsocket.try_pop(msgWebsocket_)) {
         spdlog::info("got websocket message!");
         // Save the detections and their timestamps in the waiting queue
         auto &json = msgWebsocket_->json["objects"];
         saved_detection saved;
         saved.timestamp = msgWebsocket_->json["timestamp-buffer-pts"];
+        spdlog::info("detection timestamp inserted to queue: {}", saved.timestamp);
         for (auto &object : json) {
             wsrt_detections detections;
             detections.x = object["x"];
@@ -110,8 +111,8 @@ wsrt_output WSrt::extract_data_callback(vilota::SrtReceiverInterface::MessageQue
             saved.detections.push_back(detections);
         }
         detection_queue_.push(saved);
-        while (queueWebsocket.try_pop(msgWebsocket_))
-        ;
+        // while (queueWebsocket.try_pop(msgWebsocket_))
+        // ;
     }
 
     if (msgSrt_->hasImage) {
@@ -119,7 +120,7 @@ wsrt_output WSrt::extract_data_callback(vilota::SrtReceiverInterface::MessageQue
         int rawDataSize;
         msgSrt_->getData(rawData, rawDataSize);
 
-        spdlog::debug("image timestamp {}, size {}", msgSrt_->imageTimestamp, rawDataSize);
+        spdlog::info("image timestamp {}, size {}", msgSrt_->imageTimestamp, rawDataSize);
 
         cv::Mat cvImage(cv::Size(msgSrt_->imageWidth, msgSrt_->imageHeight), CV_8UC3, rawData, cv::Mat::AUTO_STEP);
 
@@ -133,19 +134,20 @@ wsrt_output WSrt::extract_data_callback(vilota::SrtReceiverInterface::MessageQue
         // compare SRT image and websocket detection timestamps to make sure they are time-synced
         // detection_queue_ stores pending detections from websocket that are not synced with an image
         while (!detection_queue_.empty()) {
-            auto latest_detection = detection_queue_.front();
-            uint64_t detection_timestamp = latest_detection.timestamp;
+            auto earliest_detection = detection_queue_.front();
+            uint64_t detection_timestamp = earliest_detection.timestamp;
 
             // if detection is later than image, release image without detections
             // let the main loop know that delay is required
             if (detection_timestamp > msgSrt_->imageTimestamp) {
                 spdlog::warn("Detection is later than image, delaying release of detection");
+                // spdlog::warn("detection timestamp {}", detection_timestamp);
                 output.delay_required = true;
                 break;
             }
             else if (detection_timestamp == msgSrt_->imageTimestamp) {
                 spdlog::info("Detection and Image timestamps in sync");
-                for (auto &object : latest_detection.detections) {
+                for (auto &object : earliest_detection.detections) {
                     wsrt_detections detections;
                     detections.x = object.x;
                     detections.y = object.y;
@@ -158,7 +160,8 @@ wsrt_output WSrt::extract_data_callback(vilota::SrtReceiverInterface::MessageQue
                 break;
             }
             else {
-                spdlog::warn("Detection is earlier than timestamp, dropping detection");
+                spdlog::warn("Detection is earlier than image, dropping detection");
+                // spdlog::warn("detection timestamp {}", detection_timestamp);
                 detection_queue_.pop();
                 output.delay_required = true;
             }

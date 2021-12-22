@@ -103,7 +103,7 @@ int main(int argc, char * argv[]) {
 				// if the edgecam detections and images are not in sync, the clearing of detections is delayed
 				// if, after delaying for a max number of frames specified by MAX_DETECTION_DELAY_,
 				// the edgecam is still out of sync, the detections are cleared anyway to avoid clogging them up
-				if (!edgecam_data.delay_required || camera->edgecam_cap_->detection_delays_ == MAX_DETECTION_DELAY_){
+				if (!edgecam_data.delay_required || camera->edgecam_cap_->detection_delays_ >= MAX_DETECTION_DELAY_){
 					camera->sizes_.clear();
 					camera->centroids_.clear();
 					camera->edgecam_cap_->detection_delays_ = 0;
