@@ -43,7 +43,7 @@ namespace mcmt {
     // declare session and camera parameters
     // follow convention: "DD-MM_<location>_<session no>"
     // input files should be named in the format "<SESSION_NAME>_<cam no>.<file ext>"
-    const std::string SESSION_NAME_ = "4_2D1C720pB"; 
+    const std::string SESSION_NAME_ = "1_1D1C720pA"; 
     const std::vector<std::string> CAMERA_INPUT_ = {"0", "1"};
     const std::string INPUT_FILE_EXTENSION_ = "avi";
 

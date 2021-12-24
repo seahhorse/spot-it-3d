@@ -66,15 +66,9 @@ int main(int argc, char * argv[]) {
 	bool is_disconnected_ = false;
 
 	std::vector<cv::Mat> sample_frames = initialize_cameras();
-	initialize_tracks(sample_frames[0]);
-	initialize_recording(sample_frames[0]);
-	if (RUN_DETECT_TRACK_) {
-		initialize_logs();
-	}
-
-	for (int cam_idx = 0; cam_idx < NUM_OF_CAMERAS_; cam_idx++) {
-		cameras_[cam_idx]->cap_ >> cameras_[cam_idx]->frame_store_;
-	}
+	initialize_tracks();
+	initialize_recording(cameras_[0]->frame_w_, cameras_[0]->frame_h_);
+	if (RUN_DETECT_TRACK_) initialize_logs();
 
 	auto frame_end = std::chrono::system_clock::now();
 	std::chrono::duration<float> elapsed_seconds = std::chrono::duration<float>::zero();
@@ -88,6 +82,7 @@ int main(int argc, char * argv[]) {
 
 			// get camera frame
 			camera->cap_ >> camera->frame_;
+
 			camera->frame_original_ = camera->frame_.clone();
 
 			// check if getting frame was successful
@@ -97,9 +92,13 @@ int main(int argc, char * argv[]) {
 				break;
 			}
 
-			if (IS_REALTIME_) {
-				recordings_[camera->cam_index_]->write(camera->frame_);
+			if (frame_count_ == 1) {
+				for (int cam_idx = 0; cam_idx < NUM_OF_CAMERAS_; cam_idx++) {
+					cameras_[cam_idx]->cap_ >> cameras_[cam_idx]->frame_store_;
+				}
 			}
+
+			if (IS_REALTIME_) recordings_[camera->cam_index_]->write(camera->frame_);
 
 			if (RUN_DETECT_TRACK_) {
 
@@ -162,9 +161,7 @@ int main(int argc, char * argv[]) {
 
 		}
 
-		if (is_disconnected_) {
-			break;
-		}
+		if (is_disconnected_) break;
 		
 		if (RUN_DETECT_TRACK_) log_2D();
 

@@ -67,15 +67,17 @@ namespace mcmt {
 	Json::Value detections_2d_(Json::arrayValue);
 	Json::Value detections_3d_(Json::arrayValue);
 
-	void initialize_recording(cv::Mat sample_frame) {
+	void initialize_recording(int frame_width, int frame_height) {
+
+		// cameras_[0].frame_width_, cameras[0].frame_height_
 		
 		// intialize video writer
 		if (GRAPHIC_UI_) {
 			recording_ = cv::VideoWriter("data/output/" + SESSION_NAME_ + "_ann.avi", cv::VideoWriter::fourcc('M','P','4','V'), VIDEO_FPS_, 
-				cv::Size(NUM_OF_CAMERAS_ * sample_frame.cols, sample_frame.rows + (360 * NUM_OF_CAMERAS_ * sample_frame.cols / 3840)));
+				cv::Size(NUM_OF_CAMERAS_ * frame_width, frame_height + (360 * NUM_OF_CAMERAS_ * frame_width / 3840)));
 		} else {
 			recording_ = cv::VideoWriter("data/output/" + SESSION_NAME_ + "_ann.avi", cv::VideoWriter::fourcc('M','P','4','V'), VIDEO_FPS_, 
-				cv::Size(NUM_OF_CAMERAS_ * sample_frame.cols, sample_frame.rows));
+				cv::Size(NUM_OF_CAMERAS_ * frame_width, frame_height));
 		}
 	}
 
