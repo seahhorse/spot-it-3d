@@ -42,6 +42,7 @@
 #include <functional>
 #include <numeric>
 #include <iostream>
+#include <curl/curl.h>
 
 using namespace mcmt;
 
@@ -76,6 +77,12 @@ namespace mcmt {
 		update_track_feature_variable(frame_no);
 		update_area(frame);
 		update_3D_velocity_orientation(frame_no);
+		try {
+			update_classification(frame_no);
+		} catch(...) {
+			is_drone_ = true;
+			classification_confidence_ = -1;
+		}
 	}
 
 	/**
@@ -205,6 +212,55 @@ namespace mcmt {
 			}
 
 			vel_orient_.push_back(velocity);
+		}
+	}
+
+	void TrackPlot::update_classification(int & frame_no) {
+		
+		if (frameNos_.size() == 8 && frameNos_.back() == frame_no) {			
+			std::string payload = "{ \"flight_path\":[ ";
+			for (int i = -8; i < -1; i++) {
+				payload += std::to_string((double) xs_.end()[i] / FRAME_WIDTH_) + ", ";
+				payload += std::to_string((double) ys_.end()[i] / FRAME_HEIGHT_) + ", ";
+			}
+			payload += std::to_string(xs_.back()) + ", ";
+			payload += std::to_string(ys_.back()) + "]}";
+
+			CURL *curl;
+			CURLcode res;
+			struct MemoryStruct chunk;
+			chunk.memory = (char*)malloc(1);
+			chunk.size = 0;
+
+			curl_global_init(CURL_GLOBAL_ALL);
+			curl = curl_easy_init();
+			if(curl) {
+				curl_easy_setopt(curl, CURLOPT_URL, "localhost:4000/api/classify");
+
+				struct curl_slist *list = NULL;
+				list = curl_slist_append(list, "Content-Type: application/json");
+				list = curl_slist_append(list, "Accept: application/json");
+				curl_easy_setopt(curl, CURLOPT_HTTPHEADER, list);
+				curl_easy_setopt(curl, CURLOPT_POSTFIELDS, payload.c_str());
+				curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
+				curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&chunk);
+				res = curl_easy_perform(curl);
+
+				if(res != CURLE_OK)
+					fprintf(stderr, "curl_easy_perform() failed: %s\n",
+							curl_easy_strerror(res));
+
+				is_drone_ = chunk.memory[14] == 'd';
+
+				std::string confidence = "";
+				for(int i=40;i<45;i++)  
+					confidence += chunk.memory[i];
+
+				classification_confidence_ = std::stod(confidence);
+				free(chunk.memory);
+				curl_easy_cleanup(curl);
+			}
+			curl_global_cleanup();
 		}
 	}
 

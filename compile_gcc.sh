@@ -1,4 +1,6 @@
 opencv_installed=0
+set -e
+trap "trap - SIGTERM && kill -- -$$" SIGINT SIGTERM EXIT
 
 # Check if OpenCV 4 is installed
 opencv=$(pkg-config --modversion opencv4)
@@ -52,5 +54,11 @@ fi
 
 if [ $opencv_installed == 1 ]
 then
-    g++ -I./include -L./lib/hungarian -L./lib/json src/*.cpp lib/hungarian/Hungarian.cpp lib/json/jsoncpp.cpp -o spot-it-3d `pkg-config --cflags --libs opencv4`
+    g++ -I./include -L./lib/hungarian -L./lib/json src/*.cpp lib/hungarian/Hungarian.cpp lib/json/jsoncpp.cpp -lcurl -o spot-it-3d `pkg-config --cflags --libs opencv4`
+    echo spot-it-3d successfully compiled!
+    cd classifier_service
+    python3 main.py &>/dev/null &
+    cd ../
+    ./spot-it-3d
+    
 fi

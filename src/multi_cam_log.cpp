@@ -68,9 +68,7 @@ namespace mcmt {
 	Json::Value detections_3d_(Json::arrayValue);
 
 	void initialize_recording(int frame_width, int frame_height) {
-
-		// cameras_[0].frame_width_, cameras[0].frame_height_
-		
+	
 		// intialize video writer
 		if (GRAPHIC_UI_) {
 			recording_ = cv::VideoWriter("data/output/" + SESSION_NAME_ + "_ann.avi", cv::VideoWriter::fourcc('M','P','4','V'), VIDEO_FPS_, 
@@ -114,6 +112,8 @@ namespace mcmt {
 					std::vector<int> ys = track.second->ys_;
 					std::vector<int> size = track.second->size_;
 					std::vector<double> xyz = track.second->xyz_;
+					bool is_drone = track.second->is_drone_;
+					double confidence = track.second->classification_confidence_;
 					cv::Scalar color = (NUM_OF_CAMERAS_ == 1 || id != track.second->oid_) ? COLORS_[id % 10] : cv::Scalar(150, 150, 150);
 					bool status = track.second->lastSeen_ == frame_count_;
 					cv::Scalar status_color = status ? cv::Scalar(0, 255, 0) : cv::Scalar(0, 0, 255);
@@ -149,24 +149,29 @@ namespace mcmt {
 							cv::putText(*frames_[i].get(), "ID: " + std::to_string(id), 
 								cv::Point(rect_top_left.x + 20, rect_top_left.y - 5), cv::FONT_HERSHEY_SIMPLEX,
 								FONT_SCALE_, color, 1, cv::LINE_AA);
+							if (confidence != -1) {
+								cv::putText(*frames_[i].get(), (is_drone ? "Drone: " : "Not Drone: ") + std::to_string(confidence).substr(0,5),
+									cv::Point(rect_bottom_right.x + 10, rect_top_left.y + 10), cv::FONT_HERSHEY_SIMPLEX,
+									FONT_SCALE_, color, 1, cv::LINE_AA);
+							}
 						}
 						if (!xyz.empty() && SHOW_3D_COORDINATES_) {
 							cv::putText(*frames_[i].get(), "X: " + std::to_string(xyz[0]).substr(0,4),
-								cv::Point(rect_bottom_right.x + 10, rect_top_left.y + 10), cv::FONT_HERSHEY_SIMPLEX,
-								FONT_SCALE_, color, 1, cv::LINE_AA);
-
-							cv::putText(*frames_[i].get(), "Y: " + std::to_string(xyz[1]).substr(0,4),
 								cv::Point(rect_bottom_right.x + 10, rect_top_left.y + 25), cv::FONT_HERSHEY_SIMPLEX,
 								FONT_SCALE_, color, 1, cv::LINE_AA);
 
-							cv::putText(*frames_[i].get(), "Z: " + std::to_string(xyz[2]).substr(0,4),
+							cv::putText(*frames_[i].get(), "Y: " + std::to_string(xyz[1]).substr(0,4),
 								cv::Point(rect_bottom_right.x + 10, rect_top_left.y + 40), cv::FONT_HERSHEY_SIMPLEX,
+								FONT_SCALE_, color, 1, cv::LINE_AA);
+
+							cv::putText(*frames_[i].get(), "Z: " + std::to_string(xyz[2]).substr(0,4),
+								cv::Point(rect_bottom_right.x + 10, rect_top_left.y + 55), cv::FONT_HERSHEY_SIMPLEX,
 								FONT_SCALE_, color, 1, cv::LINE_AA);
 
 							double area = (double) std::accumulate(track.second->area_.end() - 15, track.second->area_.end(), 0) / 15;
 
 							cv::putText(*frames_[i].get(), "A: " + std::to_string(area).substr(0,5),
-								cv::Point(rect_bottom_right.x + 10, rect_top_left.y + 55), cv::FONT_HERSHEY_SIMPLEX,
+								cv::Point(rect_bottom_right.x + 10, rect_top_left.y + 70), cv::FONT_HERSHEY_SIMPLEX,
 								FONT_SCALE_, color, 1, cv::LINE_AA);
 						}
 						if (SHOW_DISPLAY_STATUS_) {
