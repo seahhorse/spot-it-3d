@@ -68,7 +68,7 @@ namespace mcmt {
 	extern Json::StreamWriterBuilder builder;
 	extern std::unique_ptr<Json::StreamWriter> writer;
 
-	extern cv::Mat ui_;
+	extern cv::Mat ui_, combined_frame_;
 
 	// define debugging tools
 	extern std::vector<std::string> debug_messages;
@@ -82,8 +82,8 @@ namespace mcmt {
 
 	// declare UI functions
 	void print_frame_summary();
-	void annotate_frames(std::array<std::shared_ptr<cv::Mat>, NUM_OF_CAMERAS_> frames_, std::array<std::shared_ptr<CameraTracks>, NUM_OF_CAMERAS_> cumulative_tracks_);
-	void graphical_UI(cv::Mat combined_frame, std::array<std::shared_ptr<CameraTracks>, NUM_OF_CAMERAS_> cumulative_tracks_, double actual_fps);
+	void annotate_frames();
+	void graphical_UI(double actual_fps);
 	
 	// declare logging functions
 	void initialize_logs();

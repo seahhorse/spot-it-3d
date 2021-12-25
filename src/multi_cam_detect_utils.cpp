@@ -210,6 +210,7 @@ namespace mcmt {
 		// get video parameters
 		frame_w_ = int(cap_.get(cv::CAP_PROP_FRAME_WIDTH));
 		frame_h_ = int(cap_.get(cv::CAP_PROP_FRAME_HEIGHT));
+		assert (frame_w_ == FRAME_WIDTH_ && frame_h_ == FRAME_HEIGHT_);
 		fps_ = VIDEO_FPS_;
 		scale_factor_ = (sqrt(pow(frame_w_, 2) + pow(frame_h_, 2))) / (sqrt(pow(848, 2) + pow(480, 2)));
 		aspect_ratio_ = frame_w_ / frame_h_;

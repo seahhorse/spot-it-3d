@@ -132,13 +132,12 @@ int main(int argc, char * argv[]) {
 		}
 
 		if (is_disconnected_) break;
-		
 		if (RUN_DETECT_TRACK_) log_2D();
 
 		auto detect_end = std::chrono::system_clock::now();
 		
 		for (int i = 0; i < NUM_OF_CAMERAS_; i++) {
-			frames_[i] = std::make_shared<cv::Mat>(cameras_[i]->frame_);
+			frames_[i] = cameras_[i]->frame_;
 			if (RUN_DETECT_TRACK_) {
 				good_tracks_[i].clear();
 				for (auto & track : cameras_[i]->good_tracks_) {
@@ -157,14 +156,18 @@ int main(int argc, char * argv[]) {
 		if (RUN_DETECT_TRACK_) {
 		
 			for (int cam_idx = 0; cam_idx < NUM_OF_CAMERAS_; cam_idx++) {
-				update_cumulative_tracks(cam_idx, good_tracks_[cam_idx]);
+
+				// update all tracks with incoming information
+				update_cumulative_tracks(cam_idx);
+
+				// remove trackplots that are not relevant anymore
 				prune_tracks(cam_idx);
 			}
 
 			if (NUM_OF_CAMERAS_ > 1) {
 				for (int cam_idx_a = 0; cam_idx_a < NUM_OF_CAMERAS_; cam_idx_a++) {
 					for (int cam_idx_b = 0; cam_idx_b < NUM_OF_CAMERAS_; cam_idx_b++) {
-						if (cam_idx_a != cam_idx_b) process_new_tracks(cam_idx_a, cam_idx_b, good_tracks_[cam_idx_a]);
+						if (cam_idx_a != cam_idx_b) process_new_tracks(cam_idx_a, cam_idx_b);
 					}
 				}
 				join_matched_tracks();
@@ -174,16 +177,13 @@ int main(int argc, char * argv[]) {
 			}
 
 			print_frame_summary();
-			annotate_frames(frames_, cumulative_tracks_);
+			annotate_frames();
 		}
 
 		auto track_end = std::chrono::system_clock::now();
 		
 		// show and save video combined tracking frame
-		cv::Mat combined_frame = *frames_[0].get();
-		for (int cam_idx = 1; cam_idx < NUM_OF_CAMERAS_; cam_idx++) cv::hconcat(combined_frame, *frames_[cam_idx].get(), combined_frame);
-
-		// cv::hconcat(*frames_, combined_frame);
+		cv::hconcat(frames_, combined_frame_);
 
 		std::cout << "Total frame took: " << elapsed_seconds.count() << "s\n";
 
@@ -196,14 +196,14 @@ int main(int argc, char * argv[]) {
 		}
 
 		if (GRAPHIC_UI_) {
-			graphical_UI(combined_frame, cumulative_tracks_, 1.0 / elapsed_seconds.count());
-			cv::vconcat(combined_frame, ui_, combined_frame);
+			graphical_UI(1.0 / elapsed_seconds.count());
+			cv::vconcat(combined_frame_, ui_, combined_frame_);
 		}
 	
-		if (RUN_DETECT_TRACK_) annotated_.write(combined_frame);
+		if (RUN_DETECT_TRACK_) annotated_.write(combined_frame_);
 
 		// show cv window
-		imshow_resized("Annotated", combined_frame);
+		imshow_resized("Annotated", combined_frame_);
 		
 		frame_count_ += 1;
 
