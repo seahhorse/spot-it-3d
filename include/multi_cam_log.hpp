@@ -71,7 +71,6 @@ namespace mcmt {
 	extern cv::Mat ui_;
 
 	// define debugging tools
-	extern std::vector<std::vector<double>> lines;
 	extern std::vector<std::string> debug_messages;
 
 	// declare logging variables
@@ -90,6 +89,7 @@ namespace mcmt {
 	void initialize_logs();
 	void log_2D();
 	void log_3D(std::shared_ptr<TrackPlot> track_plot_a, std::shared_ptr<TrackPlot> track_plot_b);
+	void write_logs();
 
 }
 

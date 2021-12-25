@@ -162,8 +162,7 @@ namespace mcmt {
 
 		if (USE_BG_SUBTRACTOR_){
 			// declare variables
-			std::vector<std::vector<cv::Point>> contours;
-			std::vector<std::vector<cv::Point>> background_contours;
+			std::vector<std::vector<cv::Point>> contours, background_contours;
 
 			// number of iterations determines how close objects need to be to be considered background
 			cv::Mat dilated;
@@ -192,64 +191,38 @@ namespace mcmt {
 	 */
 	void detect_objects(std::shared_ptr<Camera> & camera) {
 		
-		// Loop through both original and env compensated frames
-		for (int i = 0; i < camera->masked_.size(); i++) {
-		
-			// apply morphological transformation
-			cv::dilate(camera->masked_[i], camera->masked_[i], element_, cv::Point(), DILATION_ITER_);
+		// apply morphological transformation
+		cv::dilate(camera->masked_[0], camera->masked_[0], element_, cv::Point(), DILATION_ITER_);
+		cv::dilate(camera->masked_[1], camera->masked_[1], element_, cv::Point(), DILATION_ITER_);
 
-			// invert frame such that black pixels are foreground
-			cv::bitwise_not(camera->masked_[i], camera->masked_[i]);
+		// invert frame such that black pixels are foreground
+		cv::bitwise_not(camera->masked_[0], camera->masked_[0]);
+		cv::bitwise_not(camera->masked_[1], camera->masked_[1]);
 
-			// apply blob detection
-			std::vector<cv::KeyPoint> keypoints;
-			camera->detector_->detect(camera->masked_[i], keypoints);
+		// apply blob detection
+		std::vector<cv::KeyPoint> keypoints, keypoints_ec;
+		camera->detector_->detect(camera->masked_[0], keypoints);
+		camera->detector_->detect(camera->masked_[1], keypoints_ec);
 
-			// clear vectors to store sizes and centroids of current frame's detected targets
-			for (auto & it : keypoints) {
-				camera->centroids_temp_[i].push_back(it.pt);
-				camera->sizes_temp_[i].push_back(it.size);
-			}
+		// store sizes and centroids of current frame's detected targets
+		for (auto & it : keypoints) {
+			camera->centroids_.push_back(it.pt);
+			camera->sizes_.push_back(it.size);
 		}
+		int original_size = camera->centroids_.size();
 
-		remove_overlapped_detections(camera);
-
-		// add final sizes and centroids after filtering out overlaps
-		for (int i = 0; i < camera->centroids_temp_.size(); i++) {
-			for (auto & it : camera->centroids_temp_[i]) {
-				if (it.x >= 0 && it.y >= 0) {
-					camera->centroids_.push_back(it);
+		// store sizes and centroids of current frame's detected targets from env comp if they do not overlap
+		for (auto & it : keypoints_ec) {
+			bool valid = true;
+			for (int i = 0; i < original_size; i++) {
+				if (euclideanDist(it.pt, camera->centroids_[i]) > 5.0) {
+					valid = false;
+					break;
 				}
 			}
-			for (auto & it : camera->sizes_temp_[i]) {
-				if (it >= 0) {
-					camera->sizes_.push_back(it);
-				}
-			}
-		}
-	}
-
-	/**
-	 * This function detects and removes overlaps in the detections made
-	 * in the original and the env compensated frames
-	*/
-	void remove_overlapped_detections(std::shared_ptr<Camera> & camera) {	
-		// delta = distance between two detected blobs across different frames
-		// TODO: What delta threshold to set?
-		float delta, delta_thres = 5.0;
-	
-		// for each detection in frame 0 (original), check with detections in frame 1 (env compensated).
-		// detections that have separations below a specified threshold are considered overlaps
-		// marked the overlapped detections in frame 1 with -1.0 to signify that they should be ignored
-		for (int i = 0; i < camera->centroids_temp_[0].size(); i++) {
-			for (int j = 0; j < camera->centroids_temp_[1].size(); j++) {
-				delta = sqrt(pow(camera->centroids_temp_[0][i].x - camera->centroids_temp_[1][j].x, 2)
-						+ pow(camera->centroids_temp_[0][i].y - camera->centroids_temp_[1][j].y, 2));
-				if (delta < delta_thres) {
-					camera->centroids_temp_[1][j].x = -1.0;
-					camera->centroids_temp_[1][j].y = -1.0;
-					camera->sizes_temp_[1][j] = -1.0;
-				}
+			if (valid) {
+				camera->centroids_.push_back(it.pt);
+				camera->sizes_.push_back(it.size);
 			}
 		}
 	}
@@ -726,8 +699,7 @@ namespace mcmt {
 	/**
 	 * This function removes the tracks to be removed, in the vector tracks_to_be_removed_
 	 */
-	void delete_lost_tracks(std::shared_ptr<Camera> & camera)
-	{
+	void delete_lost_tracks(std::shared_ptr<Camera> & camera) {
 		for (auto & track_index : camera->tracks_to_be_removed_) {
 			camera->dead_tracks_.push_back(track_index);
 			camera->tracks_.erase(camera->tracks_.begin() + track_index);
@@ -740,9 +712,9 @@ namespace mcmt {
 	 * frames. it draws bounding boxes into these tracks into our camera frame to continuously 
 	 * identify and track the detected good tracks
 	 */
-	std::vector<std::shared_ptr<Track>> filter_tracks(std::shared_ptr<Camera> & camera)
-	{
-		std::vector<std::shared_ptr<Track>> good_tracks;
+	void filter_tracks(std::shared_ptr<Camera> & camera) {
+		camera->good_tracks_.clear();
+		
 		int min_track_age = int(std::max((AGE_THRESH_ * VIDEO_FPS_), float(30.0)));
 		int min_visible_count = int(std::max((VISIBILITY_THRESH_ * VIDEO_FPS_), float(30.0)));
 
@@ -754,10 +726,9 @@ namespace mcmt {
 			&& track->centroid_.y >= 0 && track->centroid_.y <= FRAME_HEIGHT_) {
 				
 				track->is_goodtrack_ = true;
-				good_tracks.push_back(track);			
+				camera->good_tracks_.push_back(track);			
 			}
 		}
-		return good_tracks;
 	}
 
 	/**

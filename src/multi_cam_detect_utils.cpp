@@ -250,7 +250,7 @@ namespace mcmt {
 	}
 
 	/**
-	 * This function extracts a frame from the video sources and saves it to the appropriate places.
+	 * This function extracts a frame from the video sources and saves it to the appropriate places
 	 */
 	bool Camera::get_frame() {
 		cap_ >> frame_;
@@ -259,11 +259,19 @@ namespace mcmt {
 		// check if getting frame was successful
 		if (frame_.empty()) {
 			std::cout << "Error: Video camera is disconnected!" << std::endl;
-			return false;
+			return true;
 		} else {
 			if (IS_REALTIME_) recording_.write(frame_);
-			return true;
+			return false;
 		}
+	}
+
+	/**
+	 * This function clears the detection variables to prepare for a new frame
+	 */
+	void Camera::clear_detection_variables() {
+		sizes_.clear();
+		centroids_.clear();
 	}
 
 }

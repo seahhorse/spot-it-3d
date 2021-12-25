@@ -81,29 +81,15 @@ int main(int argc, char * argv[]) {
 		for (auto & camera : cameras_) {
 
 			// get camera frame
-			// camera->cap_ >> camera->frame_;
-			// camera->frame_ec_ = camera->frame_.clone();
-
-			// // check if getting frame was successful
-			// if (camera->frame_.empty()) {
-			// 	std::cout << "Error: Video camera is disconnected!" << std::endl;
-			// 	is_disconnected_ = true;
-			// 	break;
-			// }
-
-			// if (IS_REALTIME_) camera->recording_.write(camera->frame_);
-
-			camera->get_frame();
+			if (camera->get_frame()) {
+				is_disconnected_ = true;
+			 	break;
+			}
 
 			if (RUN_DETECT_TRACK_) {
-
+				
 				// clear detection variable vectors
-				camera->sizes_.clear();
-				camera->centroids_.clear();
-				for (int i = 0; i < camera->sizes_temp_.size(); i++){
-					camera->sizes_temp_[i].clear();
-					camera->centroids_temp_[i].clear();
-				}
+				camera->clear_detection_variables();
 
 				// correct for environmental effects
 				apply_env_compensation(camera);
@@ -139,13 +125,8 @@ int main(int argc, char * argv[]) {
 				// create new tracks
 				create_new_tracks(camera);
 
-				// convert masked to BGR
-				for (auto & it : camera->masked_) {
-					cv::cvtColor(it, it, cv::COLOR_GRAY2BGR);
-				}
-
 				// filter the tracks
-				camera->good_tracks_ = filter_tracks(camera);
+				filter_tracks(camera);
 			}
 
 		}
@@ -183,16 +164,12 @@ int main(int argc, char * argv[]) {
 			if (NUM_OF_CAMERAS_ > 1) {
 				for (int cam_idx_a = 0; cam_idx_a < NUM_OF_CAMERAS_; cam_idx_a++) {
 					for (int cam_idx_b = 0; cam_idx_b < NUM_OF_CAMERAS_; cam_idx_b++) {
-						if (cam_idx_a != cam_idx_b) {
-							process_new_tracks(cam_idx_a, cam_idx_b, good_tracks_[cam_idx_a]);
-						}
+						if (cam_idx_a != cam_idx_b) process_new_tracks(cam_idx_a, cam_idx_b, good_tracks_[cam_idx_a]);
 					}
 				}
 				join_matched_tracks();
 				
-				for (int cam_idx = 0; cam_idx < NUM_OF_CAMERAS_; cam_idx++) {
-					verify_existing_tracks(cam_idx);
-				}
+				for (int cam_idx = 0; cam_idx < NUM_OF_CAMERAS_; cam_idx++)	verify_existing_tracks(cam_idx);
 				calculate_3D();
 			}
 
@@ -204,9 +181,9 @@ int main(int argc, char * argv[]) {
 		
 		// show and save video combined tracking frame
 		cv::Mat combined_frame = *frames_[0].get();
-		for (int cam_idx = 1; cam_idx < NUM_OF_CAMERAS_; cam_idx++) {
-			cv::hconcat(combined_frame, *frames_[cam_idx].get(), combined_frame);
-		}
+		for (int cam_idx = 1; cam_idx < NUM_OF_CAMERAS_; cam_idx++) cv::hconcat(combined_frame, *frames_[cam_idx].get(), combined_frame);
+
+		// cv::hconcat(*frames_, combined_frame);
 
 		std::cout << "Total frame took: " << elapsed_seconds.count() << "s\n";
 
@@ -237,24 +214,10 @@ int main(int argc, char * argv[]) {
 	}
 
 	if (RUN_DETECT_TRACK_) {
-		std::cout << "Writing logs..." << std::endl;
-		writer -> write(detections_2d_, &targets_2d_file);
-		if (NUM_OF_CAMERAS_ > 1) {
-			Json::Value output_3d;
-			output_3d["Detections"] = detections_3d_;
-			writer -> write(output_3d, &targets_3d_file);
-		}
+		write_logs();
+	 	annotated_.release();
 	}
-	
-	if (RUN_DETECT_TRACK_) annotated_.release();
-
 	close_cameras();
-
-	if (RUN_DETECT_TRACK_) {
-		frame_time_file.close();
-		targets_2d_file.close();
-		targets_3d_file.close();
-	}
 	std::raise(SIGINT);
 }
 

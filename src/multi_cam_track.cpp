@@ -178,9 +178,6 @@ namespace mcmt {
 				}
 			}
 
-			// std::vector<double> line{track_plot_a->xs_.back(), track_plot_a->ys_.back(), track_plot_b->xs_.back() + FRAME_WIDTH_, track_plot_b->ys_.back(), score, convolution, 0};
-			// lines.push_back(line);
-
 			if (max_score < 0.5 && track_plot->frameNos_.size() > 180) {
 				track_plot->mismatch_count_ += 1;
 			} else {
@@ -529,12 +526,6 @@ namespace mcmt {
 		auto convolution = (crossCorrelation_3D(track_plot_a->vel_orient_, track_plot_b->vel_orient_) + 1) / 2;
 
 		double score = (W1_ * x1) + (W2_ * x2) + (W3_ * x3);
-
-		// if (idx_a == 0) {
-		// 	std::vector<double> line{(double) track_plot_a->xs_.back(), (double) track_plot_a->ys_.back(), 
-		// 	(double) (track_plot_b->xs_.back() + FRAME_WIDTH_), (double) track_plot_b->ys_.back(), score, convolution, 0};
-		// 	lines.push_back(line);
-		// }
 
 		if (USE_3D_REID_) return (convolution > 0.7) ? convolution : 0;
 		else return (convolution > 0.5) ? convolution : 0;

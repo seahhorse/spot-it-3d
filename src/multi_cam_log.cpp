@@ -60,7 +60,6 @@ namespace mcmt {
 	cv::Mat ui_;
 
 	// define debugging tools
-	std::vector<std::vector<double>> lines;
 	std::vector<std::string> debug_messages;
 
 	// declare logging variables
@@ -337,5 +336,21 @@ namespace mcmt {
 		std::cout << std::endl;
 
     }
+
+	void write_logs() {
+		
+		std::cout << "Writing logs..." << std::endl;
+		writer -> write(detections_2d_, &targets_2d_file);
+		if (NUM_OF_CAMERAS_ > 1) {
+			Json::Value output_3d;
+			output_3d["Detections"] = detections_3d_;
+			writer -> write(output_3d, &targets_3d_file);
+		}
+		frame_time_file.close();
+		targets_2d_file.close();
+		targets_3d_file.close();
+		std::cout << "Log writing complete!" << std::endl;
+
+	}
 
 }

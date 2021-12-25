@@ -112,9 +112,7 @@ namespace mcmt {
 			std::vector<int> dead_tracks_;
 
 			// declare detection variables
-			std::array<std::vector<float>,2> sizes_temp_;
 			std::vector<float> sizes_;
-			std::array<std::vector<cv::Point2f>,2> centroids_temp_;
 			std::vector<cv::Point2f> centroids_;
 
 			// declare tracking variables
@@ -134,6 +132,7 @@ namespace mcmt {
 
 			// declare class functions
 			bool get_frame();
+			void clear_detection_variables();
 	};
 }
 
