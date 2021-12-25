@@ -26,6 +26,7 @@
 
 // local header files
 #include "multi_cam_detect_utils.hpp"
+#include "multi_cam_params.hpp"
 
 // standard package imports
 #include <stdlib.h>
@@ -190,28 +191,18 @@ namespace mcmt {
 	/**
 	 * This class is our Camera class for storing our detections' and tracks' variables
 	 */
-	Camera::Camera(
-		int index,
-		bool is_realtime,
-		std::string video_input,
-		int fps,
-		int max_frame_width,
-		int max_frame_height,
-		int fgbg_history,
-		float background_ratio,
-		int nmixtures
-	) {
+	Camera::Camera(int index, std::string video_input) {
 		// get video input and camera index
 		video_input_ = video_input;
 		cam_index_ = index;
 
 		// open video capturing or video file
-		if (is_realtime == true) {
+		if (IS_REALTIME_) {
 			cap_ = cv::VideoCapture(std::stoi(video_input_), cv::CAP_V4L2);
 			cap_.set(cv::CAP_PROP_FOURCC, cv::VideoWriter::fourcc('M', 'J', 'P', 'G'));
-			cap_.set(cv::CAP_PROP_FRAME_WIDTH, max_frame_width);
-			cap_.set(cv::CAP_PROP_FRAME_HEIGHT, max_frame_height);
-			cap_.set(cv::CAP_PROP_FPS, fps);
+			cap_.set(cv::CAP_PROP_FRAME_WIDTH, FRAME_WIDTH_);
+			cap_.set(cv::CAP_PROP_FRAME_HEIGHT, FRAME_HEIGHT_);
+			cap_.set(cv::CAP_PROP_FPS, VIDEO_FPS_);
 		} else {
 			cap_ = cv::VideoCapture(video_input_);
 		}
@@ -219,24 +210,26 @@ namespace mcmt {
 		// get video parameters
 		frame_w_ = int(cap_.get(cv::CAP_PROP_FRAME_WIDTH));
 		frame_h_ = int(cap_.get(cv::CAP_PROP_FRAME_HEIGHT));
-		fps_ = fps;
+		fps_ = VIDEO_FPS_;
 		scale_factor_ = (sqrt(pow(frame_w_, 2) + pow(frame_h_, 2))) / (sqrt(pow(848, 2) + pow(480, 2)));
 		aspect_ratio_ = frame_w_ / frame_h_;
 		next_id_ = 1000;
 
 		// if video frame size is too big, downsize
 		downsample_ = false;
-		if ((frame_w_ * frame_h_) > (max_frame_width * max_frame_height)) {
+		if ((frame_w_ * frame_h_) > (FRAME_WIDTH_ * FRAME_HEIGHT_)) {
 			downsample_ = true;
-			frame_w_ = max_frame_width;
-			frame_h_ = int(max_frame_width / aspect_ratio_);
+			frame_w_ = FRAME_WIDTH_;
+			frame_h_ = int(FRAME_WIDTH_ / aspect_ratio_);
 			scale_factor_ = (sqrt(pow(frame_w_, 2) + pow(frame_h_, 2))) / (sqrt(pow(848, 2) + pow(480, 2)));
 		}
 
-		if (!cap_.isOpened()) {
-			std::cout << "Error: Cannot open camera! Please check!" << std::endl;
-		} else {
-			std::cout << "Camera opened successful!" << std::endl;
+		std::cout << cap_.isOpened() ? "Camera opened successful!\n" : "Error: Cannot open camera! Please check!\n";
+
+		if (IS_REALTIME_) {
+			std::string vid_output = "data/output/" + SESSION_NAME_ + "_" + std::to_string(cam_index_) + ".avi";
+			recording_ = cv::VideoWriter(vid_output, cv::VideoWriter::fourcc('M','J','P','G'), VIDEO_FPS_, 
+			cv::Size(frame_w_, frame_h_));
 		}
 		
 		// initialize blob detector
@@ -246,13 +239,30 @@ namespace mcmt {
 		detector_ = cv::SimpleBlobDetector::create(blob_params);
 
 		// initialize background subtractor
-		int hist = int(fgbg_history * fps_);
+		int hist = int(FGBG_HISTORY_ * VIDEO_FPS_);
 		float varThresh = float(4 / scale_factor_);
 		bool detectShad = false;
 		for (int i = 0; i < fgbg_.size(); i++) {
 			fgbg_[i] = cv::createBackgroundSubtractorMOG2(hist, varThresh, detectShad);
-			fgbg_[i]->setBackgroundRatio(background_ratio);
-			fgbg_[i]->setNMixtures(nmixtures);
+			fgbg_[i]->setBackgroundRatio(BACKGROUND_RATIO_);
+			fgbg_[i]->setNMixtures(NMIXTURES_);
+		}
+	}
+
+	/**
+	 * This function extracts a frame from the video sources and saves it to the appropriate places.
+	 */
+	bool Camera::get_frame() {
+		cap_ >> frame_;
+		frame_ec_ = frame_.clone();
+			
+		// check if getting frame was successful
+		if (frame_.empty()) {
+			std::cout << "Error: Video camera is disconnected!" << std::endl;
+			return false;
+		} else {
+			if (IS_REALTIME_) recording_.write(frame_);
+			return true;
 		}
 	}
 

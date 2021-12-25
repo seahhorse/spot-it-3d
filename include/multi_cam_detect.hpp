@@ -55,11 +55,9 @@ namespace mcmt {
 	// declare Camera variables
 	extern std::vector<std::shared_ptr<Camera>> cameras_;
 	extern cv::Mat element_;
-	extern std::vector<std::shared_ptr<cv::VideoWriter>> recordings_;
 
 	// declare detection and tracking functions
-	std::vector<cv::Mat> initialize_cameras();
-	void frame_to_frame_subtraction(std::shared_ptr<Camera> & camera);
+	void initialize_cameras();
 	void apply_env_compensation(std::shared_ptr<Camera> & camera);
 	void apply_bg_subtractions(std::shared_ptr<Camera> & camera, int frame_id);
 	void detect_objects(std::shared_ptr<Camera> & camera);

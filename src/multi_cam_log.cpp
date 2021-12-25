@@ -51,7 +51,7 @@ using namespace mcmt;
 
 namespace mcmt {
 
-	cv::VideoWriter recording_;
+	cv::VideoWriter annotated_;
 
 	std::ofstream frame_time_file, targets_2d_file, targets_3d_file;
 	Json::StreamWriterBuilder builder;
@@ -70,13 +70,18 @@ namespace mcmt {
 	void initialize_recording(int frame_width, int frame_height) {
 	
 		// intialize video writer
-		if (GRAPHIC_UI_) {
-			recording_ = cv::VideoWriter("data/output/" + SESSION_NAME_ + "_ann.avi", cv::VideoWriter::fourcc('M','P','4','V'), VIDEO_FPS_, 
-				cv::Size(NUM_OF_CAMERAS_ * frame_width, frame_height + (360 * NUM_OF_CAMERAS_ * frame_width / 3840)));
-		} else {
-			recording_ = cv::VideoWriter("data/output/" + SESSION_NAME_ + "_ann.avi", cv::VideoWriter::fourcc('M','P','4','V'), VIDEO_FPS_, 
-				cv::Size(NUM_OF_CAMERAS_ * frame_width, frame_height));
-		}
+		annotated_ = cv::VideoWriter("data/output/" + SESSION_NAME_ + "_ann.avi", cv::VideoWriter::fourcc('M','P','4','V'), VIDEO_FPS_, 
+			cv::Size(NUM_OF_CAMERAS_ * frame_width, frame_height + (GRAPHIC_UI_ * 360 * NUM_OF_CAMERAS_ * frame_width / 3840)));
+	}
+
+	void initialize_logs() {
+
+		// initialize logs
+		frame_time_file.open("data/log/" + SESSION_NAME_ + "_frame-time.csv");
+		frame_time_file << "detect_time, track_time, total_time\n"; 
+		
+		targets_2d_file.open("data/log/" + SESSION_NAME_ + "_targets-2d-out.json");
+		targets_3d_file.open("data/log/" + SESSION_NAME_ + "_targets-3d-out.json");
 	}
 
 	void annotate_frames(std::array<std::shared_ptr<cv::Mat>, NUM_OF_CAMERAS_> frames_, std::array<std::shared_ptr<CameraTracks>, NUM_OF_CAMERAS_> cumulative_tracks_) {
@@ -183,7 +188,7 @@ namespace mcmt {
 		}
 	}
 
-	void graphical_UI(cv::Mat combined_frame, std::array<std::shared_ptr<CameraTracks>, NUM_OF_CAMERAS_> cumulative_tracks_, cv::Size frame_size, double actual_fps) {
+	void graphical_UI(cv::Mat combined_frame, std::array<std::shared_ptr<CameraTracks>, NUM_OF_CAMERAS_> cumulative_tracks_, double actual_fps) {
 
 		int ui_width = 3840;
 		int ui_height = 360;
@@ -225,7 +230,7 @@ namespace mcmt {
 		cv::rectangle(ui, cv::Point(1930, 20), cv::Point(2700, 340), cv::Scalar(200,200,200), -1);
 		cv::putText(ui, "Session: " + SESSION_NAME_, cv::Point(1950, 70), cv::FONT_HERSHEY_SIMPLEX,
 					FONT_SCALE_ * 2, cv::Scalar(0,0,0), 2, cv::LINE_AA);
-		cv::putText(ui, "Resolution: " + std::to_string(frame_size.width) + " x " + std::to_string(frame_size.height), cv::Point(1950, 120), cv::FONT_HERSHEY_SIMPLEX,
+		cv::putText(ui, "Resolution: " + std::to_string(FRAME_WIDTH_) + " x " + std::to_string(FRAME_HEIGHT_), cv::Point(1950, 120), cv::FONT_HERSHEY_SIMPLEX,
 					FONT_SCALE_ * 2, cv::Scalar(0,0,0), 2, cv::LINE_AA);
 		cv::putText(ui, "Actual FPS: " + std::to_string(actual_fps).substr(0,4), cv::Point(1950, 170), cv::FONT_HERSHEY_SIMPLEX,
 					FONT_SCALE_ * 2, cv::Scalar(0,0,0), 2, cv::LINE_AA);
@@ -249,16 +254,6 @@ namespace mcmt {
 
 		cv::resize(ui, ui_, cv::Size(combined_frame.cols, ui_height * combined_frame.cols / ui_width), 0, 0, cv::INTER_CUBIC);
 
-	}
-
-	void initialize_logs() {
-
-		// initialize logs
-		frame_time_file.open("data/log/" + SESSION_NAME_ + "_frame-time.csv");
-		frame_time_file << "detect_time, track_time, total_time" << "\n"; 
-		
-		targets_2d_file.open("data/log/" + SESSION_NAME_ + "_targets-2d-out.json");
-		targets_3d_file.open("data/log/" + SESSION_NAME_ + "_targets-3d-out.json");
 	}
 
 	/**

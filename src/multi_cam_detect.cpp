@@ -55,61 +55,20 @@ namespace mcmt {
 	// declare Camera variables
 	std::vector<std::shared_ptr<Camera>> cameras_;
 	cv::Mat element_;
-	std::vector<std::shared_ptr<cv::VideoWriter>> recordings_;
 
 	/**
 	 * Constants, variable and functions definition
 	 */
-	std::vector<cv::Mat> initialize_cameras() {
-
-		std::string vid_input, vid_output;
+	void initialize_cameras() {
 
 		for (int cam_idx = 0; cam_idx < NUM_OF_CAMERAS_; cam_idx++) {
-			
-			vid_input = IS_REALTIME_ ? CAMERA_INPUT_[cam_idx] 
+			std::string vid_input = IS_REALTIME_ ? CAMERA_INPUT_[cam_idx] 
 				: "data/input/" + SESSION_NAME_ + "_" + std::to_string(cam_idx) + "." + INPUT_FILE_EXTENSION_;
-
-			cameras_.push_back(std::shared_ptr<Camera>(
-				new Camera(cam_idx, IS_REALTIME_, vid_input, VIDEO_FPS_, FRAME_WIDTH_, 
-				FRAME_HEIGHT_, FGBG_HISTORY_, BACKGROUND_RATIO_, NMIXTURES_)));
-
-			if (IS_REALTIME_) {
-				vid_output = "data/output/" + SESSION_NAME_ + "_" + std::to_string(cam_idx) + ".avi";
-				recordings_.push_back(std::shared_ptr<cv::VideoWriter>(new cv::VideoWriter(
-				vid_output, cv::VideoWriter::fourcc('M','J','P','G'), VIDEO_FPS_, 
-				cv::Size(FRAME_WIDTH_, FRAME_HEIGHT_))));
-			}
-			
-		}
-
-		std::vector<cv::Mat> sample_frames;
-		cv::Mat sample_frame;
-		for (int cam_idx = 0; cam_idx < NUM_OF_CAMERAS_; cam_idx++) {
-			cameras_[cam_idx]->cap_ >> sample_frame;
-			sample_frames.push_back(sample_frame);
+			cameras_.push_back(std::shared_ptr<Camera>(new Camera(cam_idx, vid_input)));
 		}
 		
 		// initialize kernel used for morphological transformations
 		element_ = cv::getStructuringElement(0, cv::Size(5, 5));
-
-		return sample_frames;
-	}
-
-	/**
-	 * Takes the difference between frames at t and t-1 to extract out moving objects.
-	 * Especially useful for when the drone passes behind noisy background features.
-	 * The moving objects are added back to the original frame as feature enhancements 
-	 */
-	void frame_to_frame_subtraction(std::shared_ptr<Camera> & camera) {
-		
-			cv::Mat frame_delta_, frame_delta_grayscale_;
-			cv::absdiff(camera->frame_, camera->frame_store_, frame_delta_);
-
-			cv::cvtColor(frame_delta_, frame_delta_grayscale_, cv::COLOR_BGR2GRAY);
-			cv::bitwise_not(frame_delta_grayscale_, frame_delta_grayscale_);
-			cv::cvtColor(frame_delta_grayscale_, frame_delta_, cv::COLOR_GRAY2BGR);
-
-   			cv::addWeighted(frame_delta_, DELTA_FRAME_PROPORTION_, camera->frame_, 1.0 - DELTA_FRAME_PROPORTION_, 0.0, camera->frame_);
 	}
 
 	/**
@@ -119,7 +78,6 @@ namespace mcmt {
 	 */
 	void apply_env_compensation(std::shared_ptr<Camera> & camera) {
 		cv::Mat hsv, sky, non_sky, mask;
-		camera->frame_ec_ = camera->frame_.clone();
 		
 		// Get HSV version of the frame
 		cv::cvtColor(camera->frame_ec_, hsv, cv::COLOR_BGR2HSV);
@@ -854,6 +812,7 @@ namespace mcmt {
 	void close_cameras() {
 		for (int cam_idx = 0; cam_idx < NUM_OF_CAMERAS_; cam_idx++) {
 			cameras_[cam_idx].get()->cap_.release();
+			if (IS_REALTIME_) cameras_[cam_idx]->recording_.release();
 		}
 	}
 

@@ -62,7 +62,7 @@ using namespace mcmt;
 namespace mcmt {
 
 	// declare video parameters
-	extern cv::VideoWriter recording_;
+	extern cv::VideoWriter annotated_;
 
 	extern std::ofstream frame_time_file, targets_2d_file, targets_3d_file;
 	extern Json::StreamWriterBuilder builder;
@@ -84,7 +84,7 @@ namespace mcmt {
 	// declare UI functions
 	void print_frame_summary();
 	void annotate_frames(std::array<std::shared_ptr<cv::Mat>, NUM_OF_CAMERAS_> frames_, std::array<std::shared_ptr<CameraTracks>, NUM_OF_CAMERAS_> cumulative_tracks_);
-	void graphical_UI(cv::Mat combined_frame, std::array<std::shared_ptr<CameraTracks>, NUM_OF_CAMERAS_> cumulative_tracks_, cv::Size frame_size, double actual_fps);
+	void graphical_UI(cv::Mat combined_frame, std::array<std::shared_ptr<CameraTracks>, NUM_OF_CAMERAS_> cumulative_tracks_, double actual_fps);
 	
 	// declare logging functions
 	void initialize_logs();
