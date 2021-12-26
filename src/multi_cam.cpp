@@ -118,8 +118,12 @@ int main(int argc, char * argv[]) {
 			simpler_background_subtraction(camera, 1);
 			
 			// get detections
-			// detect_objects(camera);
-			contour_detection(camera);
+			if (USE_BLOB_DETECTION) {
+				detect_objects(camera);
+			}
+			else {
+				contour_detection(camera);
+			}
 			
 			// apply state estimation filters
 			predict_new_locations_of_tracks(camera);

@@ -60,7 +60,7 @@ namespace mcmt {
 
 		// Fixed Polygon prediction parameters
 		vel_angle_leeway = 0.75; // The angle of the search cone from the tip
-		frame_step = 1; // Number of frame steps to check the search zone
+		frame_step = 2; // Number of frame steps to check the search zone
 		circle_step = 32; // Radius of search circle
 		search_frame_counter = 0; // Initialise counter
 		vel_threshold = 16; // Initialise velocity threshold
@@ -188,7 +188,7 @@ namespace mcmt {
 			//converted to Cartesian local coordinates
 			cv::Point2f upper_bound(last_x + frame_step * vel_mag * cos(vel_angle + vel_angle_leeway), last_y + frame_step * vel_mag * sin(vel_angle + vel_angle_leeway));
 			cv::Point2f lower_bound(last_x + frame_step * vel_mag * cos(vel_angle - vel_angle_leeway), last_y + frame_step *vel_mag * sin(vel_angle - vel_angle_leeway));
-			cv::Point2f center_bound(last_x + frame_step *vel_mag * cos(vel_angle), last_y + frame_step * vel_mag * sin(vel_angle));
+			cv::Point2f center_bound(last_x + frame_step * vel_mag * cos(vel_angle), last_y + frame_step * vel_mag * sin(vel_angle));
 
 			search_area.push_back(starting_point);
 			search_area.push_back(upper_bound);

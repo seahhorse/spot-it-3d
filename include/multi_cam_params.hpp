@@ -41,16 +41,16 @@ namespace mcmt {
     const int NUM_OF_CAMERAS_ = 1;
 
     // realtime parameters
-    const std::vector<std::string> VIDEO_INPUT_ = {     "data/output/17-12_OHR_OldWebcam1_1.avi",
+    const std::vector<std::string> VIDEO_INPUT_ = {     "Downloads/12-10_WCP_2b.avi",
                                                         "6"
                                                     };
-    const std::vector<std::string> VIDEO_OUTPUT_ = {    "data/output/20-12_WCP_1a.avi",
+    const std::vector<std::string> VIDEO_OUTPUT_ = {    "Downloads/12-10_WCP_2b_out.avi",
                                                         "data/output/20-12_WCP_1b.avi"
                                                     };
-	const std::string VIDEO_OUTPUT_ANNOTATED_ = "data/output/17-12_OHR_OldWebcam1_1_out.avi";
+	const std::string VIDEO_OUTPUT_ANNOTATED_ = "Downloads/12-10_WCP_2b_anno.avi";
 	const std::string TARGETS_2D_OUTPUT_ = "data/output/20-12_WCP_1_targets_2d_out.json";
     const std::string TARGETS_3D_OUTPUT_ = "data/output/20-12_WCP_1_targets_3d_out.json";
-    const std::string FRAME_TIME_ = "data/output/17-12_OHR_OldWebcam1_1_frame_time_.csv";
+    const std::string FRAME_TIME_ = "Downloads/12-10_WCP_2b_frame.csv";
     
     // declare display settings
     const bool GRAPHIC_UI_ = true;
@@ -81,6 +81,7 @@ namespace mcmt {
 
 	// declare background subtractor parameters
     const bool USE_BG_SUBTRACTOR_ = true;
+    const bool USE_BLOB_DETECTION = false;
     const int FGBG_HISTORY_ = 30;
     const float BACKGROUND_RATIO_ = 0.4;
     const int NMIXTURES_ = 5;
