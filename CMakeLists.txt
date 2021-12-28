@@ -11,6 +11,10 @@ find_package( OpenCV 4 REQUIRED )
 message(STATUS "Found OpenCV version ${OpenCV_VERSION}")
 include_directories( ${OpenCV_INCLUDE_DIRS} )
 
+# curl
+find_package( CURL REQUIRED )
+message(STATUS "Found CURL version ${CURL_VERSION_STRING}")
+
 # creates the variable EXEC and sets it to spot-it-3d
 set(EXEC spot-it-3d)
 
@@ -28,5 +32,7 @@ add_executable(${EXEC} ${SOURCES})
 
 # Link executables to libraries
 target_link_libraries( ${EXEC} ${OpenCV_LIBS} )
-target_link_libraries( ${EXEC} PUBLIC Hungarian)
-target_link_libraries( ${EXEC} PUBLIC Json)
+target_link_libraries( ${EXEC} Hungarian)
+target_link_libraries( ${EXEC} Json)
+
+target_link_libraries( ${EXEC} CURL::libcurl )

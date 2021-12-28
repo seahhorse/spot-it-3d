@@ -79,7 +79,7 @@ namespace mcmt {
 	extern Json::Value detections_3d_;
 
 	// declare recording functions
-	void initialize_recording(cv::Mat sample_frame);
+	void initialize_recording(int frame_width, int frame_height);
 
 	// declare UI functions
 	void print_frame_summary();

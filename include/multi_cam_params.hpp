@@ -40,17 +40,15 @@ namespace mcmt {
 	const bool IS_REALTIME_ = false;
     const int NUM_OF_CAMERAS_ = 1;
 
-    // realtime parameters
-    const std::vector<std::string> VIDEO_INPUT_ = {     "Downloads/12-10_WCP_2b.avi",
-                                                        "6"
-                                                    };
-    const std::vector<std::string> VIDEO_OUTPUT_ = {    "Downloads/12-10_WCP_2b_out.avi",
-                                                        "data/output/20-12_WCP_1b.avi"
-                                                    };
-	const std::string VIDEO_OUTPUT_ANNOTATED_ = "Downloads/12-10_WCP_2b_anno.avi";
-	const std::string TARGETS_2D_OUTPUT_ = "data/output/20-12_WCP_1_targets_2d_out.json";
-    const std::string TARGETS_3D_OUTPUT_ = "data/output/20-12_WCP_1_targets_3d_out.json";
-    const std::string FRAME_TIME_ = "Downloads/12-10_WCP_2b_frame.csv";
+    // declare session and camera parameters
+    // follow convention: "DD-MM_<location>_<session no>"
+    // input files should be named in the format "<SESSION_NAME>_<cam no>.<file ext>"
+    const std::string SESSION_NAME_ = "A"; 
+    const std::vector<std::string> CAMERA_INPUT_ = {"0", "1"};
+    const std::string INPUT_FILE_EXTENSION_ = "avi";
+
+    // declare master switch
+    const bool RUN_DETECT_TRACK_ = true;
     
     // declare display settings
     const bool GRAPHIC_UI_ = true;
@@ -58,6 +56,7 @@ namespace mcmt {
     const bool SHOW_CAM_NUM_ = false;
     const bool SHOW_ID_ = true;
     const bool SHOW_3D_COORDINATES_ = true;
+    const bool SHOW_DISPLAY_STATUS_ = true;
 
 	// declare video parameters
 	const int FRAME_WIDTH_ = 640;
@@ -69,7 +68,7 @@ namespace mcmt {
     const float VISIBILITY_RATIO_ = 0.5;
     const float VISIBILITY_THRESH_ = 1.0;
     const float CONSECUTIVE_THRESH_ = 5.0;
-    const float AGE_THRESH_ = 1.0;
+    const float AGE_THRESH_ = 3.0;
     const int SECONDARY_FILTER_ = 2;
     const float SEC_FILTER_DELAY_ = 1.0;
 
@@ -105,10 +104,6 @@ namespace mcmt {
 	// declare plotting parameters
 	const int PLOT_HISTORY_ = 200;
 	const double FONT_SCALE_ = 0.5;
-    const bool DISPLAY_MATCHED_ONLY_ = false;
-    const bool DISPLAY_ID_ = true;
-    const bool DISPLAY_3D_ = true;
-    const bool DISPLAY_STATUS_ = true;
     const std::vector<cv::Scalar> COLORS_{
         cv::Scalar(124, 104, 66), // 1
         cv::Scalar(20, 60, 96), // 2

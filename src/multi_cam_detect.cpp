@@ -67,14 +67,15 @@ namespace mcmt {
 
 		for (int cam_idx = 0; cam_idx < NUM_OF_CAMERAS_; cam_idx++) {
 			
-			vid_input = VIDEO_INPUT_[cam_idx];
-			vid_output = VIDEO_OUTPUT_[cam_idx];
+			vid_input = IS_REALTIME_ ? CAMERA_INPUT_[cam_idx] 
+				: "data/input/" + SESSION_NAME_ + "_" + std::to_string(cam_idx) + "." + INPUT_FILE_EXTENSION_;
 
 			cameras_.push_back(std::shared_ptr<Camera>(
 				new Camera(cam_idx, IS_REALTIME_, vid_input, VIDEO_FPS_, FRAME_WIDTH_, 
 				FRAME_HEIGHT_, FGBG_HISTORY_, BACKGROUND_RATIO_, NMIXTURES_)));
 
 			if (IS_REALTIME_) {
+				vid_output = "data/output/" + SESSION_NAME_ + "_" + std::to_string(cam_idx) + ".avi";
 				recordings_.push_back(std::shared_ptr<cv::VideoWriter>(new cv::VideoWriter(
 				vid_output, cv::VideoWriter::fourcc('M','J','P','G'), VIDEO_FPS_, 
 				cv::Size(FRAME_WIDTH_, FRAME_HEIGHT_))));
@@ -309,7 +310,6 @@ namespace mcmt {
 			// apply blob detection
 			std::vector<cv::KeyPoint> keypoints;
 			camera->detector_->detect(camera->masked_[i], keypoints);
-			cv::imshow(detection_masked, camera->masked_[i]);
 
 			// clear vectors to store sizes and centroids of current frame's detected targets
 			for (auto & it : keypoints) {
