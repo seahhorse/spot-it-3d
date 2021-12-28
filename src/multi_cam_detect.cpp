@@ -243,7 +243,9 @@ namespace mcmt {
 		}
 
 		// Recombine the sky and treeline
-		cv::add(sky, non_sky, camera->frame_ec_);
+		for (int j = 0; j < camera->masked_.size(); j++) {
+			cv::add(sky, non_sky, camera->masked_[j]);
+		}
 		cv::imshow("After sun compensation", camera->frame_ec_);
 	}
 
@@ -296,7 +298,6 @@ namespace mcmt {
 		
 		// Loop through both original and env compensated frames
 		for (int i = 0; i < camera->masked_.size(); i++) {
-			string detection_masked = "Detection from " + to_string(i);
 		
 			// apply morphological transformation
 			cv::erode(camera->masked_[i], camera->masked_[i], element_, cv::Point(), DILATION_ITER_);
@@ -312,7 +313,6 @@ namespace mcmt {
 
 			// clear vectors to store sizes and centroids of current frame's detected targets
 			for (auto & it : keypoints) {
-				std::cout << "Detection at Point (" + to_string(it.pt.x) + "," + to_string(it.pt.y) + ")\n";
 				camera->centroids_temp_[i].push_back(it.pt);
 				camera->sizes_temp_[i].push_back(it.size);
 			}
@@ -765,10 +765,10 @@ namespace mcmt {
 
 					// Try to search using the last known velocity location, reassign any found blob as the new detection
 					std::vector<cv::Point2f> search_area = track->search_polygon(); // Use appropiate search zone
-					for (auto & poly_point : search_area) {
-						std::cout << to_string(poly_point.x) + " " + to_string(poly_point.y) + "\n";
-					}
-					std::cout << "Polygon for Track" + to_string(track_index) + "\n";
+					//for (auto & poly_point : search_area) {
+					//	std::cout << to_string(poly_point.x) + " " + to_string(poly_point.y) + "\n";
+					//}
+					//std::cout << "Polygon for Track" + to_string(track_index) + "\n";
 					std::vector<double> eligible_points_distance; // Placeholder for eligible detections' distance from the center of the search zone
 					std::vector<int> eligible_unassigned_detections;
 
@@ -798,7 +798,7 @@ namespace mcmt {
 
 					// Reassign unassigned detection to the track if there is a suitable candidate 
 					if (min_distance > 0) {
-						std::cout << "Reassigned track for Track " + to_string(track_index) + "\n";
+						// std::cout << "Reassigned track for Track " + to_string(track_index) + "\n";
 						std::vector<int> reinitialized_assignment{-1, -1}; // Data structure for assignment
 						reinitialized_assignment[0] = track_index;  // track index assigned
 						reinitialized_assignment[1] = best_detection; // track detection assigned
