@@ -59,13 +59,13 @@ namespace mcmt {
 	std::map<int, std::array<int, NUM_OF_CAMERAS_ + 1>> matched_tracks_;
 
 	// declare tracking arrays
-	std::array<std::shared_ptr<cv::Mat>, NUM_OF_CAMERAS_> frames_;
+	std::array<cv::Mat, NUM_OF_CAMERAS_> frames_;
 	std::array<std::vector<std::shared_ptr<GoodTrack>>, NUM_OF_CAMERAS_> good_tracks_;
 
 	/**
 	 * This function initializes the new tracks for subsequent addition
 	 */
-	void initialize_tracks(cv::Mat sample_frame) {
+	void initialize_tracks() {
 		for (int cam_idx = 0; cam_idx < NUM_OF_CAMERAS_; cam_idx++) {
 			cumulative_tracks_[cam_idx] = std::shared_ptr<CameraTracks>(new CameraTracks(cam_idx));
 		}
@@ -74,9 +74,9 @@ namespace mcmt {
 	/**
 	 * This function creates new tracks and the addition to the cumulative tracks log for each frame
 	 */
-	void update_cumulative_tracks(int index, std::vector<std::shared_ptr<GoodTrack>> & good_tracks) {
+	void update_cumulative_tracks(int idx) {
 			
-		for (auto & track : good_tracks) {
+		for (auto & track : good_tracks_[idx]) {
 			
 			// Extract details from the track
 			int track_id = track->id;
@@ -85,35 +85,35 @@ namespace mcmt {
 			std::shared_ptr<TrackPlot> track_plot;
 
 			// Check for location of track (either in track_new_plots_ or track_plots_ or neither)
-			if (exists(cumulative_tracks_[index]->track_new_plots_, track_id)) {
+			if (exists(cumulative_tracks_[idx]->track_new_plots_, track_id)) {
 				// Track is in track_new_plots_, so we extract it using the track_id
-				track_plot = cumulative_tracks_[index]->track_new_plots_[track_id];
-			} else if (exists(matching_dict_[index], track_id)) {
+				track_plot = cumulative_tracks_[idx]->track_new_plots_[track_id];
+			} else if (exists(matching_dict_[idx], track_id)) {
 				// Track is in track_plots_, so we find the matched_id to extract it
-				track_plot = cumulative_tracks_[index]->track_plots_[matching_dict_[index][track_id]];
+				track_plot = cumulative_tracks_[idx]->track_plots_[matching_dict_[idx][track_id]];
 			} else {
 				// Track is new, so we create a new TrackPlot and add it to track_new_plots
-				cumulative_tracks_[index]->track_new_plots_[track_id] = std::shared_ptr<TrackPlot>(
+				cumulative_tracks_[idx]->track_new_plots_[track_id] = std::shared_ptr<TrackPlot>(
 					new TrackPlot(track_id));
-				matching_dict_[index][track_id] = track_id;
-				track_plot = cumulative_tracks_[index]->track_new_plots_[track_id];
+				matching_dict_[idx][track_id] = track_id;
+				track_plot = cumulative_tracks_[idx]->track_new_plots_[track_id];
 			}
 
 			// Update the TrackPlot
-			track_plot->update(location, size, frame_count_, *(frames_[index]));
+			track_plot->update(location, size, frame_count_, frames_[idx]);
 		}			
 	}
 
 	/**
 	 * This function removes dead tracks if they have not appeared for more than 30 frames
 	 */
-	void prune_tracks(int index) {
+	void prune_tracks(int idx) {
 		
 		std::vector<int> prune;
 		
 		// Clean the new tracks first
 		prune.clear();
-		for (auto & track : cumulative_tracks_[index]->track_new_plots_) {
+		for (auto & track : cumulative_tracks_[idx]->track_new_plots_) {
 			if ((frame_count_ - track.second->lastSeen_) > PRUNE_HIST_) {
 				prune.push_back(track.second->id_);
 			}
@@ -121,13 +121,13 @@ namespace mcmt {
 
 		// Remove new tracks if they are older than PRUNE_HIST_
 		for (auto & track_id : prune) {
-			cumulative_tracks_[index]->track_new_plots_.erase(track_id);
-			matching_dict_[index].erase(track_id);
+			cumulative_tracks_[idx]->track_new_plots_.erase(track_id);
+			matching_dict_[idx].erase(track_id);
 		}
 
 		// Clean the matched tracks last
 		prune.clear();
-		for (auto & track : cumulative_tracks_[index]->track_plots_) {
+		for (auto & track : cumulative_tracks_[idx]->track_plots_) {
 			if ((frame_count_ - track.second->lastSeen_) > PRUNE_HIST_) {
 				prune.push_back(track.second->oid_);
 			}
@@ -135,15 +135,15 @@ namespace mcmt {
 		
 		// Remove new tracks if they are older than PRUNE_HIST_
 		for (auto & track_id : prune) {
-			cumulative_tracks_[index]->track_plots_.erase(matching_dict_[index][track_id]);
-			matched_tracks_[matching_dict_[index][track_id]][index] = 0;
-			matched_tracks_[matching_dict_[index][track_id]][NUM_OF_CAMERAS_]--;
+			cumulative_tracks_[idx]->track_plots_.erase(matching_dict_[idx][track_id]);
+			matched_tracks_[matching_dict_[idx][track_id]][idx] = 0;
+			matched_tracks_[matching_dict_[idx][track_id]][NUM_OF_CAMERAS_]--;
 
 			// Update the matched_tracks_ map and remove if all tracks are gone
-			if (!matched_tracks_[matching_dict_[index][track_id]][NUM_OF_CAMERAS_]) {
-				matched_tracks_.erase(matching_dict_[index][track_id]);
+			if (!matched_tracks_[matching_dict_[idx][track_id]][NUM_OF_CAMERAS_]) {
+				matched_tracks_.erase(matching_dict_[idx][track_id]);
 			}
-			matching_dict_[index].erase(track_id);
+			matching_dict_[idx].erase(track_id);
 		}
 	}
 	
@@ -178,9 +178,6 @@ namespace mcmt {
 				}
 			}
 
-			// std::vector<double> line{track_plot_a->xs_.back(), track_plot_a->ys_.back(), track_plot_b->xs_.back() + FRAME_WIDTH_, track_plot_b->ys_.back(), score, convolution, 0};
-			// lines.push_back(line);
-
 			if (max_score < 0.5 && track_plot->frameNos_.size() > 180) {
 				track_plot->mismatch_count_ += 1;
 			} else {
@@ -199,7 +196,7 @@ namespace mcmt {
 		}
 	}
 
-	void process_new_tracks(int idx, int alt, std::vector<std::shared_ptr<GoodTrack>> & good_tracks) {
+	void process_new_tracks(int idx, int alt) {
 		
 		std::vector<std::shared_ptr<GoodTrack>> filter_good_tracks;
 
@@ -209,7 +206,7 @@ namespace mcmt {
 		double score = 0;
 		int row = 0;
 
-		for (auto & track : good_tracks) {
+		for (auto & track : good_tracks_[idx]) {
 
 			// Extract details from the track
 			track_id = track->id;
@@ -525,19 +522,13 @@ namespace mcmt {
 		double x2 = geometric_similarity(track_plot_a->other_tracks_, track_plot_b->other_tracks_);
 		// x3: Heading deviation error value
 		double x3 = heading_score(track_plot_a, track_plot_b);
-		// TESTING FOR 3D VELOCITY ORIENTATION
+		// convolution: 3d-reid method
 		auto convolution = (crossCorrelation_3D(track_plot_a->vel_orient_, track_plot_b->vel_orient_) + 1) / 2;
 
 		double score = (W1_ * x1) + (W2_ * x2) + (W3_ * x3);
 
-		// if (idx_a == 0) {
-		// 	std::vector<double> line{(double) track_plot_a->xs_.back(), (double) track_plot_a->ys_.back(), 
-		// 	(double) (track_plot_b->xs_.back() + FRAME_WIDTH_), (double) track_plot_b->ys_.back(), score, convolution, 0};
-		// 	lines.push_back(line);
-		// }
-
 		if (USE_3D_REID_) return (convolution > 0.7) ? convolution : 0;
-		else return (convolution > 0.5) ? convolution : 0;
+		else return (score > 0.5) ? score : 0;
 	}
 
 	/**
@@ -601,21 +592,17 @@ namespace mcmt {
 			std::vector<std::array<double, 3>> B(Y.end() - length, Y.end());
 
 			for (int i = 0; i < length; i++) {
-				// std::cout << "Old: " << B[i][0] << " " << B[i][2] << std::endl;
 				double x_prime = (B[i][0] * cos(theta / 180.0 * M_PI)) - (B[i][2] * sin(theta / 180.0 * M_PI));
 				double z_prime = (B[i][0] * sin(theta / 180.0 * M_PI)) + (B[i][2] * cos(theta / 180.0 * M_PI));
 				B[i][0] = x_prime;
 				B[i][2] = z_prime;
-				// std::cout << "New: " << B[i][0] << " " << B[i][2] << std::endl;
 			}
 
 			for (int i = 0; i < length; i++) {
 				for (int axis = 0; axis < 3; axis++) {
 					double l = A[i][axis] * B[i][axis];
 					sum += l / length;
-					// std::cout << "Result: " << l << std::endl;
 				}
-				// std::cout << "Matching: " << A[i][0] << " " << B[i][0] << ", " << A[i][1] << " " << B[i][1] << ", " << A[i][2] << " " << B[i][2] <<  std::endl;
 			}
 			
 			return sum;

@@ -34,23 +34,20 @@
 #include <set>
 #include <fstream>
 
-namespace mcmt {
+namespace mcmt {  
 
-	// declare filepaths
-	const int IS_REALTIME_ = 2;
-    const int NUM_OF_CAMERAS_ = 2;
+    // declare session and camera parameters
+    // follow convention: "YYYY-DD-MM_<location>_<session no>"
+    // input files should be named in the format "<SESSION_NAME>_<cam no>.<file ext>"
+    // for edge cams (IS_REALTIME_ = 2), specify IP addresses directly in CAMERA_INPUT_. SESSION_NAME_ will be unused
+    const std::string SESSION_NAME_ = "A"; 
+    const std::vector<std::string> CAMERA_INPUT_ = {"192.168.1.141", "192.168.1.146"};
+    const std::string INPUT_FILE_EXTENSION_ = "mp4";
+    const int IS_REALTIME_ = 1;
+    const int NUM_OF_CAMERAS_ = 1;
 
-    // realtime parameters
-    const std::vector<std::string> VIDEO_INPUT_ = {     "192.168.1.141",
-                                                        "192.168.1.146"
-                                                    };
-    const std::vector<std::string> VIDEO_OUTPUT_ = {    "data/output/A_out.avi",
-                                                        "data/output/B_out.avi"
-                                                    };
-	const std::string VIDEO_OUTPUT_ANNOTATED_ = "data/output/ABC2.avi";
-	const std::string TARGETS_2D_OUTPUT_ = "data/output/targets_2d_out.json";
-    const std::string TARGETS_3D_OUTPUT_ = "data/output/targets_3d_out.json";
-    const std::string FRAME_TIME_ = "data/output/frame_time.csv";
+    // declare master switch
+    const bool RUN_DETECT_TRACK_ = true;
     
     // declare display settings
     const bool GRAPHIC_UI_ = true;
@@ -58,10 +55,11 @@ namespace mcmt {
     const bool SHOW_CAM_NUM_ = true;
     const bool SHOW_ID_ = true;
     const bool SHOW_3D_COORDINATES_ = true;
+    const bool SHOW_DISPLAY_STATUS_ = true;
 
 	// declare video parameters
-	const int FRAME_WIDTH_ = 640;
-    const int FRAME_HEIGHT_ = 480;
+	const int FRAME_WIDTH_ = 1920;
+    const int FRAME_HEIGHT_ = 1080;
     const int VIDEO_FPS_ = 30;
     const int MAX_TOLERATED_CONSECUTIVE_DROPPED_FRAMES_ = 5;
 
@@ -107,10 +105,6 @@ namespace mcmt {
 	// declare plotting parameters
 	const int PLOT_HISTORY_ = 200;
 	const double FONT_SCALE_ = 0.5;
-    const bool DISPLAY_MATCHED_ONLY_ = false;
-    const bool DISPLAY_ID_ = true;
-    const bool DISPLAY_3D_ = true;
-    const bool DISPLAY_STATUS_ = true;
     const std::vector<cv::Scalar> COLORS_{
         cv::Scalar(124, 104, 66), // 1
         cv::Scalar(20, 60, 96), // 2

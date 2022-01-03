@@ -62,16 +62,15 @@ using namespace mcmt;
 namespace mcmt {
 
 	// declare video parameters
-	extern cv::VideoWriter recording_;
+	extern cv::VideoWriter annotated_;
 
 	extern std::ofstream frame_time_file, targets_2d_file, targets_3d_file;
 	extern Json::StreamWriterBuilder builder;
 	extern std::unique_ptr<Json::StreamWriter> writer;
 
-	extern cv::Mat ui_;
+	extern cv::Mat ui_, combined_frame_;
 
 	// define debugging tools
-	extern std::vector<std::vector<double>> lines;
 	extern std::vector<std::string> debug_messages;
 
 	// declare logging variables
@@ -79,17 +78,18 @@ namespace mcmt {
 	extern Json::Value detections_3d_;
 
 	// declare recording functions
-	void initialize_recording(cv::Mat sample_frame);
+	void initialize_recording(int frame_width, int frame_height);
 
 	// declare UI functions
 	void print_frame_summary();
-	void annotate_frames(std::array<std::shared_ptr<cv::Mat>, NUM_OF_CAMERAS_> frames_, std::array<std::shared_ptr<CameraTracks>, NUM_OF_CAMERAS_> cumulative_tracks_);
-	void graphical_UI(cv::Mat combined_frame, std::array<std::shared_ptr<CameraTracks>, NUM_OF_CAMERAS_> cumulative_tracks_, cv::Size frame_size, double actual_fps);
+	void annotate_frames();
+	void graphical_UI(double actual_fps);
 	
 	// declare logging functions
 	void initialize_logs();
 	void log_2D();
 	void log_3D(std::shared_ptr<TrackPlot> track_plot_a, std::shared_ptr<TrackPlot> track_plot_b);
+	void write_logs();
 
 }
 

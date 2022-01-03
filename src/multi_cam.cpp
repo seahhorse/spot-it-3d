@@ -66,16 +66,13 @@ int main(int argc, char * argv[]) {
 	frame_count_ = 1;
 	bool is_disconnected_ = false;
 
-	std::vector<cv::Mat> sample_frames = initialize_cameras();
-	initialize_tracks(sample_frames[0]);
-	initialize_recording(sample_frames[0]);
-	initialize_logs();
+	initialize_cameras();
+	initialize_tracks();
+	if (RUN_DETECT_TRACK_) initialize_recording(cameras_[0]->frame_w_, cameras_[0]->frame_h_);
+	if (RUN_DETECT_TRACK_) initialize_logs();
 
-	if (IS_REALTIME_ != 2) { // To remove when interface shifts
-	for (int cam_idx = 0; cam_idx < NUM_OF_CAMERAS_; cam_idx++) {
-		cameras_[cam_idx]->cap_ >> cameras_[cam_idx]->frame_store_;
-	}
-	}
+	auto frame_end = std::chrono::system_clock::now();
+	std::chrono::duration<float> elapsed_seconds = std::chrono::duration<float>::zero();
 
 	while (true) {
 		
@@ -131,205 +128,154 @@ int main(int argc, char * argv[]) {
 			else {
 				camera->cap_ >> camera->frame_;
 			}
-			camera->frame_original_ = camera->frame_.clone();
 
 			// check if getting frame was successful
 			if (camera->frame_.empty()) {
 				std::cout << "Error: Video camera is disconnected!" << std::endl;
 				is_disconnected_ = true;
-				break;
+			 	break;
+			}
+			else {
+				// make a copy of the frame to be run through env compensation pipeline
+				camera->frame_ec_ = camera->frame_.clone();
+				if (IS_REALTIME_) {
+					camera->recording_.write(camera->frame_);
+				}
 			}
 
-			if (IS_REALTIME_) {
-				recordings_[camera->cam_index_]->write(camera->frame_);
+			if (RUN_DETECT_TRACK_) {
+
+				if (IS_REALTIME_ != 2) { // To remove when interface shifts
+
+					// clear detection variable vectors
+					camera->clear_detection_variables();
+
+					// correct for environmental effects
+					apply_env_compensation(camera);
+
+					// apply background subtractor
+					remove_ground(camera, 0);
+					remove_ground(camera, 1);
+				
+					// get detections
+					detect_objects(camera);
+				}// Edge Cam Interface is currently before KF/DCF. To be shifted
+				
+				// apply state estimation filters
+				predict_new_locations_of_tracks(camera);
+
+				// get KF cost matrix and match detections and track targets
+				detection_to_track_assignment_KF(camera);
+
+				// get DCF cost matrix and match detections and track targets
+				detection_to_track_assignment_DCF(camera);
+
+				// compare DCF and KF cost matrix
+				compare_cost_matrices(camera);
+
+				// updated assigned tracks
+				update_assigned_tracks(camera);
+
+				// update unassigned tracks, and delete lost tracks
+				update_unassigned_tracks(camera);
+				delete_lost_tracks(camera);
+
+				// create new tracks
+				create_new_tracks(camera);
+
+				// filter the tracks
+				filter_tracks(camera);
 			}
-
-			if (IS_REALTIME_ != 2) { // To remove when interface shifts
-
-			// clear detection variable vectors
-			camera->sizes_.clear();
-			camera->centroids_.clear();
-			for (int i = 0; i < camera->sizes_temp_.size(); i++){
-				camera->sizes_temp_[i].clear();
-				camera->centroids_temp_[i].clear();
-			}
-
-			// apply frame by frame subtraction for feature enhancement
-			frame_to_frame_subtraction(camera);
-
-			// correct for environmental effects
-			apply_env_compensation(camera);
-
-			// apply background subtractor
-			remove_ground(camera, 0);
-			remove_ground(camera, 1);
-			
-			// get detections
-			detect_objects(camera);
-			// cv::imshow("Remove Ground Original", camera->removebg_[0]);
-			// cv::imshow("Remove Ground EC", camera->removebg_[1]);
-
-			} // Edge Cam Interface is currently before KF/DCF. To be shifted
-			
-			// apply state estimation filters
-			predict_new_locations_of_tracks(camera);
-
-			clear_track_variables(camera);
-
-			// get KF cost matrix and match detections and track targets
-			detection_to_track_assignment_KF(camera);
-
-			// get DCF cost matrix and match detections and track targets
-			detection_to_track_assignment_DCF(camera);
-
-			// compare DCF and KF cost matrix
-			compare_cost_matrices(camera);
-
-			// updated assigned tracks
-			update_assigned_tracks(camera);
-
-			// update unassigned tracks, and delete lost tracks
-			update_unassigned_tracks(camera);
-			delete_lost_tracks(camera);
-
-			// create new tracks
-			create_new_tracks(camera);
-
-			// convert masked to BGR
-			if (IS_REALTIME_ != 2) { // To remove when interface shifts
-			for (auto & it : camera->masked_) {
-				cv::cvtColor(it, it, cv::COLOR_GRAY2BGR);
-			}
-			}
-
-			// filter the tracks
-			camera->good_tracks_ = filter_tracks(camera);
-			
-			// update the stored t-1 frame 
-			if (IS_REALTIME_ != 2) { // To remove when interface shifts
-			camera->frame_store_ = camera->frame_original_.clone();
-			}
-
 		}
 
-		if (is_disconnected_) {
-			break;
-		}
+		if (is_disconnected_) break;
+		if (RUN_DETECT_TRACK_) log_2D();
 
 		auto detect_end = std::chrono::system_clock::now();
 		
 		for (int i = 0; i < NUM_OF_CAMERAS_; i++) {
-			frames_[i] = std::make_shared<cv::Mat>(cameras_[i]->frame_original_);
-			good_tracks_[i].clear();
-			for (auto & track : cameras_[i]->good_tracks_) {
-				auto good_track = std::shared_ptr<GoodTrack>(new GoodTrack());
-				good_track->id = track->id_;
-				good_track->x = track->centroid_.x;
-				good_track->y = track->centroid_.y;
-				good_track->size = track->size_;
-				good_tracks_[i].push_back(good_track);
-			}
-		}
-		
-		auto track_start = std::chrono::system_clock::now();
-		
-		log_2D();
-
-		for (int cam_idx = 0; cam_idx < NUM_OF_CAMERAS_; cam_idx++) {
-			update_cumulative_tracks(cam_idx, good_tracks_[cam_idx]);
-			prune_tracks(cam_idx);
-		}
-
-		if (NUM_OF_CAMERAS_ > 1) {
-
-			for (int cam_idx_a = 0; cam_idx_a < NUM_OF_CAMERAS_; cam_idx_a++) {
-				for (int cam_idx_b = 0; cam_idx_b < NUM_OF_CAMERAS_; cam_idx_b++) {
-					if (cam_idx_a != cam_idx_b) {
-						process_new_tracks(cam_idx_a, cam_idx_b, good_tracks_[cam_idx_a]);
-					}
+			frames_[i] = cameras_[i]->frame_;
+			if (RUN_DETECT_TRACK_) {
+				good_tracks_[i].clear();
+				for (auto & track : cameras_[i]->good_tracks_) {
+					auto good_track = std::shared_ptr<GoodTrack>(new GoodTrack());
+					good_track->id = track->id_;
+					good_track->x = track->centroid_.x;
+					good_track->y = track->centroid_.y;
+					good_track->size = track->size_;
+					good_tracks_[i].push_back(good_track);
 				}
 			}
-			join_matched_tracks();
-			
-			for (int cam_idx = 0; cam_idx < NUM_OF_CAMERAS_; cam_idx++) {
-				verify_existing_tracks(cam_idx);
-			}
-			calculate_3D();
 		}
 
-		// for (auto & track_plot_a : cumulative_tracks_[0]->track_plots_) {
-		// 	for (auto & track_plot_b : cumulative_tracks_[1]->track_plots_) {
-		// 		compute_matching_score(track_plot_a.second, track_plot_b.second, 0, 1);
-		// 	}
-		// }
+		auto track_start = std::chrono::system_clock::now();
 
-		print_frame_summary();
-		annotate_frames(frames_, cumulative_tracks_);
+		if (RUN_DETECT_TRACK_) {
+		
+			for (int cam_idx = 0; cam_idx < NUM_OF_CAMERAS_; cam_idx++) {
+
+				// update all tracks with incoming information
+				update_cumulative_tracks(cam_idx);
+
+				// remove trackplots that are not relevant anymore
+				prune_tracks(cam_idx);
+			}
+
+			if (NUM_OF_CAMERAS_ > 1) {
+				for (int cam_idx_a = 0; cam_idx_a < NUM_OF_CAMERAS_; cam_idx_a++) {
+					for (int cam_idx_b = 0; cam_idx_b < NUM_OF_CAMERAS_; cam_idx_b++) {
+						if (cam_idx_a != cam_idx_b) process_new_tracks(cam_idx_a, cam_idx_b);
+					}
+				}
+				join_matched_tracks();
+				
+				for (int cam_idx = 0; cam_idx < NUM_OF_CAMERAS_; cam_idx++)	verify_existing_tracks(cam_idx);
+				calculate_3D();
+			}
+
+			print_frame_summary();
+			annotate_frames();
+		}
 
 		auto track_end = std::chrono::system_clock::now();
 		
 		// show and save video combined tracking frame
-		cv::Mat combined_frame = *frames_[0].get();
-		for (int cam_idx = 1; cam_idx < NUM_OF_CAMERAS_; cam_idx++) {
-			cv::hconcat(combined_frame, *frames_[cam_idx].get(), combined_frame);
-		}
-		
-		// for (auto line : lines) {
-		// 	cv::line(combined_frame, cv::Point((int) line[0], (int)line[1]), cv::Point((int) line[2], (int) line[3]), cv::Scalar(0, (int) (line[5] * 255), (int) ((1 - line[5]) * 255)), 1);
-		// 	std::string scores;
-		// 	scores = std::to_string(line[4]).substr(0,4) + ", " + std::to_string(line[5]).substr(0,4);
-		// 	cv::putText(combined_frame, scores, cv::Point((int) ((line[0] + line[2]) / 2), (int) ((line[1] + line[3]) / 2)),  
-		// 					cv::FONT_HERSHEY_SIMPLEX, FONT_SCALE_ * 1, cv::Scalar(0, (int) (line[5] * 255), (int) ((1 - line[5]) * 255)), 2, cv::LINE_AA);
-		// }
-		// lines.clear();
+		cv::hconcat(frames_, combined_frame_);
 
-		auto frame_end = std::chrono::system_clock::now();
-
-		std::chrono::duration<float> detect_elapsed_seconds = detect_end - detect_start;
-		std::cout << "Detection took: " << detect_elapsed_seconds.count() << "s\n";	
-		std::chrono::duration<float> track_elapsed_seconds = track_end - track_start;
-		std::cout << "Tracking took: " << track_elapsed_seconds.count() << "s\n";
-		std::chrono::duration<float> elapsed_seconds = frame_end - frame_start;
 		std::cout << "Total frame took: " << elapsed_seconds.count() << "s\n";
 
-		graphical_UI(combined_frame, cumulative_tracks_, sample_frames[0].size(), 1.0 / elapsed_seconds.count());
-	
-		frame_time_file << detect_elapsed_seconds.count() << ", " << track_elapsed_seconds.count() << ", " << elapsed_seconds.count() << "\n"; 
+		if (RUN_DETECT_TRACK_) {
+			std::chrono::duration<float> detect_elapsed_seconds = detect_end - detect_start;
+			std::cout << "Detection took: " << detect_elapsed_seconds.count() << "s\n";	
+			std::chrono::duration<float> track_elapsed_seconds = track_end - track_start;
+			std::cout << "Tracking took: " << track_elapsed_seconds.count() << "s\n";
+			frame_time_file << detect_elapsed_seconds.count() << ", " << track_elapsed_seconds.count() << ", " << elapsed_seconds.count() << "\n"; 
+		}
 
-		cv::vconcat(combined_frame, ui_, combined_frame);
-		
-		recording_.write(combined_frame);
+		if (GRAPHIC_UI_) {
+			graphical_UI(1.0 / elapsed_seconds.count());
+			cv::vconcat(combined_frame_, ui_, combined_frame_);
+		}
+	
+		if (RUN_DETECT_TRACK_) annotated_.write(combined_frame_);
 
 		// show cv window
-		imshow_resized("Annotated", combined_frame);
+		imshow_resized("Annotated", combined_frame_);
 		
 		frame_count_ += 1;
 
-		cv::waitKey(1);
+		if (cv::waitKey(1) == 'q') break;
+
+		frame_end = std::chrono::system_clock::now();
+		elapsed_seconds = frame_end - frame_start;
 	}
 
-	std::cout << "Writing logs..." << std::endl;
-	writer -> write(detections_2d_, &targets_2d_file);
-	if (NUM_OF_CAMERAS_ > 1) {
-		Json::Value output_3d;
-		output_3d["Detections"] = detections_3d_;
-		writer -> write(output_3d, &targets_3d_file);
-	}
-
-	recording_.release();
-	if (IS_REALTIME_) {
-		for (int cam_idx = 0; cam_idx < NUM_OF_CAMERAS_; cam_idx++) {
-			recordings_[cam_idx]->release();
-		}
+	if (RUN_DETECT_TRACK_) {
+		write_logs();
+	 	annotated_.release();
 	}
 	close_cameras();
-
-	frame_time_file.close();
-	targets_2d_file.close();
-	targets_3d_file.close();
-
 	std::raise(SIGINT);
-
 }
 
 void imshow_resized(std::string window_name, cv::Mat img) {

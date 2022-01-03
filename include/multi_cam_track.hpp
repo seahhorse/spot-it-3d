@@ -77,23 +77,25 @@ namespace mcmt {
 	extern std::map<int, std::array<int, NUM_OF_CAMERAS_ + 1>> matched_tracks_;
 
 	// declare tracking arrays
-	extern std::array<std::shared_ptr<cv::Mat>, NUM_OF_CAMERAS_> frames_;
+	extern std::array<cv::Mat, NUM_OF_CAMERAS_> frames_;
 	extern std::array<std::vector<std::shared_ptr<GoodTrack>>, NUM_OF_CAMERAS_> good_tracks_;
 
 	// declare tracking functions	
-	void initialize_tracks(cv::Mat sample_frame);
+	void initialize_tracks();
+	void update_cumulative_tracks	(int idx);
+	void prune_tracks				(int idx);
+	void verify_existing_tracks		(int idx);
+	void process_new_tracks			(int idx, int alt);
+	void join_matched_tracks		();
+
+	// declare auxiliary functions
 	template <typename T1, typename T2>
 	bool exists(std::map<T1, T2> arr, T1 item);
-	void update_cumulative_tracks(int index, std::vector<std::shared_ptr<GoodTrack>> & good_tracks);
-	void prune_tracks(int index);
-	void verify_existing_tracks(int idx);
-	void process_new_tracks(int idx, int alt, std::vector<std::shared_ptr<GoodTrack>> & good_tracks);
-	void join_matched_tracks();
 	std::vector<double> normalise_track_plot(std::shared_ptr<TrackPlot> track_plot);
 	double compute_matching_score(std::shared_ptr<TrackPlot> track_plot_a, std::shared_ptr<TrackPlot> track_plot_b, int idx_a, int idx_b);
 	double crossCorrelation(std::vector<double> X, std::vector<double> Y);
 	double geometric_similarity(std::vector<std::shared_ptr<TrackPlot::OtherTrack>> & other_tracks_a,
-		std::vector<std::shared_ptr<TrackPlot::OtherTrack>> & other_tracks_b);
+			std::vector<std::shared_ptr<TrackPlot::OtherTrack>> & other_tracks_b);
 	double heading_score(std::shared_ptr<TrackPlot> track_plot_a, std::shared_ptr<TrackPlot> track_plot_b);
 	double crossCorrelation_3D(std::vector<std::array<double, 3>> X, std::vector<std::array<double, 3>> Y);
 	void generate_matched_ids(int idx_a, int idx_b);
@@ -102,7 +104,6 @@ namespace mcmt {
 	std::vector<std::pair<int, int>> create_pairs(std::vector<int> vec);
 	double compute_multi_matching_score(int track_id, int alt_track_id);
 	void calculate_3D();
-	void imshow_resized_dual(std::string & window_name, cv::Mat & img);
 
 }
 

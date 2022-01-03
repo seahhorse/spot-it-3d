@@ -93,14 +93,7 @@ namespace mcmt {
 		public:
 			Camera(
 				int cam_index,
-				int is_realtime,
-				std::string video_input,
-				int fps,
-				int max_frame_width,
-				int max_frame_height,
-				int fgbg_history,
-				float background_ratio,
-				int nmixtures
+				std::string video_input
 			);
 
 		virtual ~Camera() {}
@@ -108,7 +101,8 @@ namespace mcmt {
 			// declare video parameters
 			cv::VideoCapture cap_;
 			std::shared_ptr<WSrt> edgecam_cap_; // To remove when interface shifts
-			cv::Mat frame_, frame_original_, frame_ec_, gray_, frame_store_;
+			cv::VideoWriter recording_;
+			cv::Mat frame_, frame_ec_, gray_;
 			std::array<cv::Mat, 2> masked_;
 			std::string video_input_;
 			int cam_index_, frame_w_, frame_h_, fps_, next_id_;
@@ -120,9 +114,7 @@ namespace mcmt {
 			std::vector<int> dead_tracks_;
 
 			// declare detection variables
-			std::array<std::vector<float>,2> sizes_temp_;
 			std::vector<float> sizes_;
-			std::array<std::vector<cv::Point2f>,2> centroids_temp_;
 			std::vector<cv::Point2f> centroids_;
 
 			// declare tracking variables
@@ -139,6 +131,10 @@ namespace mcmt {
 			// declare blob detector and background subtractor
 			cv::Ptr<cv::SimpleBlobDetector> detector_;
 			std::array<cv::Ptr<cv::BackgroundSubtractorMOG2>, 2> fgbg_;
+
+			// declare class functions
+			// bool get_frame();
+			void clear_detection_variables();
 	};
 }
 

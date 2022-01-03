@@ -43,8 +43,30 @@
 #include <vector>
 #include <list>
 #include <array>
+#include <curl/curl.h>
 
 namespace mcmt {
+
+	struct MemoryStruct {
+		char *memory;
+		size_t size;
+	};
+ 
+	static size_t
+	WriteMemoryCallback(void *contents, size_t size, size_t nmemb, void *userp)	{
+		size_t realsize = size * nmemb;
+		struct MemoryStruct *mem = (struct MemoryStruct *)userp;
+		
+		char *ptr = (char*)realloc(mem->memory, mem->size + realsize + 1);
+		if(!ptr) return 0;		
+		mem->memory = ptr;
+		memcpy(&(mem->memory[mem->size]), contents, realsize);
+		mem->size += realsize;
+		mem->memory[mem->size] = 0;
+		
+		return realsize;
+	}
+
 	
 	/**
 	 * This class is for storing our tracks' information, calculating track feature
@@ -64,7 +86,9 @@ namespace mcmt {
 			} OtherTrack;
 
 			// declare track information
+			bool is_drone_ = true;
 			int id_, oid_, lastSeen_, mismatch_count_;
+			double classification_confidence_ = -1;
 			std::vector<int> xs_, ys_, size_, frameNos_, area_;
 			std::vector<double> xyz_, turning_angle_, curvature_, track_feature_variable_;
 			std::vector<std::array<double, 3>> vel_orient_;
@@ -76,6 +100,7 @@ namespace mcmt {
 			void update_track_feature_variable(int & frame_no);
 			void update_area(cv::Mat frame);
 			void update_3D_velocity_orientation(int & frame_no);
+			void update_classification(int & frame_no);
 			bool check_stationary();
 	};
 

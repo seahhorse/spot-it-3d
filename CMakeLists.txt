@@ -37,6 +37,11 @@ message(STATUS "Found Gstreamer version ${GST_VERSION}")
 include_directories("${GST_INCLUDE_DIRS}")
 target_link_libraries(${EXEC} PRIVATE ${GST_LIBRARIES})
 
+# curl
+find_package( CURL REQUIRED )
+message(STATUS "Found CURL version ${CURL_VERSION_STRING}")
+target_link_libraries( ${EXEC} CURL::libcurl )
+
 # add custom include and library folders
 include_directories(${CMAKE_SOURCE_DIR}/include)
 add_subdirectory(${CMAKE_SOURCE_DIR}/lib)

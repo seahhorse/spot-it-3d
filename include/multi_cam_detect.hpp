@@ -55,27 +55,24 @@ namespace mcmt {
 	// declare Camera variables
 	extern std::vector<std::shared_ptr<Camera>> cameras_;
 	extern cv::Mat element_;
-	extern std::vector<std::shared_ptr<cv::VideoWriter>> recordings_;
 
 	// declare detection and tracking functions
-	std::vector<cv::Mat> initialize_cameras();
-	void frame_to_frame_subtraction(std::shared_ptr<Camera> & camera);
-	void apply_env_compensation(std::shared_ptr<Camera> & camera);
-	void apply_bg_subtractions(std::shared_ptr<Camera> & camera, int frame_id);
-	void detect_objects(std::shared_ptr<Camera> & camera);
-	void remove_ground(std::shared_ptr<Camera> & camera, int masked_id);
-	void remove_overlapped_detections(std::shared_ptr<Camera> & camera);
-	void predict_new_locations_of_tracks(std::shared_ptr<Camera> & camera);
-	void clear_track_variables(std::shared_ptr<Camera> & camera);
-	void detection_to_track_assignment_KF(std::shared_ptr<Camera> & camera);
-	void detection_to_track_assignment_DCF(std::shared_ptr<Camera> & camera);
-	void compare_cost_matrices(std::shared_ptr<Camera> & camera);
-	void update_assigned_tracks(std::shared_ptr<Camera> & camera);
-	void update_unassigned_tracks(std::shared_ptr<Camera> & camera);
-	void create_new_tracks(std::shared_ptr<Camera> & camera);
-	void delete_lost_tracks(std::shared_ptr<Camera> & camera);
-	std::vector<std::shared_ptr<Track>> filter_tracks(std::shared_ptr<Camera> & camera);
-	void close_cameras();
+	void initialize_cameras						();
+	void apply_env_compensation					(std::shared_ptr<Camera> & camera);
+	void apply_bg_subtractions					(std::shared_ptr<Camera> & camera, int frame_id);
+	void detect_objects							(std::shared_ptr<Camera> & camera);
+	void remove_ground							(std::shared_ptr<Camera> & camera, int masked_id);
+	void predict_new_locations_of_tracks		(std::shared_ptr<Camera> & camera);
+	void clear_track_variables					(std::shared_ptr<Camera> & camera);
+	void detection_to_track_assignment_KF		(std::shared_ptr<Camera> & camera);
+	void detection_to_track_assignment_DCF		(std::shared_ptr<Camera> & camera);
+	void compare_cost_matrices					(std::shared_ptr<Camera> & camera);
+	void update_assigned_tracks					(std::shared_ptr<Camera> & camera);
+	void update_unassigned_tracks				(std::shared_ptr<Camera> & camera);
+	void create_new_tracks						(std::shared_ptr<Camera> & camera);
+	void delete_lost_tracks						(std::shared_ptr<Camera> & camera);
+	void filter_tracks							(std::shared_ptr<Camera> & camera);
+	void close_cameras							();
 
 	// declare utility functions
 	float euclideanDist(cv::Point2f & p, cv::Point2f & q);
