@@ -73,7 +73,6 @@ namespace mcmt {
 		}
 		
 		// initialize kernel used for morphological transformations
-<<<<<<< HEAD
 		element_ = cv::getStructuringElement(0, cv::Size(3, 1));
 		dilate_element = cv::getStructuringElement(0, cv::Size(1, 3));
 
@@ -154,9 +153,6 @@ namespace mcmt {
 			cv::cvtColor(frame_delta_grayscale_, frame_delta_, cv::COLOR_GRAY2BGR);
 
    			cv::addWeighted(frame_delta_, DELTA_FRAME_PROPORTION_, camera->frame_, 1.0 - DELTA_FRAME_PROPORTION_, 0.0, camera->frame_);
-=======
-		element_ = cv::getStructuringElement(0, cv::Size(5, 5));
->>>>>>> main
 	}
 
 	/**
