@@ -164,6 +164,8 @@ int main(int argc, char * argv[]) {
 				// apply state estimation filters
 				predict_new_locations_of_tracks(camera);
 
+				clear_track_variables(camera);
+
 				// get KF cost matrix and match detections and track targets
 				detection_to_track_assignment_KF(camera);
 

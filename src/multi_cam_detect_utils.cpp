@@ -26,11 +26,8 @@
 
 // local header files
 #include "multi_cam_detect_utils.hpp"
-<<<<<<< HEAD
 #include "WSrtInterface.hpp"
-=======
 #include "multi_cam_params.hpp"
->>>>>>> main
 
 // standard package imports
 #include <stdlib.h>
@@ -237,7 +234,7 @@ namespace mcmt {
 			scale_factor_ = (sqrt(pow(frame_w_, 2) + pow(frame_h_, 2))) / (sqrt(pow(848, 2) + pow(480, 2)));
 		}
 
-		std::cout << IS_REALTIME_ != 2 && cap_.isOpened() ? 
+		std::cout << (IS_REALTIME_ != 2 && cap_.isOpened()) ? 
 		"Camera opened successful!\n" : "Error: Cannot open camera! Please check!\n";
 
 		if (IS_REALTIME_) {

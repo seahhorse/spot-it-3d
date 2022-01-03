@@ -41,9 +41,9 @@ namespace mcmt {
     // input files should be named in the format "<SESSION_NAME>_<cam no>.<file ext>"
     // for edge cams (IS_REALTIME_ = 2), specify IP addresses directly in CAMERA_INPUT_. SESSION_NAME_ will be unused
     const std::string SESSION_NAME_ = "A"; 
-    const std::vector<std::string> CAMERA_INPUT_ = {"192.168.1.141", "192.168.1.146"};
-    const std::string INPUT_FILE_EXTENSION_ = "mp4";
-    const int IS_REALTIME_ = 1;
+    const std::vector<std::string> CAMERA_INPUT_ = {"192.168.1.122", "192.168.1.146"};
+    const std::string INPUT_FILE_EXTENSION_ = "avi";
+    const int IS_REALTIME_ = 2;
     const int NUM_OF_CAMERAS_ = 1;
 
     // declare master switch
