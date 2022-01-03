@@ -309,7 +309,6 @@ namespace mcmt {
 			// apply blob detection
 			std::vector<cv::KeyPoint> keypoints;
 			camera->detector_->detect(camera->masked_[i], keypoints);
-			cv::imshow(detection_masked, camera->masked_[i]);
 
 			// clear vectors to store sizes and centroids of current frame's detected targets
 			for (auto & it : keypoints) {
