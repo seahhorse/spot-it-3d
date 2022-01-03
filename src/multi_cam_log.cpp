@@ -51,16 +51,15 @@ using namespace mcmt;
 
 namespace mcmt {
 
-	cv::VideoWriter recording_;
+	cv::VideoWriter annotated_;
 
 	std::ofstream frame_time_file, targets_2d_file, targets_3d_file;
 	Json::StreamWriterBuilder builder;
 	std::unique_ptr<Json::StreamWriter> writer(builder.newStreamWriter());
 
-	cv::Mat ui_;
+	cv::Mat ui_, combined_frame_;
 
 	// define debugging tools
-	std::vector<std::vector<double>> lines;
 	std::vector<std::string> debug_messages;
 
 	// declare logging variables
@@ -70,23 +69,28 @@ namespace mcmt {
 	void initialize_recording(int frame_width, int frame_height) {
 	
 		// intialize video writer
-		if (GRAPHIC_UI_) {
-			recording_ = cv::VideoWriter("data/output/" + SESSION_NAME_ + "_ann.avi", cv::VideoWriter::fourcc('M','P','4','V'), VIDEO_FPS_, 
-				cv::Size(NUM_OF_CAMERAS_ * frame_width, frame_height + (360 * NUM_OF_CAMERAS_ * frame_width / 3840)));
-		} else {
-			recording_ = cv::VideoWriter("data/output/" + SESSION_NAME_ + "_ann.avi", cv::VideoWriter::fourcc('M','P','4','V'), VIDEO_FPS_, 
-				cv::Size(NUM_OF_CAMERAS_ * frame_width, frame_height));
-		}
+		annotated_ = cv::VideoWriter("data/output/" + SESSION_NAME_ + "_ann.avi", cv::VideoWriter::fourcc('M','P','4','V'), VIDEO_FPS_, 
+			cv::Size(NUM_OF_CAMERAS_ * frame_width, frame_height + (GRAPHIC_UI_ * 360 * NUM_OF_CAMERAS_ * frame_width / 3840)));
 	}
 
-	void annotate_frames(std::array<std::shared_ptr<cv::Mat>, NUM_OF_CAMERAS_> frames_, std::array<std::shared_ptr<CameraTracks>, NUM_OF_CAMERAS_> cumulative_tracks_) {
+	void initialize_logs() {
+
+		// initialize logs
+		frame_time_file.open("data/log/" + SESSION_NAME_ + "_frame-time.csv");
+		frame_time_file << "detect_time, track_time, total_time\n"; 
+		
+		targets_2d_file.open("data/log/" + SESSION_NAME_ + "_targets-2d-out.json");
+		targets_3d_file.open("data/log/" + SESSION_NAME_ + "_targets-3d-out.json");
+	}
+
+	void annotate_frames() {
 	
 		// draw tracks on opencv GUI to monitor the detected tracks
 		// lopp through each camera frame
 		for (int i = 0; i < NUM_OF_CAMERAS_; i++) {
 
 			if (SHOW_CAM_NUM_) {
-				cv::putText(*frames_[i].get(), "CAM " + std::to_string(i), cv::Point(20, 30),
+				cv::putText(frames_[i], "CAM " + std::to_string(i), cv::Point(20, 30),
 					cv::FONT_HERSHEY_SIMPLEX, FONT_SCALE_ * 1, cv::Scalar(255, 0, 0), 2, cv::LINE_AA);
 			}
 
@@ -121,7 +125,7 @@ namespace mcmt {
 					cv::Point2i rect_top_left(xs.back() - size.back(), ys.back() - size.back());
 					cv::Point2i rect_bottom_right(xs.back() + size.back(), ys.back() + size.back());		
 					
-					cv::rectangle(*frames_[i].get(), rect_top_left, rect_bottom_right, color, 2);	
+					cv::rectangle(frames_[i], rect_top_left, rect_bottom_right, color, 2);	
 					
 					bool annotate_flag = false;
 					
@@ -135,9 +139,9 @@ namespace mcmt {
 						double alpha = 0.5 + (double) color_idx / 400;
 						double beta = 1 - alpha;
 
-						cv::Vec3b pixelColor = (*frames_[i].get()).at<cv::Vec3b>(ys[idx], xs[idx]);
+						cv::Vec3b pixelColor = (frames_[i]).at<cv::Vec3b>(ys[idx], xs[idx]);
 
-						cv::circle(*frames_[i].get(), cv::Point(xs[idx], ys[idx]), 3,
+						cv::circle(frames_[i], cv::Point(xs[idx], ys[idx]), 3,
 							cv::Scalar((int) (pixelColor[0] * beta + (color[0] * alpha)),
 										(int) (pixelColor[1] * beta + (color[1] * alpha)),
 										(int) (pixelColor[2] * beta + (color[2] * alpha))), -1);
@@ -146,36 +150,36 @@ namespace mcmt {
 					// put ID, status and XYZ coordinates on opencv GUI
 					if (annotate_flag) {
 						if (SHOW_ID_) {
-							cv::putText(*frames_[i].get(), "ID: " + std::to_string(id), 
+							cv::putText(frames_[i], "ID: " + std::to_string(id), 
 								cv::Point(rect_top_left.x + 20, rect_top_left.y - 5), cv::FONT_HERSHEY_SIMPLEX,
 								FONT_SCALE_, color, 1, cv::LINE_AA);
 							if (confidence != -1) {
-								cv::putText(*frames_[i].get(), (is_drone ? "Drone: " : "Not Drone: ") + std::to_string(confidence).substr(0,5),
+								cv::putText(frames_[i], (is_drone ? "Drone: " : "Not Drone: ") + std::to_string(confidence).substr(0,5),
 									cv::Point(rect_bottom_right.x + 10, rect_top_left.y + 10), cv::FONT_HERSHEY_SIMPLEX,
 									FONT_SCALE_, color, 1, cv::LINE_AA);
 							}
 						}
 						if (!xyz.empty() && SHOW_3D_COORDINATES_) {
-							cv::putText(*frames_[i].get(), "X: " + std::to_string(xyz[0]).substr(0,4),
+							cv::putText(frames_[i], "X: " + std::to_string(xyz[0]).substr(0,4),
 								cv::Point(rect_bottom_right.x + 10, rect_top_left.y + 25), cv::FONT_HERSHEY_SIMPLEX,
 								FONT_SCALE_, color, 1, cv::LINE_AA);
 
-							cv::putText(*frames_[i].get(), "Y: " + std::to_string(xyz[1]).substr(0,4),
+							cv::putText(frames_[i], "Y: " + std::to_string(xyz[1]).substr(0,4),
 								cv::Point(rect_bottom_right.x + 10, rect_top_left.y + 40), cv::FONT_HERSHEY_SIMPLEX,
 								FONT_SCALE_, color, 1, cv::LINE_AA);
 
-							cv::putText(*frames_[i].get(), "Z: " + std::to_string(xyz[2]).substr(0,4),
+							cv::putText(frames_[i], "Z: " + std::to_string(xyz[2]).substr(0,4),
 								cv::Point(rect_bottom_right.x + 10, rect_top_left.y + 55), cv::FONT_HERSHEY_SIMPLEX,
 								FONT_SCALE_, color, 1, cv::LINE_AA);
 
 							double area = (double) std::accumulate(track.second->area_.end() - 15, track.second->area_.end(), 0) / 15;
 
-							cv::putText(*frames_[i].get(), "A: " + std::to_string(area).substr(0,5),
+							cv::putText(frames_[i], "A: " + std::to_string(area).substr(0,5),
 								cv::Point(rect_bottom_right.x + 10, rect_top_left.y + 70), cv::FONT_HERSHEY_SIMPLEX,
 								FONT_SCALE_, color, 1, cv::LINE_AA);
 						}
 						if (SHOW_DISPLAY_STATUS_) {
-							cv::circle(*frames_[i].get(), cv::Point(rect_top_left.x + 5, rect_top_left.y - 10), 5, status_color, -1);
+							cv::circle(frames_[i], cv::Point(rect_top_left.x + 5, rect_top_left.y - 10), 5, status_color, -1);
 						}
 					}
 				}
@@ -183,7 +187,7 @@ namespace mcmt {
 		}
 	}
 
-	void graphical_UI(cv::Mat combined_frame, std::array<std::shared_ptr<CameraTracks>, NUM_OF_CAMERAS_> cumulative_tracks_, cv::Size frame_size, double actual_fps) {
+	void graphical_UI(double actual_fps) {
 
 		int ui_width = 3840;
 		int ui_height = 360;
@@ -225,7 +229,7 @@ namespace mcmt {
 		cv::rectangle(ui, cv::Point(1930, 20), cv::Point(2700, 340), cv::Scalar(200,200,200), -1);
 		cv::putText(ui, "Session: " + SESSION_NAME_, cv::Point(1950, 70), cv::FONT_HERSHEY_SIMPLEX,
 					FONT_SCALE_ * 2, cv::Scalar(0,0,0), 2, cv::LINE_AA);
-		cv::putText(ui, "Resolution: " + std::to_string(frame_size.width) + " x " + std::to_string(frame_size.height), cv::Point(1950, 120), cv::FONT_HERSHEY_SIMPLEX,
+		cv::putText(ui, "Resolution: " + std::to_string(FRAME_WIDTH_) + " x " + std::to_string(FRAME_HEIGHT_), cv::Point(1950, 120), cv::FONT_HERSHEY_SIMPLEX,
 					FONT_SCALE_ * 2, cv::Scalar(0,0,0), 2, cv::LINE_AA);
 		cv::putText(ui, "Actual FPS: " + std::to_string(actual_fps).substr(0,4), cv::Point(1950, 170), cv::FONT_HERSHEY_SIMPLEX,
 					FONT_SCALE_ * 2, cv::Scalar(0,0,0), 2, cv::LINE_AA);
@@ -247,18 +251,8 @@ namespace mcmt {
 		cv::putText(ui, "3D-REID", cv::Point(2750, 270), cv::FONT_HERSHEY_SIMPLEX,
 					FONT_SCALE_ * 2, USE_3D_REID_ && RUN_DETECT_TRACK_ ? cv::Scalar(0,100,0) : cv::Scalar(0,0,100), 3, cv::LINE_AA);
 
-		cv::resize(ui, ui_, cv::Size(combined_frame.cols, ui_height * combined_frame.cols / ui_width), 0, 0, cv::INTER_CUBIC);
+		cv::resize(ui, ui_, cv::Size(combined_frame_.cols, ui_height * combined_frame_.cols / ui_width), 0, 0, cv::INTER_CUBIC);
 
-	}
-
-	void initialize_logs() {
-
-		// initialize logs
-		frame_time_file.open("data/log/" + SESSION_NAME_ + "_frame-time.csv");
-		frame_time_file << "detect_time, track_time, total_time" << "\n"; 
-		
-		targets_2d_file.open("data/log/" + SESSION_NAME_ + "_targets-2d-out.json");
-		targets_3d_file.open("data/log/" + SESSION_NAME_ + "_targets-3d-out.json");
 	}
 
 	/**
@@ -342,5 +336,21 @@ namespace mcmt {
 		std::cout << std::endl;
 
     }
+
+	void write_logs() {
+		
+		std::cout << "Writing logs..." << std::endl;
+		writer -> write(detections_2d_, &targets_2d_file);
+		if (NUM_OF_CAMERAS_ > 1) {
+			Json::Value output_3d;
+			output_3d["Detections"] = detections_3d_;
+			writer -> write(output_3d, &targets_3d_file);
+		}
+		frame_time_file.close();
+		targets_2d_file.close();
+		targets_3d_file.close();
+		std::cout << "Log writing complete!" << std::endl;
+
+	}
 
 }

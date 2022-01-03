@@ -34,18 +34,16 @@
 #include <set>
 #include <fstream>
 
-namespace mcmt {
-
-	// declare filepaths
-	const bool IS_REALTIME_ = false;
-    const int NUM_OF_CAMERAS_ = 1;
+namespace mcmt {  
 
     // declare session and camera parameters
     // follow convention: "DD-MM_<location>_<session no>"
     // input files should be named in the format "<SESSION_NAME>_<cam no>.<file ext>"
     const std::string SESSION_NAME_ = "A"; 
     const std::vector<std::string> CAMERA_INPUT_ = {"0", "1"};
-    const std::string INPUT_FILE_EXTENSION_ = "avi";
+    const std::string INPUT_FILE_EXTENSION_ = "mp4";
+    const bool IS_REALTIME_ = false;
+    const int NUM_OF_CAMERAS_ = 1;
 
     // declare master switch
     const bool RUN_DETECT_TRACK_ = true;
