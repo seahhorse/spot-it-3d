@@ -50,6 +50,7 @@ namespace mcmt {
 				cv::Point2f centroid,
 				int video_fps,
 				float sec_filter_delay);
+
 			
 		virtual ~Track() {}
 			
@@ -59,6 +60,17 @@ namespace mcmt {
 
 			// variable to store predicted and actual locations from kf
 			cv::Point2f centroid_, predicted_;
+
+			// Variabless to store each detection's velocity, its directions and the detection's previous position
+			cv::Point2f previous; // Previous position variable
+			int vel_mag, vel_angle; // veolcity variables
+
+			// Prediction steps for polygons
+			int vel_angle_leeway; // Angle of search cone for high velocity movements
+			int circle_step; // Radius of search circle for low velocity movements
+			int frame_step; // How long to keep looking for detections
+			int search_frame_counter; // The counter to keep track of number of frames searched since missing
+			int vel_threshold; // Threshold value for velocity to determine type of search zone
 
 			// declare DCF bool variable
 			bool is_dcf_init_, outOfSync_;
@@ -73,6 +85,7 @@ namespace mcmt {
 			// declare class functions
 			void predictKF();
 			void updateKF(cv::Point2f & measurement);
+			std::vector<cv::Point2f> search_polygon();
 			void predictDCF(cv::Mat & frame);
 			void checkDCF(cv::Point2f & measurement, cv::Mat & frame);
 
@@ -133,6 +146,15 @@ namespace mcmt {
 			// declare class functions
 			bool get_frame();
 			void clear_detection_variables();
+			// Simpler background subtraction parameters
+			cv::Ptr<cv::BackgroundSubtractor> simple_MOG2; //
+			cv::Mat foreground_mask;
+
+			// Contour detection parameters
+			std::vector<std::vector<cv::Point>> current_frame_contours; // Store current frame contours
+			std::vector<cv::Vec4i> hierarchy; // Dummy holder for hierarchy
+			cv::Point2f contour_center; // Contour Center placeholder
+			float contour_radius; // Contour radius placeholder
 	};
 }
 

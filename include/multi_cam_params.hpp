@@ -51,7 +51,7 @@ namespace mcmt {
     // declare display settings
     const bool GRAPHIC_UI_ = true;
     const bool SHOW_UNMATCHED_TARGETS_ = true;
-    const bool SHOW_CAM_NUM_ = true;
+    const bool SHOW_CAM_NUM_ = false;
     const bool SHOW_ID_ = true;
     const bool SHOW_3D_COORDINATES_ = true;
     const bool SHOW_DISPLAY_STATUS_ = true;
@@ -63,9 +63,9 @@ namespace mcmt {
     const int MAX_TOLERATED_CONSECUTIVE_DROPPED_FRAMES_ = 5;
 
 	// declare filter parameters
-    const float VISIBILITY_RATIO_ = 0.8;
+    const float VISIBILITY_RATIO_ = 0.5;
     const float VISIBILITY_THRESH_ = 1.0;
-    const float CONSECUTIVE_THRESH_ = 1.0;
+    const float CONSECUTIVE_THRESH_ = 5.0;
     const float AGE_THRESH_ = 1.0;
     const int SECONDARY_FILTER_ = 2;
     const float SEC_FILTER_DELAY_ = 1.0;
@@ -78,14 +78,16 @@ namespace mcmt {
 
 	// declare background subtractor parameters
     const bool USE_BG_SUBTRACTOR_ = true;
-    const int FGBG_HISTORY_ = 5;
-    const float BACKGROUND_RATIO_ = 0.05;
+    const int  SMALLEST_ACCEPTABLE_CONTOUR = 10;
+    const bool USE_BLOB_DETECTION = false;
+    const int FGBG_HISTORY_ = 30;
+    const float BACKGROUND_RATIO_ = 0.4;
     const int NMIXTURES_ = 5;
     const int BRIGHTNESS_GAIN_ = 15;
-    const float FGBG_LEARNING_RATE_ = 0.2;
-    const int DILATION_ITER_ = 2;
-    const float REMOVE_GROUND_ITER_ = 5.75;
-    const float BACKGROUND_CONTOUR_CIRCULARITY_ = 0.5;
+    const float FGBG_LEARNING_RATE_ = 0.5;
+    const int DILATION_ITER_ = 1;
+    const float REMOVE_GROUND_ITER_ = 3;
+    const float BACKGROUND_CONTOUR_CIRCULARITY_ = 0.4;
 
     // declare tracking parameters
     const int PRUNE_HIST_ = 30;

@@ -55,6 +55,8 @@ namespace mcmt {
 	// declare Camera variables
 	std::vector<std::shared_ptr<Camera>> cameras_;
 	cv::Mat element_;
+	cv::Mat dilate_element;
+	std::vector<std::shared_ptr<cv::VideoWriter>> recordings_;
 
 	/**
 	 * Constants, variable and functions definition
@@ -67,9 +69,87 @@ namespace mcmt {
 			cameras_.push_back(std::shared_ptr<Camera>(new Camera(cam_idx, vid_input)));
 		}
 		
-		// initialize kernel used for morphological transformations
-		element_ = cv::getStructuringElement(0, cv::Size(5, 5));
+		// initialize kernels used for morphological transformations
+		element_ = cv::getStructuringElement(0, cv::Size(3, 1));
+		dilate_element = cv::getStructuringElement(0, cv::Size(1, 3));
 	}
+
+	/**
+	 * Applies only MOG2 to the tracking sequence, removing sky compensation, relying only on motion detection matching
+	 * 
+	 */
+	void simpler_background_subtraction(std::shared_ptr<Camera> & camera, int masked_id) {
+		if (masked_id == 0) {
+			cv::Mat cur_frame = camera->frame_;
+		}
+		else {
+			cv::Mat cur_frame = camera->frame_ec_;
+		}
+
+		camera->simple_MOG2->apply(cur_frame, camera->foreground_mask); // Apply the MOG2 algorithm
+
+		camera->foreground_mask.convertTo(camera->masked_[masked_id], CV_8UC1);
+		
+	}
+
+	/**
+	 * Find the contours in current scene, detection based on size of contours
+	 * Accepts all contours in non-env-comp frame, then cycles through the env-comp frame
+	 * to find any missing detections
+	 */
+	void contour_detection(std::shared_ptr<Camera>& camera) {
+		// Go through frame with no env compensation first
+		// Dilate to increase size of contours, making them more visible
+		cv::erode(camera->masked_[0], camera->masked_[0], element_, cv::Point(), DILATION_ITER_);
+		cv::dilate(camera->masked_[0], camera->masked_[0], dilate_element, cv::Point(), DILATION_ITER_);
+
+		// Find the contours in current 
+		cv::findContours(camera->masked_[0], camera->current_frame_contours, cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE);
+
+		// Add the new contours to the centroids if they exceed a certain size
+		for (int j = 0; j < camera->current_frame_contours.size(); j++) {
+			if (cv::contourArea(camera->current_frame_contours[j]) > SMALLEST_ACCEPTABLE_CONTOUR) {
+				cv::minEnclosingCircle(camera->current_frame_contours[j], camera->contour_center, camera->contour_radius);
+				camera->centroids_.push_back(camera->contour_center);
+				camera->sizes_.push_back(cv::contourArea(camera->current_frame_contours[j]));
+			}
+		}
+
+		//Clear variables for env compensated frames
+		camera->current_frame_contours.clear();
+
+		//Apply multi-shaped kernels to env_compensated frame, same as before
+		cv::erode(camera->masked_[1], camera->masked_[1], element_, cv::Point(), DILATION_ITER_);
+		cv::dilate(camera->masked_[1], camera->masked_[1], dilate_element, cv::Point(), DILATION_ITER_);
+
+		// Find the contours in env compensated 
+		cv::findContours(camera->masked_[1], camera->current_frame_contours, cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE);
+
+		// Pass env compensated centroids through, check if new detections are found
+		for (int k = 0; k < camera->current_frame_contours.size(); k++) {
+			//If contour too small, dont bother with checking
+			if (cv::contourArea(camera->current_frame_contours[k]) < SMALLEST_ACCEPTABLE_CONTOUR) {
+				continue;
+			}
+
+			// Check if the current centroid overlaps with other centroids
+			bool valid = true;
+			for (auto & centroid : centroids_) {
+				cv::minEnclosingCircle(camera->current_frame_contours[k], camera->contour_center, camera->contour_radius);
+				if (euclideanDist(camera->contour_center, centroid) < 5) {
+					valid = false;
+					break;
+				}
+			}
+			if (valid) {
+					camera->centroids_.push_back(camera->contour_center);
+					camera->sizes_.push_back(cv::contourArea(camera->current_frame_contours[k]));
+			}
+			
+		}
+
+	}
+
 
 	/**
 	 * Apply environmental compensation on frame. This is needed when environmental conditions prevent
@@ -94,8 +174,8 @@ namespace mcmt {
 		// Extract the treeline and put it in non_sky frame
 		// The mask for the treeline is the inversion of the sky mask
 		// Convert treeline back to RGB using bitwise_and
-		cv::bitwise_not(mask, mask);
-		cv::bitwise_and(camera->frame_ec_, camera->frame_ec_, non_sky, mask);
+		cv::bitwise_not(mask, mask); // flip the mask, changing it to the ground (anti-sky)
+		cv::bitwise_and(camera->frame_ec_, camera->frame_ec_, non_sky, mask); // Take out the ground using anti-sky mask
 		// cv::imshow("non sky", non_sky);
 
 		// Again, split the sky into 3 channels (HSV)
@@ -157,7 +237,7 @@ namespace mcmt {
 		cv::convertScaleAbs((masked_id ? camera->frame_ec_ : camera->frame_), masked, 1, (256 - average_brightness(camera) + BRIGHTNESS_GAIN_));
 		
 		// subtract background
-		camera->fgbg_[masked_id]->apply(masked, masked, FGBG_LEARNING_RATE_);
+		camera->fgbg_[masked_id]->apply(masked, masked);
 		masked.convertTo(camera->masked_[masked_id], CV_8UC1);
 
 		if (USE_BG_SUBTRACTOR_){
@@ -192,12 +272,16 @@ namespace mcmt {
 	void detect_objects(std::shared_ptr<Camera> & camera) {
 		
 		// apply morphological transformation
+		cv::erode(camera->masked_[0], camera->masked_[0], dilate_element, cv::Point(), DILATION_ITER_);
+		cv::erode(camera->masked_[1], camera->masked_[1], dilate_element, cv::Point(), DILATION_ITER_);
+
 		cv::dilate(camera->masked_[0], camera->masked_[0], element_, cv::Point(), DILATION_ITER_);
 		cv::dilate(camera->masked_[1], camera->masked_[1], element_, cv::Point(), DILATION_ITER_);
 
 		// invert frame such that black pixels are foreground
 		cv::bitwise_not(camera->masked_[0], camera->masked_[0]);
 		cv::bitwise_not(camera->masked_[1], camera->masked_[1]);
+		
 
 		// apply blob detection
 		std::vector<cv::KeyPoint> keypoints, keypoints_ec;
@@ -215,7 +299,7 @@ namespace mcmt {
 		for (auto & it : keypoints_ec) {
 			bool valid = true;
 			for (int i = 0; i < original_size; i++) {
-				if (euclideanDist(it.pt, camera->centroids_[i]) > 5.0) {
+				if (euclideanDist(it.pt, camera->centroids_[i]) < 5.0) {
 					valid = false;
 					break;
 				}
@@ -445,8 +529,7 @@ namespace mcmt {
 	 * of detections to tracks. We obtain the final assignments, unassigned_tracks, and unassigned
 	 * detections vectors from this function.
 	 */
-	void compare_cost_matrices(std::shared_ptr<Camera> & camera)
-	{
+	void compare_cost_matrices(std::shared_ptr<Camera> & camera) {
 		// check to see if it is the case where there are no assignments in the current frame
 		if (camera->assignments_kf_.size() == 0 && camera->assignments_dcf_.size() == 0) {
 				camera->assignments_ = camera->assignments_kf_;
@@ -621,6 +704,67 @@ namespace mcmt {
 				}
 				camera->unassigned_detections_.push_back(unassigned_detection);
 			}
+
+			// Last check, see if for all unassigned tracks and detections, apply search polygon
+			for (auto & track_index : camera->unassigned_tracks_) {
+				std::shared_ptr<Track> track = camera->tracks_[track_index];
+
+				// Do the search for within stipulated number of frames,else dont do search, let track die
+				if (track->search_frame_counter < track->frame_step) {
+				// add to the search frame counter to count the current check as step 
+					track->search_frame_counter += 1;
+
+					// Try to search using the last known velocity location, reassign any found blob as the new detection
+					std::vector<cv::Point2f> search_area = track->search_polygon(); // Use appropiate search zone
+					//for (auto & poly_point : search_area) {
+					//	std::cout << to_string(poly_point.x) + " " + to_string(poly_point.y) + "\n";
+					//}
+					//std::cout << "Polygon for Track" + to_string(track_index) + "\n";
+					std::vector<double> eligible_points_distance; // Placeholder for eligible detections' distance from the center of the search zone
+					std::vector<int> eligible_unassigned_detections;
+
+					for (auto& unassigned_detection : camera->unassigned_detections_) { // For every unassgined point, check if in search zone
+						cv::Point2f cur_cen = camera->centroids_[unassigned_detection]; //Find an unassinged point
+						double pointPolygondistance = cv::pointPolygonTest(search_area, cur_cen, true); // Check distances of point to polygon
+						if (pointPolygondistance >= 0) { // Positve distance if inside polygon, 0 if one edge(will still count)
+							eligible_points_distance.push_back(pointPolygondistance);
+							eligible_unassigned_detections.push_back(unassigned_detection);
+						}
+					}
+
+
+					// Find the detection with the smallest distance
+					double min_distance = -1; // Minimum distance
+					int min_detection; // detection parameter
+					int eligible_pointer = 0;
+					int best_detection = -1;
+
+					for (double eligible_point_distance : eligible_points_distance) { // For every eligible point
+						if  (eligible_point_distance > min_distance) { // Find the index with the largest distance from polygon edge(closest to the center)
+							min_distance = eligible_point_distance;
+							best_detection = eligible_unassigned_detections[eligible_pointer];
+							eligible_pointer++;
+						}
+					}
+
+					// Reassign unassigned detection to the track if there is a suitable candidate 
+					if (min_distance > 0) {
+						// std::cout << "Reassigned track for Track " + to_string(track_index) + "\n";
+						std::vector<int> reinitialized_assignment{-1, -1}; // Data structure for assignment
+						reinitialized_assignment[0] = track_index;  // track index assigned
+						reinitialized_assignment[1] = best_detection; // track detection assigned
+						camera->assignments_.push_back(reinitialized_assignment); // set as new assignment
+						track->search_frame_counter = 0; // Reset frame counter to see for future assignments
+
+						// Dont need to remove unassigned assignments, overlap will take care of that
+					}
+					else {
+						track->search_frame_counter++;
+					}
+				}
+
+				
+			}
 		}
 	}
 
@@ -667,7 +811,7 @@ namespace mcmt {
 			std::shared_ptr<Track> track = camera->tracks_[track_index];
 			track->age_++;
 			track->consecutiveInvisibleCount_++;
-			
+		
 			float visibility = float(track->totalVisibleCount_) / float(track->age_);
 
 			// if invisible for too long, append track to be removed

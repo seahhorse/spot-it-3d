@@ -95,16 +95,22 @@ int main(int argc, char * argv[]) {
 				apply_env_compensation(camera);
 
 				// apply background subtractor
-				remove_ground(camera, 0);
-				remove_ground(camera, 1);
+				// remove_ground(camera, 0);
+				// remove_ground(camera, 1);
+
+				simpler_background_subtraction(camera, 0);
+				simpler_background_subtraction(camera, 1);
 				
 				// get detections
-				detect_objects(camera);
+				if (USE_BLOB_DETECTION) {
+					detect_objects(camera);
+				}
+				else {
+					contour_detection(camera);
+				}
 				
 				// apply state estimation filters
 				predict_new_locations_of_tracks(camera);
-
-				clear_track_variables(camera);
 
 				// get KF cost matrix and match detections and track targets
 				detection_to_track_assignment_KF(camera);

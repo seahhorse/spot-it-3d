@@ -101,6 +101,7 @@ namespace mcmt {
 			void update_area(cv::Mat frame);
 			void update_3D_velocity_orientation(int & frame_no);
 			void update_classification(int & frame_no);
+			void construct_look_ahead_polygon();
 			bool check_stationary();
 	};
 

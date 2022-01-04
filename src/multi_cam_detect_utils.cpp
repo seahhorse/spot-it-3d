@@ -59,9 +59,17 @@ namespace mcmt {
 		is_goodtrack_ = false;
 		outOfSync_ = false;
 
+		// Fixed Polygon prediction parameters
+		vel_angle_leeway = 0.75; // The angle of the search cone from the tip
+		frame_step = 2; // Number of frame steps to check the search zone
+		circle_step = 32; // Radius of search circle
+		search_frame_counter = 0; // Initialise counter
+		vel_threshold = 16; // Initialise velocity threshold
+
 		// initialize centroid location
 		centroid_ = centroid;
 		predicted_ = cv::Point2f(0.0, 0.0);
+		previous = cv::Point2f(0.0, 0.0); // Keep track of previous location
 		
 		// initialize kf. We define the KF's parameters for constant velocity model,
 		// and inputs detected target's location into the KF tracker.
@@ -139,17 +147,69 @@ namespace mcmt {
 
 	/**
 	 * This function uses the kalman filter of the track to update the filter with the measured
-	 * location of the detected blob in the current frame.
+	 * location of the detected blob in the current frame. Also updates the previous centroid positions
+	 * and velocity as variables
 	 */
 	void Track::updateKF(cv::Point2f & measurement)	{
 		cv::Mat measure = cv::Mat::zeros(2, 1, CV_32F);
 		measure.at<float>(0) = measurement.x;
 		measure.at<float>(1) = measurement.y;
 
+		// Update the datapoints of the previous locations and velocity if detections are sucessful
+		previous.x = centroid_.x;
+		previous.y = centroid_.y;
+
+		vel_mag = sqrt(pow(measurement.x - previous.x, 2) + pow(measurement.y - previous.y, 2));
+		vel_angle = atan2(measurement.y - previous.y, measurement.x - previous.x);
+
 		// update
 		cv::Mat prediction = kf_->correct(measure);
-		centroid_.x = prediction.at<float>(0);
+		centroid_.x = prediction.at<float>(0); 
 		centroid_.y = prediction.at<float>(1);
+	}
+
+	/**
+	 * This function constructs the track specific search polygon to do reassignment, assisting DCF tracking
+	 * returns the points required to form the current search polygon
+	 * Output: search polygon, vector of elements tuple<int, int> will convert to point2f during searching phase
+	 */
+	std::vector<cv::Point2f> Track::search_polygon() {
+		// Return Structure for polygon
+		std::vector<cv::Point2f> search_area;
+		float circle_pointer = 0;
+		search_area.clear(); // Clear just in case
+
+		// If the drone is travelling fast, use cone to track drone
+		if (vel_mag > vel_threshold) { 
+			float last_x = centroid_.x; //Last known location of x
+			float last_y = centroid_.y; //Last known locations of y
+			cv::Point2f starting_point(last_x, last_y);
+
+			//Calculate the upper bound, center bound and lower bound locations, using polar local coordinates representation 
+			//converted to Cartesian local coordinates
+			cv::Point2f upper_bound(last_x + frame_step * vel_mag * cos(vel_angle + vel_angle_leeway), last_y + frame_step * vel_mag * sin(vel_angle + vel_angle_leeway));
+			cv::Point2f lower_bound(last_x + frame_step * vel_mag * cos(vel_angle - vel_angle_leeway), last_y + frame_step *vel_mag * sin(vel_angle - vel_angle_leeway));
+			cv::Point2f center_bound(last_x + frame_step * vel_mag * cos(vel_angle), last_y + frame_step * vel_mag * sin(vel_angle));
+
+			search_area.push_back(starting_point);
+			search_area.push_back(upper_bound);
+			search_area.push_back(center_bound);
+			search_area.push_back(lower_bound);
+
+			return search_area;
+		}
+
+		else { // else use Circular polygon  to find the drone 
+			while( circle_pointer < M_PI*2) {
+				float global_x = centroid_.x + circle_step*cos(circle_pointer);
+				float global_y = centroid_.y + circle_step*sin(circle_pointer);
+				cv::Point2f circle_point(global_x, global_y);
+				search_area.push_back(circle_point);
+				circle_pointer += M_PI / 4;
+			}
+
+			return search_area;
+		}
 	}
 
 	/**
@@ -181,7 +241,7 @@ namespace mcmt {
 						(measurement.x > (box_.x + (2 * box_.width)))) &&
 					((measurement.y < (box_.y - (1 * box_.height))) ||
 						(measurement.y > (box_.y - (2 * box_.height))))) {
-				outOfSync_ = true;
+				outOfSync_ = false;
 			} else {
 				outOfSync_ = false;
 			}
@@ -236,18 +296,26 @@ namespace mcmt {
 		// initialize blob detector
 		cv::SimpleBlobDetector::Params blob_params;
 		blob_params.filterByConvexity = false;
-		blob_params.filterByCircularity = false;
+		blob_params.filterByCircularity = true;
+		blob_params.filterByInertia = false;
+		blob_params.maxInertiaRatio = 0.3;
+		blob_params.filterByArea = true; // Filter by area size, background changes result in only small movements
+		blob_params.minArea = 15; // Minimum area for blob to count as detection
+		blob_params.minCircularity = 0.5;
 		detector_ = cv::SimpleBlobDetector::create(blob_params);
 
 		// initialize background subtractor
-		int hist = int(FGBG_HISTORY_ * VIDEO_FPS_);
-		float varThresh = float(4 / scale_factor_);
+		int hist = 100;
+		float varThresh = 50; // Need to change this based on background colour
 		bool detectShad = false;
 		for (int i = 0; i < fgbg_.size(); i++) {
 			fgbg_[i] = cv::createBackgroundSubtractorMOG2(hist, varThresh, detectShad);
 			fgbg_[i]->setBackgroundRatio(BACKGROUND_RATIO_);
 			fgbg_[i]->setNMixtures(NMIXTURES_);
 		}
+
+		// Simpler background subtractor, uses full background instead of background split 
+		simple_MOG2 = cv::createBackgroundSubtractorMOG2(hist, varThresh, detectShad);
 	}
 
 	/**
