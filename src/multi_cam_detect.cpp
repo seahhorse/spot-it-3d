@@ -54,7 +54,7 @@ namespace mcmt {
 
 	// declare Camera variables
 	std::vector<std::shared_ptr<Camera>> cameras_;
-	cv::Mat element_;
+	cv::Mat element_, dilate_element, erode_element;
 
 	/**
 	 * Constants, variable and functions definition
@@ -69,6 +69,79 @@ namespace mcmt {
 		
 		// initialize kernel used for morphological transformations
 		element_ = cv::getStructuringElement(0, cv::Size(5, 5));
+		erode_element = cv::getStructuringElement(0, cv::Size(3, 1));
+		dilate_element = cv::getStructuringElement(0, cv::Size(1, 3));
+	}
+
+	/**
+	 * Simple background subtractor, using MOG2
+	 */
+	void simple_background_subtraction(std::shared_ptr<Camera> & camera) {
+		cv::Mat current_frame = camera->frame_ec_;
+		cv::Mat current_frame_ec = camera->frame_ec_;
+
+		camera->simple_MOG2->apply(current_frame , camera->foreground_mask);
+		camera->foreground_mask.convertTo(camera->masked_[0], CV_8UC1);
+
+		camera->simple_MOG2_ec->apply(current_frame_ec , camera->foreground_mask_ec);
+		camera->foreground_mask_ec.convertTo(camera->masked_[1], CV_8UC1);
+		
+	}
+
+	void contour_detection(std::shared_ptr<Camera> & camera) {
+
+		// Dilate to increase size of contours, making them more visible
+		cv::erode(camera->masked_[0], camera->masked_[0], erode_element, cv::Point(), DILATION_ITER_);
+		cv::dilate(camera->masked_[0], camera->masked_[0], dilate_element, cv::Point(), DILATION_ITER_);
+
+		// Find the contours in current 
+		cv::findContours(camera->masked_[0], camera->current_frame_contours, cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE);
+		
+		cv::imshow("After erode-dilate", camera->masked_[0]);
+
+		for (int j = 0; j < camera->current_frame_contours.size(); j++) {
+			if (cv::contourArea(camera->current_frame_contours[j]) > SMALLEST_ALLOWED_CONTOUR) {
+				cv::minEnclosingCircle(camera->current_frame_contours[j], camera->contour_center, camera->contour_radius);
+				camera->centroids_.push_back(camera->contour_center);
+				camera->sizes_.push_back(cv::contourArea(camera->current_frame_contours[j]));
+			}
+		}
+
+		// Remove overlapped detections using searching algorithm
+		int search_pointer = 0;
+		for (auto & centroid : camera->centroids_) {
+		
+		}
+		/**
+		// Clear the contours after every search, save original size
+		int original_size = camera->current_frame_contours.size();
+		camera->current_frame_contours.clear();
+
+		// Dilate to increase size of contours, making them more visible for environmental compensation
+		cv::erode(camera->masked_[1], camera->masked_[1], erode_element, cv::Point(), DILATION_ITER_);
+		cv::dilate(camera->masked_[1], camera->masked_[1], dilate_element, cv::Point(), DILATION_ITER_);
+
+		cv::imshow("Env comp after", camera->masked_[1]);
+
+		
+		// Find the contours in enviornmentally compensated, add if no overlap
+		cv::findContours(camera->masked_[1], camera->current_frame_contours, cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE);
+		
+		for (int k = 0; k < camera->current_frame_contours.size(); k++) {
+			bool valid = true;
+			for (int l = 0; l < original_size; l++ ) {
+				cv::minEnclosingCircle(camera->current_frame_contours[k], camera->contour_center, camera->contour_radius);
+				if (euclideanDist(camera->centroids_[l], camera->contour_center) < 5) {
+					valid = false;
+					break;
+				}
+			}
+			if (valid) {
+				camera->centroids_.push_back(camera->contour_center);
+				camera->sizes_.push_back(cv::contourArea(camera->current_frame_contours[k]));
+			}
+		}
+		**/
 	}
 
 	/**
@@ -620,6 +693,65 @@ namespace mcmt {
 					continue;
 				}
 				camera->unassigned_detections_.push_back(unassigned_detection);
+			}
+
+			for (auto & track_index : camera->unassigned_tracks_) {
+				std::shared_ptr<Track> track = camera->tracks_[track_index];
+
+				// Do the search for within stipulated number of frames,else dont do search, let track die
+				if (track->search_frame_counter < track->frame_step) {
+				// add to the search frame counter to count the current check as step 
+					track->search_frame_counter += 1;
+
+					// Try to search using the last known velocity location, reassign any found blob as the new detection
+					std::vector<cv::Point2f> search_area = track->search_polygon(); // Use appropiate search zone
+					//for (auto & poly_point : search_area) {
+					//	std::cout << to_string(poly_point.x) + " " + to_string(poly_point.y) + "\n";
+					//}
+					//std::cout << "Polygon for Track" + to_string(track_index) + "\n";
+					std::vector<double> eligible_points_distance; // Placeholder for eligible detections' distance from the center of the search zone
+					std::vector<int> eligible_unassigned_detections;
+
+					for (auto& unassigned_detection : camera->unassigned_detections_) { // For every unassgined point, check if in search zone
+						cv::Point2f cur_cen = camera->centroids_[unassigned_detection]; //Find an unassinged point
+						double pointPolygondistance = cv::pointPolygonTest(search_area, cur_cen, true); // Check distances of point to polygon
+						if (pointPolygondistance >= 0) { // Positve distance if inside polygon, 0 if one edge(will still count)
+							eligible_points_distance.push_back(pointPolygondistance);
+							eligible_unassigned_detections.push_back(unassigned_detection);
+						}
+					}
+
+
+					// Find the detection with the smallest distance
+					double min_distance = -1; // Minimum distance
+					int eligible_counter = 0; // Pointer for best distance
+					int best_detection = -1;
+
+					for (double eligible_point_distance : eligible_points_distance) { // For every eligible point
+						if  (eligible_point_distance > min_distance) { // Find the index with the largest distance from polygon edge(closest to the center)
+							min_distance = eligible_point_distance;
+							best_detection = eligible_unassigned_detections[eligible_counter];
+						}
+						eligible_counter++;
+					}
+
+					// Reassign unassigned detection to the track if there is a suitable candidate 
+					if (min_distance > 0) {
+						// std::cout << "Reassigned track for Track " + to_string(track_index) + "\n";
+						std::vector<int> reinitialized_assignment{-1, -1}; // Data structure for assignment
+						reinitialized_assignment[0] = track_index;  // track index assigned
+						reinitialized_assignment[1] = best_detection; // track detection assigned
+						camera->assignments_.push_back(reinitialized_assignment); // set as new assignment
+						track->search_frame_counter = 0; // Reset frame counter to see for future assignments
+
+						// Dont need to remove unassigned assignments, overlap will take care of that
+					}
+					else {
+						track->search_frame_counter++;
+					}
+				}
+
+				
 			}
 		}
 	}
