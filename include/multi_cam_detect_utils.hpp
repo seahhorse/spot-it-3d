@@ -61,16 +61,14 @@ namespace mcmt {
 			// variable to store predicted and actual locations from kf
 			cv::Point2f centroid_, predicted_;
 
-			// Variabless to store each detection's velocity, its directions and the detection's previous position
-			cv::Point2f previous; // Previous position variable
-			int vel_mag, vel_angle; // veolcity variables
+			cv::Point2f previous; // Last known point
+			int vel_mag, vel_angle; // Velocity Variables
 
-			// Prediction steps for polygons
-			int vel_angle_leeway; // Angle of search cone for high velocity movements
-			int circle_step; // Radius of search circle for low velocity movements
-			int frame_step; // How long to keep looking for detections
-			int search_frame_counter; // The counter to keep track of number of frames searched since missing
-			int vel_threshold; // Threshold value for velocity to determine type of search zone
+			int vel_angle_leeway; // Angle for high velocity search zone
+			int circle_step; // Radius of search circle
+			int frame_step; // How long to keep looking for high velocity
+			int search_frame_counter; // Counter for search zone timings
+			int vel_threshold; // velocity threshold between high and low velocity
 
 			// declare DCF bool variable
 			bool is_dcf_init_, outOfSync_;
@@ -142,6 +140,18 @@ namespace mcmt {
 			// declare blob detector and background subtractor
 			cv::Ptr<cv::SimpleBlobDetector> detector_;
 			std::array<cv::Ptr<cv::BackgroundSubtractorMOG2>, 2> fgbg_;
+
+			// Simple background Subtractor and other variables
+			cv::Ptr<cv::BackgroundSubtractorMOG2> simple_MOG2;
+			cv::Ptr<cv::BackgroundSubtractorMOG2> simple_MOG2_ec;
+			cv::Mat foreground_mask;
+			cv::Mat foreground_mask_ec;
+
+			// Contour detection parameters
+			std::vector<std::vector<cv::Point>> current_frame_contours;
+			std::vector<cv::Vec4i> hierarchy;
+			cv::Point2f contour_center;
+			float contour_radius;
 
 			// declare class functions
 			bool get_frame();

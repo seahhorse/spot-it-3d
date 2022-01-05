@@ -98,8 +98,7 @@ int main(int argc, char * argv[]) {
 				// remove_ground(camera, 0);
 				// remove_ground(camera, 1);
 
-				simpler_background_subtraction(camera, 0);
-				simpler_background_subtraction(camera, 1);
+				simple_background_subtraction(camera);
 				
 				// get detections
 				if (USE_BLOB_DETECTION) {

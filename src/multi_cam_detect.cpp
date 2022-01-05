@@ -54,9 +54,7 @@ namespace mcmt {
 
 	// declare Camera variables
 	std::vector<std::shared_ptr<Camera>> cameras_;
-	cv::Mat element_;
-	cv::Mat dilate_element;
-	std::vector<std::shared_ptr<cv::VideoWriter>> recordings_;
+	cv::Mat element_, dilate_element, erode_element;
 
 	/**
 	 * Constants, variable and functions definition
@@ -69,9 +67,81 @@ namespace mcmt {
 			cameras_.push_back(std::shared_ptr<Camera>(new Camera(cam_idx, vid_input)));
 		}
 		
-		// initialize kernels used for morphological transformations
-		element_ = cv::getStructuringElement(0, cv::Size(3, 1));
+		// initialize kernel used for morphological transformations
+		element_ = cv::getStructuringElement(0, cv::Size(5, 5));
+		erode_element = cv::getStructuringElement(0, cv::Size(3, 1));
 		dilate_element = cv::getStructuringElement(0, cv::Size(1, 3));
+	}
+
+	/**
+	 * Simple background subtractor, using MOG2
+	 */
+	void simple_background_subtraction(std::shared_ptr<Camera> & camera) {
+		cv::Mat current_frame = camera->frame_ec_;
+		cv::Mat current_frame_ec = camera->frame_ec_;
+
+		camera->simple_MOG2->apply(current_frame , camera->foreground_mask);
+		camera->foreground_mask.convertTo(camera->masked_[0], CV_8UC1);
+
+		camera->simple_MOG2_ec->apply(current_frame_ec , camera->foreground_mask_ec);
+		camera->foreground_mask_ec.convertTo(camera->masked_[1], CV_8UC1);
+		
+	}
+
+	void contour_detection(std::shared_ptr<Camera> & camera) {
+
+		// Dilate to increase size of contours, making them more visible
+		cv::erode(camera->masked_[0], camera->masked_[0], erode_element, cv::Point(), DILATION_ITER_);
+		cv::dilate(camera->masked_[0], camera->masked_[0], dilate_element, cv::Point(), DILATION_ITER_);
+
+		// Find the contours in current 
+		cv::findContours(camera->masked_[0], camera->current_frame_contours, cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE);
+		
+		cv::imshow("After erode-dilate", camera->masked_[0]);
+
+		for (int j = 0; j < camera->current_frame_contours.size(); j++) {
+			if (cv::contourArea(camera->current_frame_contours[j]) > SMALLEST_ALLOWED_CONTOUR) {
+				cv::minEnclosingCircle(camera->current_frame_contours[j], camera->contour_center, camera->contour_radius);
+				camera->centroids_.push_back(camera->contour_center);
+				camera->sizes_.push_back(cv::contourArea(camera->current_frame_contours[j]));
+			}
+		}
+
+		// Remove overlapped detections using searching algorithm
+		int search_pointer = 0;
+		for (auto & centroid : camera->centroids_) {
+		
+		}
+		/**
+		// Clear the contours after every search, save original size
+		int original_size = camera->current_frame_contours.size();
+		camera->current_frame_contours.clear();
+
+		// Dilate to increase size of contours, making them more visible for environmental compensation
+		cv::erode(camera->masked_[1], camera->masked_[1], erode_element, cv::Point(), DILATION_ITER_);
+		cv::dilate(camera->masked_[1], camera->masked_[1], dilate_element, cv::Point(), DILATION_ITER_);
+
+		cv::imshow("Env comp after", camera->masked_[1]);
+
+		
+		// Find the contours in enviornmentally compensated, add if no overlap
+		cv::findContours(camera->masked_[1], camera->current_frame_contours, cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE);
+		
+		for (int k = 0; k < camera->current_frame_contours.size(); k++) {
+			bool valid = true;
+			for (int l = 0; l < original_size; l++ ) {
+				cv::minEnclosingCircle(camera->current_frame_contours[k], camera->contour_center, camera->contour_radius);
+				if (euclideanDist(camera->centroids_[l], camera->contour_center) < 5) {
+					valid = false;
+					break;
+				}
+			}
+			if (valid) {
+				camera->centroids_.push_back(camera->contour_center);
+				camera->sizes_.push_back(cv::contourArea(camera->current_frame_contours[k]));
+			}
+		}
+		**/
 	}
 
 	/**
@@ -705,7 +775,6 @@ namespace mcmt {
 				camera->unassigned_detections_.push_back(unassigned_detection);
 			}
 
-			// Last check, see if for all unassigned tracks and detections, apply search polygon
 			for (auto & track_index : camera->unassigned_tracks_) {
 				std::shared_ptr<Track> track = camera->tracks_[track_index];
 
@@ -735,15 +804,13 @@ namespace mcmt {
 
 					// Find the detection with the smallest distance
 					double min_distance = -1; // Minimum distance
-					int eligible_pointer = 0;
-					int eligible_counter = 0;
+					int eligible_counter = 0; // Pointer for best distance
 					int best_detection = -1;
 
 					for (double eligible_point_distance : eligible_points_distance) { // For every eligible point
 						if  (eligible_point_distance > min_distance) { // Find the index with the largest distance from polygon edge(closest to the center)
 							min_distance = eligible_point_distance;
 							best_detection = eligible_unassigned_detections[eligible_counter];
-							eligible_pointer = eligible_counter;
 						}
 						eligible_counter++;
 					}
