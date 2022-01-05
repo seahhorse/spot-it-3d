@@ -735,16 +735,17 @@ namespace mcmt {
 
 					// Find the detection with the smallest distance
 					double min_distance = -1; // Minimum distance
-					int min_detection; // detection parameter
 					int eligible_pointer = 0;
+					int eligible_counter = 0;
 					int best_detection = -1;
 
 					for (double eligible_point_distance : eligible_points_distance) { // For every eligible point
 						if  (eligible_point_distance > min_distance) { // Find the index with the largest distance from polygon edge(closest to the center)
 							min_distance = eligible_point_distance;
-							best_detection = eligible_unassigned_detections[eligible_pointer];
-							eligible_pointer++;
+							best_detection = eligible_unassigned_detections[eligible_counter];
+							eligible_pointer = eligible_counter;
 						}
+						eligible_counter++;
 					}
 
 					// Reassign unassigned detection to the track if there is a suitable candidate 

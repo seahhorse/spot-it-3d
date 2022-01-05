@@ -66,7 +66,7 @@ namespace mcmt {
     const float VISIBILITY_RATIO_ = 0.5;
     const float VISIBILITY_THRESH_ = 1.0;
     const float CONSECUTIVE_THRESH_ = 5.0;
-    const float AGE_THRESH_ = 1.0;
+    const float AGE_THRESH_ = 2.0;
     const int SECONDARY_FILTER_ = 2;
     const float SEC_FILTER_DELAY_ = 1.0;
 
