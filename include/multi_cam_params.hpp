@@ -39,9 +39,9 @@ namespace mcmt {
     // declare session and camera parameters
     // follow convention: "DD-MM_<location>_<session no>"
     // input files should be named in the format "<SESSION_NAME>_<cam no>.<file ext>"
-    const std::string SESSION_NAME_ = "22-12_OHR_trial4"; 
+    const std::string SESSION_NAME_ = "A"; 
     const std::vector<std::string> CAMERA_INPUT_ = {"0", "1"};
-    const std::string INPUT_FILE_EXTENSION_ = "avi";
+    const std::string INPUT_FILE_EXTENSION_ = "mp4";
     const bool IS_REALTIME_ = false;
     const int NUM_OF_CAMERAS_ = 1;
 
@@ -51,14 +51,14 @@ namespace mcmt {
     // declare display settings
     const bool GRAPHIC_UI_ = true;
     const bool SHOW_UNMATCHED_TARGETS_ = true;
-    const bool SHOW_CAM_NUM_ = false;
+    const bool SHOW_CAM_NUM_ = true;
     const bool SHOW_ID_ = true;
     const bool SHOW_3D_COORDINATES_ = true;
     const bool SHOW_DISPLAY_STATUS_ = true;
 
 	// declare video parameters
-	const int FRAME_WIDTH_ = 640;
-    const int FRAME_HEIGHT_ = 480;
+	const int FRAME_WIDTH_ = 1920;
+    const int FRAME_HEIGHT_ = 1080;
     const int VIDEO_FPS_ = 30;
     const int MAX_TOLERATED_CONSECUTIVE_DROPPED_FRAMES_ = 5;
 

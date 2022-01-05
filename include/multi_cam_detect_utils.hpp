@@ -156,15 +156,6 @@ namespace mcmt {
 			// declare class functions
 			bool get_frame();
 			void clear_detection_variables();
-			// Simpler background subtraction parameters
-			cv::Ptr<cv::BackgroundSubtractor> simple_MOG2; //
-			cv::Mat foreground_mask;
-
-			// Contour detection parameters
-			std::vector<std::vector<cv::Point>> current_frame_contours; // Store current frame contours
-			std::vector<cv::Vec4i> hierarchy; // Dummy holder for hierarchy
-			cv::Point2f contour_center; // Contour Center placeholder
-			float contour_radius; // Contour radius placeholder
 	};
 }
 
