@@ -1,0 +1,13 @@
+{
+  "model_settings": {
+    "classes": {
+      "0": "drone",
+      "1": "other"
+    },
+    "threshold": 0.7
+  },
+  "server_settings": {
+    "port": 4000,
+    "model_path": "models/drone_classifier.pickle.dat"
+  }
+}
