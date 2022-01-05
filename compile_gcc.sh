@@ -61,4 +61,4 @@ then
     cd ../
     # ./spot-it-3d
     
-fi
+fi 

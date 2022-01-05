@@ -60,6 +60,13 @@ namespace mcmt {
 		is_goodtrack_ = false;
 		outOfSync_ = false;
 
+		// Initialize search zone parameters
+		vel_angle_leeway = 0.75;
+		frame_step = 2;
+		circle_step = 32;
+		search_frame_counter = 0;
+		vel_threshold =0;
+
 		// initialize centroid location
 		centroid_ = centroid;
 		predicted_ = cv::Point2f(0.0, 0.0);
@@ -147,10 +154,55 @@ namespace mcmt {
 		measure.at<float>(0) = measurement.x;
 		measure.at<float>(1) = measurement.y;
 
+		previous.x = centroid_.x;
+		previous.y = centroid_.y;
+
+		vel_mag = sqrt(pow(measurement.x - previous.x, 2) + pow(measurement.y - previous.y, 2));
+		vel_angle = atan2(measurement.y - previous.y, measurement.x - previous.x);
+
 		// update
 		cv::Mat prediction = kf_->correct(measure);
 		centroid_.x = prediction.at<float>(0);
 		centroid_.y = prediction.at<float>(1);
+	}
+
+	std::vector<cv::Point2f> Track::search_polygon() {
+		// Return Structure for polygon
+		std::vector<cv::Point2f> search_area;
+		float circle_pointer = 0; // Search Circle pointer
+		search_area.clear(); // Clear just in case
+
+		// If the drone is travelling fast, use cone to track drone
+		if (vel_mag > vel_threshold) { 
+			float last_x = centroid_.x; //Last known location of x
+			float last_y = centroid_.y; //Last known locations of y
+			cv::Point2f starting_point(last_x, last_y);
+
+			//Calculate the upper bound, center bound and lower bound locations, using polar local coordinates representation 
+			//converted to Cartesian local coordinates
+			cv::Point2f upper_bound(last_x + frame_step * vel_mag * cos(vel_angle + vel_angle_leeway), last_y + frame_step * vel_mag * sin(vel_angle + vel_angle_leeway));
+			cv::Point2f lower_bound(last_x + frame_step * vel_mag * cos(vel_angle - vel_angle_leeway), last_y + frame_step *vel_mag * sin(vel_angle - vel_angle_leeway));
+			cv::Point2f center_bound(last_x + frame_step * vel_mag * cos(vel_angle), last_y + frame_step * vel_mag * sin(vel_angle));
+
+			search_area.push_back(starting_point);
+			search_area.push_back(upper_bound);
+			search_area.push_back(center_bound);
+			search_area.push_back(lower_bound);
+
+			return search_area;
+		}
+
+		else { // else use Circular polygon  to find the drone 
+			while( circle_pointer < M_PI*2) {
+				float global_x = centroid_.x + circle_step*cos(circle_pointer);
+				float global_y = centroid_.y + circle_step*sin(circle_pointer);
+				cv::Point2f circle_point(global_x, global_y);
+				search_area.push_back(circle_point);
+				circle_pointer += M_PI / 4;
+			}
+
+			return search_area;
+		}
 	}
 
 	/**
@@ -261,6 +313,9 @@ namespace mcmt {
 				fgbg_[i]->setNMixtures(NMIXTURES_);
 			}
 		}
+
+		simple_MOG2 = cv::createBackgroundSubtractorMOG2(100, 50, detectShad);
+		simple_MOG2_ec = cv::createBackgroundSubtractorMOG2(100, 50, detectShad);
 	}
 
 	/**
