@@ -312,10 +312,9 @@ namespace mcmt {
 				fgbg_[i]->setBackgroundRatio(BACKGROUND_RATIO_);
 				fgbg_[i]->setNMixtures(NMIXTURES_);
 			}
+			simple_MOG2 = cv::createBackgroundSubtractorMOG2(100, 50, detectShad);
+			simple_MOG2_ec = cv::createBackgroundSubtractorMOG2(100, 50, detectShad);
 		}
-
-		simple_MOG2 = cv::createBackgroundSubtractorMOG2(100, 50, detectShad);
-		simple_MOG2_ec = cv::createBackgroundSubtractorMOG2(100, 50, detectShad);
 	}
 
 	/**
