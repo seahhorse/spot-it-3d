@@ -34,7 +34,7 @@ else
         # Build and install OpenCV
         mkdir opencv_build
         cd opencv_build
-        cmake -D BUILD_TIFF=ON -D WITH_CUDA=OFF -D ENABLE_AVX=OFF -D WITH_OPENGL=OFF -D WITH_OPENCL=OFF -D WITH_IPP=OFF -D WITH_TBB=ON -D BUILD_TBB=ON -D WITH_EIGEN=OFF -D WITH_V4L=OFF -D WITH_VTK=OFF -D BUILD_TESTS=OFF -D BUILD_PERF_TESTS=OFF -D CMAKE_BUILD_TYPE=RELEASE -D OPENCV_GENERATE_PKGCONFIG=YES -D CMAKE_INSTALL_PREFIX=/usr/local -D OPENCV_EXTRA_MODULES_PATH=../opencv_contrib/modules ../opencv
+        cmake -D BUILD_TIFF=ON -D WITH_CUDA=OFF -D ENABLE_AVX=OFF -D WITH_OPENGL=OFF -D WITH_OPENCL=OFF -D WITH_IPP=OFF -D WITH_TBB=ON -D BUILD_TBB=ON -D WITH_EIGEN=OFF -D WITH_V4L=ON -D WITH_VTK=OFF -D BUILD_TESTS=OFF -D BUILD_PERF_TESTS=OFF -D CMAKE_BUILD_TYPE=RELEASE -D OPENCV_GENERATE_PKGCONFIG=YES -D CMAKE_INSTALL_PREFIX=/usr/local -D OPENCV_EXTRA_MODULES_PATH=../opencv_contrib/modules ../opencv
         make -j4
         sudo make install
         sudo ldconfig
@@ -54,11 +54,11 @@ fi
 
 if [ $opencv_installed == 1 ]
 then
-    g++ -I./include -L./lib/hungarian -L./lib/json src/*.cpp lib/hungarian/Hungarian.cpp lib/json/jsoncpp.cpp -lcurl -o spot-it-3d `pkg-config --cflags --libs opencv4`
+    g++ -I./include -L/lib/x86_64-linux-gnu -L/usr/lib/x86_64-linux-gnu/ -L./lib/hungarian -L./lib/json -L./lib/wsrt src/*.cpp lib/hungarian/Hungarian.cpp lib/json/jsoncpp.cpp lib/wsrt/libsrtreceiver.a lib/wsrt/libwsclient.a /lib/x86_64-linux-gnu/libgstapp-1.0.so.0 /usr/lib/x86_64-linux-gnu/libsoup-2.4.so -lcurl -o spot-it-3d `pkg-config --cflags --libs opencv4 gstreamer-1.0 tbb`
     echo spot-it-3d successfully compiled!
     cd classifier_service
     python3 main.py &>/dev/null &
     cd ../
-    ./spot-it-3d
+    # ./spot-it-3d
     
 fi 

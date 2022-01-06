@@ -37,12 +37,13 @@
 namespace mcmt {  
 
     // declare session and camera parameters
-    // follow convention: "DD-MM_<location>_<session no>"
+    // follow convention: "YYYY-DD-MM_<location>_<session no>"
     // input files should be named in the format "<SESSION_NAME>_<cam no>.<file ext>"
+    // for edge cams (IS_REALTIME_ = 2), specify IP addresses directly in CAMERA_INPUT_. SESSION_NAME_ will be unused
     const std::string SESSION_NAME_ = "A"; 
     const std::vector<std::string> CAMERA_INPUT_ = {"0", "1"};
-    const std::string INPUT_FILE_EXTENSION_ = "mp4";
-    const bool IS_REALTIME_ = false;
+    const std::string INPUT_FILE_EXTENSION_ = "avi";
+    const int IS_REALTIME_ = 1;
     const int NUM_OF_CAMERAS_ = 1;
 
     // declare master switch
@@ -75,6 +76,9 @@ namespace mcmt {
 
     // declare image subtraction parameters
     const float DELTA_FRAME_PROPORTION_ = 0.00;
+
+    // declare edge cam parameters
+    const float MAX_DETECTION_DELAY_ = 10;
 
 	// declare background subtractor parameters
     const bool USE_BG_SUBTRACTOR_ = true;

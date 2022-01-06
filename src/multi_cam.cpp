@@ -46,6 +46,7 @@
 #include "multi_cam_track_utils.hpp"
 #include "multi_cam_log.hpp"
 #include "multi_cam_params.hpp"
+#include "WSrtInterface.hpp"
 
 // opencv header files
 #include "opencv2/opencv.hpp"
@@ -81,33 +82,92 @@ int main(int argc, char * argv[]) {
 		for (auto & camera : cameras_) {
 
 			// get camera frame
-			if (camera->get_frame()) {
+			if (IS_REALTIME_ == 2) { // To remove when interface shifts
+				
+				// here is where data from edge cam is passed to the main detection/tracking pipeline
+				wsrt_output edgecam_data;
+				edgecam_data = camera->edgecam_cap_->extract_data();
+
+				// get image from edge cam - keep this code when interface shifts!
+				camera->frame_ = edgecam_data.image.clone();
+
+				// copy frame to masked to avoid downstream errors - to remove when interface shifts
+				for (auto & it : camera->masked_) {
+					it = camera->frame_.clone();
+				}
+
+				// clear detection variable vectors for next batch of detections
+				// if the edgecam detections and images are not in sync, the clearing of detections is delayed
+				// if, after delaying for a max number of frames specified by MAX_DETECTION_DELAY_,
+				// the edgecam is still out of sync, the detections are cleared anyway to avoid clogging them up
+				if (!edgecam_data.delay_required || camera->edgecam_cap_->detection_delays_ >= MAX_DETECTION_DELAY_){
+					camera->sizes_.clear();
+					camera->centroids_.clear();
+					camera->edgecam_cap_->detection_delays_ = 0;
+				}
+				else{
+					camera->edgecam_cap_->detection_delays_ += 1;
+				}
+
+				// get detections from edge cam - keep this code when interface shifts!
+				for (auto & detection : edgecam_data.detections) {
+					float size = std::max(float(detection.width), float(detection.height)); // "size" is a diameter!
+					cv::Point2f coords(float(detection.x), float(detection.y));
+					camera->centroids_.push_back(coords);
+					camera->sizes_.push_back(size);
+				}
+
+				// display raw detections for debug purpose
+				// cv::Mat srt_frame = camera->frame_.clone();
+				// for (int i = 0; i < camera->centroids_.size(); i++) {
+				// 	cv::rectangle(srt_frame, {camera->centroids_[i].x, camera->centroids_[i].y}, 
+				// 	{camera->centroids_[i].x + camera->sizes_[i], camera->centroids_[i].y + camera->sizes_[i]}, 150, 3);
+				// }
+				// cv::imshow("SRT raw detections", srt_frame);
+			}
+			else {
+				camera->cap_ >> camera->frame_;
+			}
+
+			// check if getting frame was successful
+			if (camera->frame_.empty()) {
+				std::cout << "Error: Video camera is disconnected!" << std::endl;
 				is_disconnected_ = true;
 			 	break;
 			}
+			else {
+				// make a copy of the frame to be run through env compensation pipeline
+				camera->frame_ec_ = camera->frame_.clone();
+				if (IS_REALTIME_) {
+					camera->recording_.write(camera->frame_);
+				}
+			}
 
 			if (RUN_DETECT_TRACK_) {
-				
-				// clear detection variable vectors
-				camera->clear_detection_variables();
 
-				// correct for environmental effects
-				apply_env_compensation(camera);
+				if (IS_REALTIME_ != 2) { // To remove when interface shifts
 
-				// apply background subtractor
-				// remove_ground(camera, 0);
-				// remove_ground(camera, 1);
+					// clear detection variable vectors
+					camera->clear_detection_variables();
 
-				simple_background_subtraction(camera);
-				
-				// get detections
-				if (USE_BLOB_DETECTION) {
-					detect_objects(camera);
-				}
-				else {
-					contour_detection(camera);
-				}
-				
+					// correct for environmental effects
+					apply_env_compensation(camera);
+
+					// apply background subtractor
+					// remove_ground(camera, 0);
+					// remove_ground(camera, 1);
+
+					simple_background_subtraction(camera);
+
+					// get detections
+					if (USE_BLOB_DETECTION) {
+						detect_objects(camera);
+					}
+					else {
+						contour_detection(camera);
+					}
+				}// Edge Cam Interface is currently before KF/DCF. To be shifted
+
 				// apply state estimation filters
 				predict_new_locations_of_tracks(camera);
 
@@ -135,7 +195,6 @@ int main(int argc, char * argv[]) {
 				// filter the tracks
 				filter_tracks(camera);
 			}
-
 		}
 
 		if (is_disconnected_) break;

@@ -31,6 +31,7 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/ximgproc.hpp>
 #include <opencv2/tracking.hpp>
+#include <WSrtInterface.hpp>
 
 // standard package imports
 #include <string>
@@ -110,6 +111,7 @@ namespace mcmt {
 
 			// declare video parameters
 			cv::VideoCapture cap_;
+			std::shared_ptr<WSrt> edgecam_cap_; // To remove when interface shifts
 			cv::VideoWriter recording_;
 			cv::Mat frame_, frame_ec_, gray_;
 			std::array<cv::Mat, 2> masked_;
@@ -154,7 +156,7 @@ namespace mcmt {
 			float contour_radius;
 
 			// declare class functions
-			bool get_frame();
+			// bool get_frame();
 			void clear_detection_variables();
 	};
 }

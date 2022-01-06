@@ -26,6 +26,7 @@
 
 // local header files
 #include "multi_cam_detect_utils.hpp"
+#include "WSrtInterface.hpp"
 #include "multi_cam_params.hpp"
 
 // standard package imports
@@ -249,19 +250,27 @@ namespace mcmt {
 		cam_index_ = index;
 
 		// open video capturing or video file
-		if (IS_REALTIME_) {
+		if (IS_REALTIME_ == 1) {
 			cap_ = cv::VideoCapture(std::stoi(video_input_), cv::CAP_V4L2);
 			cap_.set(cv::CAP_PROP_FOURCC, cv::VideoWriter::fourcc('M', 'J', 'P', 'G'));
 			cap_.set(cv::CAP_PROP_FRAME_WIDTH, FRAME_WIDTH_);
 			cap_.set(cv::CAP_PROP_FRAME_HEIGHT, FRAME_HEIGHT_);
 			cap_.set(cv::CAP_PROP_FPS, VIDEO_FPS_);
+		} else if (IS_REALTIME_ == 2) { // To remove when interface shifts
+			edgecam_cap_ = std::shared_ptr<WSrt>(new WSrt(cam_index_, video_input_, "8888", "49999", "avdec_h264"));
 		} else {
 			cap_ = cv::VideoCapture(video_input_);
 		}
 
 		// get video parameters
-		frame_w_ = int(cap_.get(cv::CAP_PROP_FRAME_WIDTH));
-		frame_h_ = int(cap_.get(cv::CAP_PROP_FRAME_HEIGHT));
+		if (IS_REALTIME_ == 2) {// To remove when interface shifts
+			frame_w_ = FRAME_WIDTH_; // placeholder... how to get frame width/height from edgecam?
+			frame_h_ = FRAME_HEIGHT_;
+		}
+		else {
+			frame_w_ = int(cap_.get(cv::CAP_PROP_FRAME_WIDTH));
+			frame_h_ = int(cap_.get(cv::CAP_PROP_FRAME_HEIGHT));
+		}
 		assert (frame_w_ == FRAME_WIDTH_ && frame_h_ == FRAME_HEIGHT_);
 		fps_ = VIDEO_FPS_;
 		scale_factor_ = (sqrt(pow(frame_w_, 2) + pow(frame_h_, 2))) / (sqrt(pow(848, 2) + pow(480, 2)));
@@ -277,7 +286,8 @@ namespace mcmt {
 			scale_factor_ = (sqrt(pow(frame_w_, 2) + pow(frame_h_, 2))) / (sqrt(pow(848, 2) + pow(480, 2)));
 		}
 
-		std::cout << cap_.isOpened() ? "Camera opened successful!\n" : "Error: Cannot open camera! Please check!\n";
+		std::cout << (IS_REALTIME_ != 2 && cap_.isOpened()) ? 
+		"Camera opened successful!\n" : "Error: Cannot open camera! Please check!\n";
 
 		if (IS_REALTIME_) {
 			std::string vid_output = "data/output/" + SESSION_NAME_ + "_" + std::to_string(cam_index_) + ".avi";
@@ -285,42 +295,44 @@ namespace mcmt {
 			cv::Size(frame_w_, frame_h_));
 		}
 		
-		// initialize blob detector
-		cv::SimpleBlobDetector::Params blob_params;
-		blob_params.filterByConvexity = false;
-		blob_params.filterByCircularity = false;
-		detector_ = cv::SimpleBlobDetector::create(blob_params);
+		if (IS_REALTIME_ != 2) { // To remove when interface shifts
+		
+			// initialize blob detector
+			cv::SimpleBlobDetector::Params blob_params;
+			blob_params.filterByConvexity = false;
+			blob_params.filterByCircularity = false;
+			detector_ = cv::SimpleBlobDetector::create(blob_params);
 
-		// initialize background subtractor
-		int hist = int(FGBG_HISTORY_ * VIDEO_FPS_);
-		float varThresh = float(4 / scale_factor_);
-		bool detectShad = false;
-		for (int i = 0; i < fgbg_.size(); i++) {
-			fgbg_[i] = cv::createBackgroundSubtractorMOG2(hist, varThresh, detectShad);
-			fgbg_[i]->setBackgroundRatio(BACKGROUND_RATIO_);
-			fgbg_[i]->setNMixtures(NMIXTURES_);
+			// initialize background subtractor
+			int hist = int(FGBG_HISTORY_ * VIDEO_FPS_);
+			float varThresh = float(4 / scale_factor_);
+			bool detectShad = false;
+			for (int i = 0; i < fgbg_.size(); i++) {
+				fgbg_[i] = cv::createBackgroundSubtractorMOG2(hist, varThresh, detectShad);
+				fgbg_[i]->setBackgroundRatio(BACKGROUND_RATIO_);
+				fgbg_[i]->setNMixtures(NMIXTURES_);
+			}
+			simple_MOG2 = cv::createBackgroundSubtractorMOG2(100, 50, detectShad);
+			simple_MOG2_ec = cv::createBackgroundSubtractorMOG2(100, 50, detectShad);
 		}
-
-		simple_MOG2 = cv::createBackgroundSubtractorMOG2(100, 50, detectShad);
-		simple_MOG2_ec = cv::createBackgroundSubtractorMOG2(100, 50, detectShad);
 	}
 
 	/**
 	 * This function extracts a frame from the video sources and saves it to the appropriate places
 	 */
-	bool Camera::get_frame() {
-		cap_ >> frame_;
-		frame_ec_ = frame_.clone();
+	// bool Camera::get_frame() {
+	// 	cap_ >> frame_;
+	// 	frame_ec_ = frame_.clone();
 			
-		// check if getting frame was successful
-		if (frame_.empty()) {
-			std::cout << "Error: Video camera is disconnected!" << std::endl;
-			return true;
-		} else {
-			if (IS_REALTIME_) recording_.write(frame_);
-			return false;
-		}
-	}
+	// 	// check if getting frame was successful
+	// 	if (frame_.empty()) {
+	// 		std::cout << "Error: Video camera is disconnected!" << std::endl;
+	// 		return true;
+	// 	} else {
+	// 		if (IS_REALTIME_) recording_.write(frame_);
+	// 		return false;
+	// 	}
+	// }
 
 	/**
 	 * This function clears the detection variables to prepare for a new frame
