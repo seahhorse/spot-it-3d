@@ -58,11 +58,11 @@ The following is a general high-level overview of the main code pipeline:
 
 1. Open and read from single / double camera sensors, and obtain live camera frames.
 
-2. Apply image processing techniques to remove background noise, by distinguisihing between foreground and background. We apply background subtraction in our image processing pipeline, and subsequently identify contours that do not conform to a minimum level of circularity. We deem these contours as background, and subtract them out of our image frames.
+2. Compensate for environmental effects (e.g. bright sunlight, dark skies) that may affect detection of targets. This works by converting each frame to HSV and applying localised image enhancements to the S and V channels of the sky.
 
-3. Apply morphological operations such as dilation and erosion to remove noise and enhance our detection.
+3. Apply background subtraction using OpenCV's MOG2 to remove noise in the background.
 
-4. Apply thresholding and binarization of our frames to obtained masked frames to detect targets using blob detection.
+4. Apply either blob or contour detection to detect targets in the frame. Morphological operations such as erosion and dilation are used to remove noise and enhance detection.
 
 5. Use of Kalman filtering (KF) and Discriminative Correlation Filter (DCF) as our state estimation techniques to predict our targets' next known location in the following frames. Both filters are implemented in our tracking pipeline, as these targets move at fast and erratic speeds, and using these filters allow us to better predict their positions for continuous tracking.
 
@@ -72,8 +72,7 @@ The following is a general high-level overview of the main code pipeline:
 
 8. Apply graph matching algorithm for geomentry-based identification using relative coordinates. The software initializes a complete bipartite graph, that calculates the maximum sum of the weights of the edges that span across the two disjoint groups of the complete bipartite graph. Three distinct methods are used to calculate a similarity score and serve as graph edge weights in our re-identification process.
 
-9. Estimation of targets' location in 3-dimensional space using triangulation and stereo camera methodology. We use disparities between the two camera frames to obtain depth estimations of the tracked targets. *In improving the accuracy of 3D coordinates, development is underway in using a simplified method adapted from Takagi, 2018.*
-
+9. Estimation of targets' location in 3-dimensional space using triangulation and stereo camera methodology. We use disparities between the two camera frames to obtain depth estimations of the tracked targets.
 
 ## 6. Installation Guide
 
@@ -81,37 +80,37 @@ The following step-by-step processing will guide you on the installation process
 
 ### 6.1 Linux-based Operating Systems
 
-1. Pull spot-it-3d repository from GitHub.
+1. Install OpenCV and other dependencies (@TODO)
+
+2. Pull spot-it-3d repository from GitHub.
 
 	``` bash
-	get clone https://github.com/sieniven/spot-it-3d.git
+	get clone https://github.com/seahhorse/spot-it-3d.git
 	```
 
-2. Navigate to the spot-it-3d parameters file and open it with a text editor of choice.
+3. Navigate to the spot-it-3d parameters file and open it with a text editor of choice.
 
 	``` bash
 	nano spot-it-3d/include/multi_cam_params.hpp
 	```
 
-3. 	Replace the parameters as shown below to your specific setup.
+4. 	Replace the parameters as shown below to your specific setup.
 
 	``` cpptools
-	// declare filepaths
-	const bool IS_REALTIME_ = // true if realtime processing, false otherwise ;
+	// declare session and camera parameters
+    // follow convention: "YYYY-DD-MM_<location>_<session no>"
+    // for non-realtime processing (IS_REALTIME_ = 0), input files should be named in the format "<SESSION_NAME_>_<CAMERA_INPUT_>.<INPUT_FILE_EXTENSION_>". Example: "A_0.avi"
+	// for realtime processing with direct USB cameras, specify the device number directly in CAMERA_INPUT_. SESSION_NAME_ will only be used for writing output files
+    // for vilota edge cameras (IS_REALTIME_ = 2), specify IP addresses directly in CAMERA_INPUT_. SESSION_NAME_ will only be used for writing output files
+	const int IS_REALTIME_ = // 0 = non realtime processing, 1 = realtime processing with direct USB cameras, 2 = realtime processing for vilota edge cameras ;
     const int NUM_OF_CAMERAS_ = // 1 for single camera processing, 2 for double camera processing;
-    const std::string VIDEO_INPUT_1_ = // "#" camera number for realtime processing, "data/input/filename.extension" for non-realtime processing ;
-    const std::string VIDEO_INPUT_2_ = // "#" camera number for realtime processing, "data/input/filename.extension" for non-realtime processing ;
-	const std::string VIDEO_OUTPUT_1_ = // "data/output/filename.extension" (single camera output, only saves if realtime processing);
-    const std::string VIDEO_OUTPUT_2_ = // "data/output/filename.extension" (single camera output, only saves if realtime processing);
-	const std::string VIDEO_OUTPUT_ANNOTATED_ = // "data/output/filename.extension" (combined output file, annotated with tracks);
-	const std::string TARGETS_2D_OUTPUT_ = "data/output/json_filename.json";
-    const std::string TARGETS_3D_OUTPUT_ = "data/output/json_filename.json";
-    const std::string FRAME_TIME_ = "data/output/csv_filename.csv";
-    
+    const std::string SESSION_NAME_ = "A" // example
+    const std::vector<std::string> CAMERA_INPUT_ = {"0", "1"}; // example
+    const std::string INPUT_FILE_EXTENSION_ = "avi"; // example
+
 	// declare video parameters
-	const int FRAME_WIDTH_ = // specify camera\'s target width;
-    const int FRAME_HEIGHT_ = // specify camera\'s target height;
-    const int VIDEO_FPS_ = // specify camera\'s target FPS;
+	const int FRAME_WIDTH_ = 1920;
+    const int FRAME_HEIGHT_ = 1080;
 	```
 
 	Take special note that each camera is pre-built with a set of (resolution, fps) settings. To check all possible combinations, run:
@@ -122,11 +121,26 @@ The following step-by-step processing will guide you on the installation process
 	with # replaced with your camera device number.
 
 
-4. Run the bash script. You will be prompted to install OpenCV 4 if the system does not have the required version.
+4. Run the compile script. You will be prompted to install OpenCV 4 if the system does not have the required version.
+
+	Compile with gcc:
 
 	``` bash
-	bash compile.sh
+	bash compile_gcc.sh
 	```
+
+	Compile with cmake:
+
+	``` bash
+	bash compile_cmake.sh
+	```
+
+5. The compile scripts generate an executable named "spot-it-3d" in the root folder of this repository. Run the executable to run the program:
+
+	``` bash
+	./spot-it-3d
+	```
+
 ### 6.2 Windows Operating Systems
 
 1. Navigate to the Windows Store and install WSL2 (Windows Subsystem for Linux 2). Detailed instructions can be found at https://docs.microsoft.com/en-us/windows/wsl/install-win10.
@@ -155,3 +169,4 @@ We would like to thank the lead researcher in this project, Dr. Sutthiphong Srig
 2. Niven Sie Jun Liang (email: sieniven@gmail.com, GitHub profile: https://github.com/sieniven)
 3. Seah Shao Xuan (email: shaoxuan.seah@gmail.com, GitHub profile: https://github.com/seahhorse)
 4. Lau Yan Han (email: sps08.lauyanhan@gmail.com, GitHub profile: https://github.com/disgruntled-patzer)
+5. Kieren Chua (email: ), Github profile: https://github.com/YeOldMan23
