@@ -78,7 +78,7 @@ namespace mcmt {
 	 * Simple background subtractor, using MOG2
 	 */
 	void simple_background_subtraction(std::shared_ptr<Camera> & camera) {
-		cv::Mat current_frame = camera->frame_ec_;
+		cv::Mat current_frame = camera->frame_;
 		cv::Mat current_frame_ec = camera->frame_ec_;
 
 		camera->simple_MOG2->apply(current_frame , camera->foreground_mask);

@@ -697,12 +697,12 @@ namespace mcmt {
 	 */
 	void calculate_3D()	{
 
-		double fx = 1454.6;
-		double cx = 960.9;
-		double fy = 1450.3;
-		double cy = 543.7;
-		double B = 1.5;
-		int epsilon = 7;
+		double fx = 1190.0;
+		double cx = 487.5;
+		double fy = 1192.4;
+		double cy = 815.5;
+		double B = 10.0;
+		int epsilon = 10;
 
 		for (auto & matched_track : matched_tracks_) {
 
