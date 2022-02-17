@@ -83,6 +83,7 @@ namespace mcmt {
 	// declare UI functions
 	void print_frame_summary();
 	void annotate_frames();
+	cv::Mat draw_lines(cv::Mat combined_frame);
 	void graphical_UI(double actual_fps);
 	
 	// declare logging functions

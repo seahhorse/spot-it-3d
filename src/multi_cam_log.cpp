@@ -187,6 +187,22 @@ namespace mcmt {
 		}
 	}
 
+	cv::Mat draw_lines(cv::Mat combined_frame) {
+		if (NUM_OF_CAMERAS_ == 2 && SHOW_CONNECTING_LINES) {
+			for (auto & it : matched_tracks_) {
+				auto x1 = cumulative_tracks_[0]->track_plots_[it.first]->xs_.back();
+				auto x2 = cumulative_tracks_[1]->track_plots_[it.first]->xs_.back() + FRAME_WIDTH_;
+				auto y1 = cumulative_tracks_[0]->track_plots_[it.first]->ys_.back();
+				auto y2 = cumulative_tracks_[1]->track_plots_[it.first]->ys_.back();
+				double score = compute_matching_score(cumulative_tracks_[0]->track_plots_[it.first], cumulative_tracks_[1]->track_plots_[it.first], 0, 1);
+				cv::line(combined_frame, cv::Point(x1,y1), cv::Point(x2,y2), cv::Scalar(0, (int) (score*255), 0));
+				cv::putText(combined_frame, std::to_string(score).substr(0,4), cv::Point((int) (x1/2+x2/2), (int) (y1/2+y2/2)), cv::FONT_HERSHEY_SIMPLEX,
+				FONT_SCALE_ * 1.5, cv::Scalar(0, (int) (score*255.0), 0), 1.5, cv::LINE_AA);
+			}
+		}
+		return combined_frame;
+	}
+
 	void graphical_UI(double actual_fps) {
 
 		int ui_width = 3840;

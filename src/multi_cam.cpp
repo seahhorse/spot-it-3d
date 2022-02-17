@@ -251,6 +251,8 @@ int main(int argc, char * argv[]) {
 		// show and save video combined tracking frame
 		cv::hconcat(frames_, combined_frame_);
 
+		combined_frame_ = draw_lines(combined_frame_);
+
 		std::cout << "Total frame took: " << elapsed_seconds.count() << "s\n";
 
 		if (RUN_DETECT_TRACK_) {
