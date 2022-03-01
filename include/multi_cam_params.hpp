@@ -45,6 +45,7 @@ namespace mcmt {
     const std::string INPUT_FILE_EXTENSION_ = "avi";
     const int IS_REALTIME_ = 1;
     const int NUM_OF_CAMERAS_ = 1;
+    const bool USE_YOLO_DETECTION = true;
 
     // declare master switch
     const bool RUN_DETECT_TRACK_ = true;
