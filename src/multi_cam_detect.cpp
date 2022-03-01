@@ -146,6 +146,25 @@ namespace mcmt {
 	}
 
 	/**
+	 * Detect objects using Yolov5. Use this for large targets
+	 */
+	void yolo_detection(std::shared_ptr<Camera> & camera) {
+		
+		camera->yolo_objects.clear();
+		camera->yolo_objects = camera->yolo_detector->detect(camera->frame_);
+
+		// transfer Yolo detections into camera detections
+		for (auto & detection : camera->yolo_objects) {
+			float size = std::min(float(detection.box.width), float(detection.box.height));
+			float centroid_x = float(detection.box.x) + 0.5*float(detection.box.width);
+			float centroid_y = float(detection.box.y) + 0.5*float(detection.box.height);
+			cv::Point2f coords(centroid_x, centroid_y);
+			camera->centroids_.push_back(coords);
+			camera->sizes_.push_back(size);
+		}
+	}
+
+	/**
 	 * Apply environmental compensation on frame. This is needed when environmental conditions prevent
  	 * the target from standing out. Localised contrast and saturation changes are applied to
  	 * regions of the frame identified as sky depending on brightness conditions in each region

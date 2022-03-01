@@ -150,6 +150,11 @@ int main(int argc, char * argv[]) {
 					// clear detection variable vectors
 					camera->clear_detection_variables();
 
+					if (USE_YOLO_DETECTION) {
+						yolo_detection(camera);
+					}
+					else{
+
 					// correct for environmental effects
 					apply_env_compensation(camera);
 
@@ -165,6 +170,8 @@ int main(int argc, char * argv[]) {
 					}
 					else {
 						contour_detection(camera);
+					}
+
 					}
 				}// Edge Cam Interface is currently before KF/DCF. To be shifted
 

@@ -32,6 +32,7 @@
 #include <opencv2/ximgproc.hpp>
 #include <opencv2/tracking.hpp>
 #include <WSrtInterface.hpp>
+#include <yolo.hpp>
 
 // standard package imports
 #include <string>
@@ -154,6 +155,10 @@ namespace mcmt {
 			std::vector<cv::Vec4i> hierarchy;
 			cv::Point2f contour_center;
 			float contour_radius;
+
+			// Yolo detection parameters
+			std::shared_ptr<YoloDetector> yolo_detector;
+			std::vector<yolo_object> yolo_objects;
 
 			// declare class functions
 			// bool get_frame();

@@ -27,6 +27,7 @@
 // local header files
 #include "multi_cam_detect_utils.hpp"
 #include "WSrtInterface.hpp"
+#include "yolo.hpp"
 #include "multi_cam_params.hpp"
 
 // standard package imports
@@ -314,6 +315,9 @@ namespace mcmt {
 			}
 			simple_MOG2 = cv::createBackgroundSubtractorMOG2(100, 50, detectShad);
 			simple_MOG2_ec = cv::createBackgroundSubtractorMOG2(100, 50, detectShad);
+
+			// initialize yolo detector
+			yolo_detector = std::shared_ptr<YoloDetector>(new YoloDetector());
 		}
 	}
 
