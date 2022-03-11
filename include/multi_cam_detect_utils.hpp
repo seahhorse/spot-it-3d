@@ -82,10 +82,14 @@ namespace mcmt {
 			int id_, age_, totalVisibleCount_, consecutiveInvisibleCount_;
 			bool is_goodtrack_;
 
+			// declare search zone variables
+			std::vector<cv::Point2f> search_area;
+
 			// declare class functions
 			void predictKF();
 			void updateKF(cv::Point2f & measurement);
 			std::vector<cv::Point2f> search_polygon();
+			void update_search_polygon(std::vector<cv::Point2f>& search_area);
 			void predictDCF(cv::Mat & frame);
 			void checkDCF(cv::Point2f & measurement, cv::Mat & frame);
 

@@ -545,7 +545,6 @@ namespace mcmt {
 				camera->assignments_ = camera->assignments_kf_;
 				camera->unassigned_tracks_ = camera->unassigned_tracks_kf_;
 				camera->unassigned_detections_ = camera->unassigned_detections_kf_;
-			return;
 		}
 
 		// check to see if assignments by kf and dcf are equal
@@ -559,14 +558,12 @@ namespace mcmt {
 				camera->assignments_ = camera->assignments_kf_;
 				camera->unassigned_tracks_ = camera->unassigned_tracks_kf_;
 				camera->unassigned_detections_ = camera->unassigned_detections_kf_;
-				return;
 			} 
 			else {
 				// we will always choose to use detection-to-track assignments using the dcf
 				camera->assignments_ = camera->assignments_dcf_;
 				camera->unassigned_tracks_ = camera->unassigned_tracks_dcf_;
 				camera->unassigned_detections_ = camera->unassigned_detections_dcf_;
-				return;
 			}
 		}
 
@@ -714,64 +711,75 @@ namespace mcmt {
 				}
 				camera->unassigned_detections_.push_back(unassigned_detection);
 			}
+		}
 
-			for (auto & track_index : camera->unassigned_tracks_) {
-				std::shared_ptr<Track> track = camera->tracks_[track_index];
+		// For each unassigned track, search in the vicinity for a fixed number of frames
+		// to see if the track can be restored (e.g. reappearing after passing behind an obstacle)
+		for (auto & track_index : camera->unassigned_tracks_) {
+			std::shared_ptr<Track> track = camera->tracks_[track_index];
 
-				// Do the search for within stipulated number of frames,else dont do search, let track die
-				if (track->search_frame_counter < track->frame_step) {
+			// Do the search for within stipulated number of frames, else dont do search, let track die
+			if (track->search_frame_counter < track->frame_step) {
 				// add to the search frame counter to count the current check as step 
-					track->search_frame_counter += 1;
+				track->search_frame_counter += 1;
 
-					// Try to search using the last known velocity location, reassign any found blob as the new detection
-					std::vector<cv::Point2f> search_area = track->search_polygon(); // Use appropiate search zone
-					//for (auto & poly_point : search_area) {
-					//	std::cout << to_string(poly_point.x) + " " + to_string(poly_point.y) + "\n";
-					//}
-					//std::cout << "Polygon for Track" + to_string(track_index) + "\n";
-					std::vector<double> eligible_points_distance; // Placeholder for eligible detections' distance from the center of the search zone
-					std::vector<int> eligible_unassigned_detections;
+				// Try to search using the last known velocity location, reassign any found blob as the new detection
+				track->search_area = track->search_polygon();
+				// if (track->search_frame_counter == 1) {
+				// 	track->search_area = track->search_polygon(); // Use appropiate search zone
+				// }
+				// else {
+				// 	track->update_search_polygon(track->search_area);
+				// }
+				// Placeholder for eligible detections' distance from the center of the search zone
+				std::vector<double> eligible_points_distance;
+				std::vector<int> eligible_unassigned_detections;
 
-					for (auto& unassigned_detection : camera->unassigned_detections_) { // For every unassgined point, check if in search zone
-						cv::Point2f cur_cen = camera->centroids_[unassigned_detection]; //Find an unassinged point
-						double pointPolygondistance = cv::pointPolygonTest(search_area, cur_cen, true); // Check distances of point to polygon
-						if (pointPolygondistance >= 0) { // Positve distance if inside polygon, 0 if one edge(will still count)
-							eligible_points_distance.push_back(pointPolygondistance);
-							eligible_unassigned_detections.push_back(unassigned_detection);
-						}
-					}
-
-
-					// Find the detection with the smallest distance
-					double min_distance = -1; // Minimum distance
-					int eligible_counter = 0; // Pointer for best distance
-					int best_detection = -1;
-
-					for (double eligible_point_distance : eligible_points_distance) { // For every eligible point
-						if  (eligible_point_distance > min_distance) { // Find the index with the largest distance from polygon edge(closest to the center)
-							min_distance = eligible_point_distance;
-							best_detection = eligible_unassigned_detections[eligible_counter];
-						}
-						eligible_counter++;
-					}
-
-					// Reassign unassigned detection to the track if there is a suitable candidate 
-					if (min_distance > 0) {
-						// std::cout << "Reassigned track for Track " + to_string(track_index) + "\n";
-						std::vector<int> reinitialized_assignment{-1, -1}; // Data structure for assignment
-						reinitialized_assignment[0] = track_index;  // track index assigned
-						reinitialized_assignment[1] = best_detection; // track detection assigned
-						camera->assignments_.push_back(reinitialized_assignment); // set as new assignment
-						track->search_frame_counter = 0; // Reset frame counter to see for future assignments
-
-						// Dont need to remove unassigned assignments, overlap will take care of that
-					}
-					else {
-						track->search_frame_counter++;
+				// For every unassgined point, check if in search zone
+				for (auto& unassigned_detection : camera->unassigned_detections_) {
+					// Find an unassinged point
+					cv::Point2f cur_cen = camera->centroids_[unassigned_detection];
+					// Check distances of point to polygon
+					double pointPolygondistance = cv::pointPolygonTest(track->search_area, cur_cen, true);
+					// Positve distance if inside polygon, 0 if one edge(will still count)
+					if (pointPolygondistance >= 0) {
+						eligible_points_distance.push_back(pointPolygondistance);
+						eligible_unassigned_detections.push_back(unassigned_detection);
 					}
 				}
 
-				
+
+				// Find the detection with the smallest distance
+				double min_distance = -1; // Minimum distance
+				int eligible_counter = 0; // Pointer for best distance
+				int best_detection = -1;
+
+				// For every eligible point, find the index with the largest distance from polygon edge (closest to the center)
+				for (double eligible_point_distance : eligible_points_distance) { 
+					if  (eligible_point_distance > min_distance) {
+						min_distance = eligible_point_distance;
+						best_detection = eligible_unassigned_detections[eligible_counter];
+					}
+					eligible_counter++;
+				}
+
+				// Reassign unassigned detection to the track if there is a suitable candidate 
+				if (min_distance > 0) {
+					std::cout << "Reassigned track for Track " + to_string(track_index) + "\n";
+					std::vector<int> reinitialized_assignment{-1, -1}; // Data structure for assignment
+					reinitialized_assignment[0] = track_index;  // track index assigned
+					reinitialized_assignment[1] = best_detection; // track detection assigned
+					camera->assignments_.push_back(reinitialized_assignment); // set as new assignment
+					track->search_frame_counter = 0; // Reset frame counter to see for future assignments
+
+					// Dont need to remove unassigned assignments, overlap will take care of that
+				}
+				else {
+					track->search_frame_counter++;
+				}
+			}
+			else{
+				track->search_area.clear();
 			}
 		}
 	}
@@ -873,13 +881,15 @@ namespace mcmt {
 		for (auto & track : camera->tracks_) {
 			// requirement for track to be considered in re-identification
 			// note that min no. of frames being too small may lead to loss of continuous tracking
-			if (track->age_ > min_track_age && track->totalVisibleCount_ > min_visible_count
-			&& track->consecutiveInvisibleCount_ <= 5 && track->centroid_.x >= 0 && track->centroid_.x <= FRAME_WIDTH_ 
-			&& track->centroid_.y >= 0 && track->centroid_.y <= FRAME_HEIGHT_) {
+			// if (track->age_ > min_track_age && track->totalVisibleCount_ > min_visible_count
+			// && track->consecutiveInvisibleCount_ <= 5 && track->centroid_.x >= 0 && track->centroid_.x <= FRAME_WIDTH_ 
+			// && track->centroid_.y >= 0 && track->centroid_.y <= FRAME_HEIGHT_) {
 				
-				track->is_goodtrack_ = true;
-				camera->good_tracks_.push_back(track);			
-			}
+			// 	track->is_goodtrack_ = true;
+			// 	camera->good_tracks_.push_back(track);			
+			// }
+			track->is_goodtrack_ = true;
+			camera->good_tracks_.push_back(track);	
 		}
 	}
 

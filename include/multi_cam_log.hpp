@@ -82,7 +82,7 @@ namespace mcmt {
 
 	// declare UI functions
 	void print_frame_summary();
-	void annotate_frames();
+	void annotate_frames(std::vector<std::vector<cv::Point2f>> search_areas);
 	void graphical_UI(double actual_fps);
 	
 	// declare logging functions

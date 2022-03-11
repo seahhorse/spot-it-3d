@@ -65,6 +65,7 @@ int main(int argc, char * argv[]) {
 
 	frame_count_ = 1;
 	bool is_disconnected_ = false;
+	std::vector<std::vector<cv::Point2f>> search_areas;
 
 	initialize_cameras();
 	initialize_tracks();
@@ -213,6 +214,7 @@ int main(int argc, char * argv[]) {
 			frames_[i] = cameras_[i]->frame_;
 			if (RUN_DETECT_TRACK_) {
 				good_tracks_[i].clear();
+				search_areas.clear();
 				for (auto & track : cameras_[i]->good_tracks_) {
 					auto good_track = std::shared_ptr<GoodTrack>(new GoodTrack());
 					good_track->id = track->id_;
@@ -220,6 +222,9 @@ int main(int argc, char * argv[]) {
 					good_track->y = track->centroid_.y;
 					good_track->size = track->size_;
 					good_tracks_[i].push_back(good_track);
+				}
+				for (auto & track : cameras_[i]->tracks_) {
+					search_areas.push_back(track->search_area);
 				}
 			}
 		}
@@ -250,7 +255,7 @@ int main(int argc, char * argv[]) {
 			}
 
 			print_frame_summary();
-			annotate_frames();
+			annotate_frames(search_areas);
 		}
 
 		auto track_end = std::chrono::system_clock::now();

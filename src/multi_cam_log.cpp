@@ -83,7 +83,7 @@ namespace mcmt {
 		targets_3d_file.open("data/log/" + SESSION_NAME_ + "_targets-3d-out.json");
 	}
 
-	void annotate_frames() {
+	void annotate_frames(std::vector<std::vector<cv::Point2f>> search_areas) {
 	
 		// draw tracks on opencv GUI to monitor the detected tracks
 		// lopp through each camera frame
@@ -182,6 +182,13 @@ namespace mcmt {
 							cv::circle(frames_[i], cv::Point(rect_top_left.x + 5, rect_top_left.y - 10), 5, status_color, -1);
 						}
 					}
+				}
+			}
+
+			// add search areas
+			for (auto & area : search_areas) {
+				if (!area.empty()){
+					cv::rectangle(frames_[i], area[3], area[7], cv::Scalar(0, 0, 255), 2);
 				}
 			}
 		}

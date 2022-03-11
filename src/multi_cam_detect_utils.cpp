@@ -63,10 +63,10 @@ namespace mcmt {
 
 		// Initialize search zone parameters
 		vel_angle_leeway = 0.75;
-		frame_step = 2;
-		circle_step = 32;
+		frame_step = 50;
+		circle_step = 200;
 		search_frame_counter = 0;
-		vel_threshold =0;
+		vel_threshold = 100;
 
 		// initialize centroid location
 		centroid_ = centroid;
@@ -203,6 +203,18 @@ namespace mcmt {
 			}
 
 			return search_area;
+		}
+	}
+
+	/**
+	 * This function updates the search polygon for a lost track
+	 * that was moving in a fixed direction at constant velocity
+	*/
+	void Track::update_search_polygon(std::vector<cv::Point2f>& search_area) {
+		
+		for (auto &pt : search_area) {
+			pt.x += vel_mag * cos(vel_angle);
+			pt.y += vel_mag * sin(vel_angle);
 		}
 	}
 
