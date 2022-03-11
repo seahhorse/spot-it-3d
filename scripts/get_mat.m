@@ -20,12 +20,14 @@ for i = 1:size(arr,1)
     end
 end
 
+% csv format: frame number, class id, confidence,
+% ... x centroid, y centroid, width, height, target id
 matrix = zeros(2,1,size(IDs,2));
 for row = 1:size(arr,1)
     frame = arr(row,1);
-    ID = arr(row,2);
-    x = arr(row,3);
-    y = arr(row,4);
+    ID = arr(row,8);
+    x = arr(row,4);
+    y = arr(row,5);
     ID_pos = find(IDs==ID);
     matrix(1,frame,ID_pos) = x;
     matrix(2,frame,ID_pos) = y;

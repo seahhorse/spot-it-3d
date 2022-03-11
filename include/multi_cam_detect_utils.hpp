@@ -78,6 +78,10 @@ namespace mcmt {
 			// size of detected blob
 			float size_;
 
+			// yolo detection class id and confidence
+			int yolo_class_id_;
+			float yolo_confidence_;
+
 			// declare tracking variables
 			int id_, age_, totalVisibleCount_, consecutiveInvisibleCount_;
 			bool is_goodtrack_;
@@ -128,6 +132,10 @@ namespace mcmt {
 			// declare detection variables
 			std::vector<float> sizes_;
 			std::vector<cv::Point2f> centroids_;
+
+			// declare yolo detection variables
+			std::vector<int> yolo_class_ids_;
+			std::vector<float> yolo_confidences_;
 
 			// declare tracking variables
 			std::vector<int> unassigned_tracks_, unassigned_detections_;

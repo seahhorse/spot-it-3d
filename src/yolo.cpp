@@ -38,6 +38,7 @@ std::vector<std::string> YoloDetector::load_class_list() {
     while (getline(ifs, line)) {
         class_list.push_back(line);
     }
+    ifs.close();
     return class_list;
 }
 

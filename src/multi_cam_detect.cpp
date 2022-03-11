@@ -161,6 +161,8 @@ namespace mcmt {
 			cv::Point2f coords(centroid_x, centroid_y);
 			camera->centroids_.push_back(coords);
 			camera->sizes_.push_back(size);
+			camera->yolo_class_ids_.push_back(detection.class_id);
+			camera->yolo_confidences_.push_back(detection.confidence);
 		}
 	}
 
@@ -801,6 +803,10 @@ namespace mcmt {
 			track->age_++;
 			track->totalVisibleCount_++;
 			track->consecutiveInvisibleCount_ = 0;
+			if (USE_YOLO_DETECTION_) {
+				track->yolo_class_id_ = camera->yolo_class_ids_[detection_index];
+				track->yolo_confidence_ = camera->yolo_confidences_[detection_index];
+			}
 		}
 	}
 
@@ -843,6 +849,10 @@ namespace mcmt {
 			// initialize new track
 			auto new_track = std::shared_ptr<Track>(
 				new Track(camera->next_id_, size, cen, VIDEO_FPS_, SEC_FILTER_DELAY_));
+			if (USE_YOLO_DETECTION_) {
+				new_track->yolo_class_id_ = camera->yolo_class_ids_[unassigned_detection];
+				new_track->yolo_confidence_ = camera->yolo_confidences_[unassigned_detection];
+			}
 			camera->tracks_.push_back(new_track);
 			camera->next_id_++;
 		}

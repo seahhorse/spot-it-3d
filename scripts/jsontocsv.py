@@ -47,11 +47,13 @@ for i in range(0,NUM_OF_CAMERAS):
 # add headers
 header = list()
 header.append('Frame Number')
-header.append('ID')
+header.append('Class ID')
+header.append('Confidence')
 header.append('x')
 header.append('y')
 header.append('width')
 header.append('height')
+header.append('Target ID')
 for i in range(0,NUM_OF_CAMERAS):
     csv_writer[i].writerow(header)
 
@@ -70,11 +72,13 @@ for frame in data:
             # rowdata contains the data for a given detection at a given frame
             rowdata = list()
             rowdata.append(frame['Frame Number'])
-            rowdata.append(frame[cam][idx]['ID'])
+            rowdata.append(frame[cam][idx]['Class-ID'])
+            rowdata.append(frame[cam][idx]['Confidence'])
             rowdata.append(cen_x)
             rowdata.append(cen_y)
             rowdata.append(width)
             rowdata.append(height)
+            rowdata.append(frame[cam][idx]['ID'])
             csv_writer[i].writerow(rowdata)
             idx += 1
 

@@ -344,6 +344,8 @@ namespace mcmt {
 	void Camera::clear_detection_variables() {
 		sizes_.clear();
 		centroids_.clear();
+		yolo_class_ids_.clear();
+		yolo_confidences_.clear();
 	}
 
 }

@@ -68,6 +68,8 @@ namespace mcmt {
 		int x;
 		int y;
 		int size;
+		int class_id;
+		float confidence;
 	} GoodTrack;
 
 	// declare tracking variables

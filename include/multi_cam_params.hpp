@@ -40,12 +40,12 @@ namespace mcmt {
     // follow convention: "YYYY-DD-MM_<location>_<session no>"
     // input files should be named in the format "<SESSION_NAME>_<cam no>.<file ext>"
     // for edge cams (IS_REALTIME_ = 2), specify IP addresses directly in CAMERA_INPUT_. SESSION_NAME_ will be unused
-    const std::string SESSION_NAME_ = "A"; 
+    const std::string SESSION_NAME_ = "msp6"; 
     const std::vector<std::string> CAMERA_INPUT_ = {"0", "1"};
     const std::string INPUT_FILE_EXTENSION_ = "avi";
-    const int IS_REALTIME_ = 1;
-    const int NUM_OF_CAMERAS_ = 1;
-    const bool USE_YOLO_DETECTION = true;
+    const int IS_REALTIME_ = 0;
+    const int NUM_OF_CAMERAS_ = 2;
+    const bool USE_YOLO_DETECTION_ = true;
 
     // declare master switch
     const bool RUN_DETECT_TRACK_ = true;
