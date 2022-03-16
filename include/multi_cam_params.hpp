@@ -55,7 +55,7 @@ namespace mcmt {
     const bool SHOW_UNMATCHED_TARGETS_ = true;
     const bool SHOW_CAM_NUM_ = true;
     const bool SHOW_ID_ = true;
-    const bool SHOW_3D_COORDINATES_ = true;
+    const bool SHOW_3D_COORDINATES_ = false;
     const bool SHOW_DISPLAY_STATUS_ = true;
 
 	// declare video parameters
@@ -98,7 +98,8 @@ namespace mcmt {
     const int PRUNE_HIST_ = 30;
 
     // declare re-id parameters
-    const bool USE_3D_REID_ = true;
+    const bool USE_3D_REID_ = false;
+    const bool DO_CONSTANT_RESET_ = true;
     const double W1_ = 0.3;
     const double W2_ = 0.4;
     const double W3_ = 0.3;
