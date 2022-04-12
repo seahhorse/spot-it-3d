@@ -369,4 +369,43 @@ namespace mcmt {
 
 	}
 
+	void post_to_server(std::string resource_url) {
+		
+		std::string image_resource = resource_url + "/image";
+		std::string data_resource = resource_url + "/latestframe";
+
+		CURL *curl;
+		CURLcode res;
+		curl_global_init(CURL_GLOBAL_ALL);
+		curl = curl_easy_init();
+		if (!curl) return;
+
+		std::string payload = "{\"Detections\" : " + detections_3d_.toStyledString() + "}";
+
+		struct curl_slist *list = NULL;
+		list = curl_slist_append(list, "Content-Type: application/json");
+		list = curl_slist_append(list, "Accept: application/json");
+
+		curl_easy_setopt(curl, CURLOPT_HTTPHEADER, list);
+		curl_easy_setopt(curl, CURLOPT_POSTFIELDS, payload.c_str());
+		curl_easy_setopt(curl, CURLOPT_URL, image_resource.c_str());
+
+		res = curl_easy_perform(curl);
+
+		if(res != CURLE_OK)
+			fprintf(stderr, "curl_easy_perform() failed: %s\n",
+					curl_easy_strerror(res));
+
+		curl_easy_setopt(curl, CURLOPT_URL, data_resource.c_str());
+
+		res = curl_easy_perform(curl);
+
+		if(res != CURLE_OK)
+			fprintf(stderr, "curl_easy_perform() failed: %s\n",
+					curl_easy_strerror(res));
+
+		curl_easy_cleanup(curl);
+		curl_global_cleanup();
+	}
+
 }

@@ -91,6 +91,7 @@ namespace mcmt {
 	void log_2D();
 	void log_3D(std::shared_ptr<TrackPlot> track_plot_a, std::shared_ptr<TrackPlot> track_plot_b);
 	void write_logs();
+	void post_to_server(std::string resource_url);
 
 }
 

@@ -10,6 +10,6 @@ cd ../classifier_service
 python3 main.py &>/dev/null &
 cd ../
 cd middleman
-python3 main.py
+python3 main.py &>/dev/null &
 cd ../
-# ./spot-it-3d
+./spot-it-3d

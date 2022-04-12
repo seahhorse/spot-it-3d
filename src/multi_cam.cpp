@@ -251,6 +251,10 @@ int main(int argc, char * argv[]) {
 		// show and save video combined tracking frame
 		cv::hconcat(frames_, combined_frame_);
 
+		// post image and data to the server hosted on the specified URL
+		cv::imwrite("middleman/image.jpg", frames_[0]); 
+		post_to_server("localhost:5000");
+
 		combined_frame_ = draw_lines(combined_frame_);
 
 		std::cout << "Total frame took: " << elapsed_seconds.count() << "s\n";
