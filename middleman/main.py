@@ -37,11 +37,18 @@ class LatestFrame(Resource):
         # parses the argument sent by the post request
         try:
             args = frames_put_args.parse_args()
+            if (args == NULL):
+                print("args empty")
         except Exception as e: 
             print(e)
         # shifts the buffer to accomodate the latest frame detection
         shift_frame_index(get_list_size())
-        append_frames(args)
+        try:
+            append_frames(args)
+        except UnboundLocalError as e:
+            print("JSON File is empty")
+            abort(404, error = '404 Not Found: Frame not found. There are no frame(s) added to the frame buffer.')
+            
         return "Latest frame sucessfully added", 201
 
 #checks if there are already frames in the buffer
