@@ -313,7 +313,7 @@ namespace mcmt {
 			detection["XYZ-Coordinates"] = xyz;
 			detection["Geolocation"] = Json::Value("Placeholder Geolocation");
 			time_t now = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-			std::string s(14, '\0');
+			std::string s(20, '\0');
 			std::strftime(&s[0], s.size(), "%Y-%m-%d %H:%M:%S", std::localtime(&now));
 			detection["Timestamp"] = s;
 			detections_3d_.append(detection);
@@ -382,16 +382,41 @@ namespace mcmt {
 		curl = curl_easy_init();
 		if (!curl) return;
 
-		std::string payload = "{\"Detections\" : " + detections_3d_.toStyledString() + "}";
+		std::string readBuffer;
+
+		Json::Value detection;
+		detection["Frame-Number"] = (int) frame_count_;
+		Json::Value objects(Json::arrayValue);
+		for (auto & matched_track : matched_tracks_) {
+			if (matched_track.second[NUM_OF_CAMERAS_] < 2) continue;
+			int matched_id = matched_track.first;
+			Json::Value obj;
+			obj["ID"] = matched_id;
+			Json::Value xyz(Json::arrayValue);
+			xyz.append(cumulative_tracks_[0]->track_plots_[matched_id]->xyz_[0]);
+			xyz.append(cumulative_tracks_[0]->track_plots_[matched_id]->xyz_[1]);
+			xyz.append(cumulative_tracks_[0]->track_plots_[matched_id]->xyz_[2]);
+			obj["XYZ-Coordinates"] = xyz;
+			objects.append(obj);
+		}
+		detection["Objects"] = objects;
+
+		Json::Value detection_array;
+		detection_array.append(detection);
+
+		Json::Value wrapper;
+		wrapper["Detections"] = detection_array;
+
+		std::string payload = wrapper.toStyledString();
 
 		struct curl_slist *list = NULL;
 		list = curl_slist_append(list, "Content-Type: application/json");
 		list = curl_slist_append(list, "Accept: application/json");
 
 		curl_easy_setopt(curl, CURLOPT_HTTPHEADER, list);
+		curl_easy_setopt(curl, CURLOPT_POST, 1);
 		curl_easy_setopt(curl, CURLOPT_POSTFIELDS, payload.c_str());
-		curl_easy_setopt(curl, CURLOPT_URL, image_resource.c_str());
-		curl_easy_setopt(curl, CURLOPT_NOBODY, 1);
+		curl_easy_setopt(curl, CURLOPT_URL, data_resource.c_str());
 
 		res = curl_easy_perform(curl);
 
@@ -399,7 +424,7 @@ namespace mcmt {
 			fprintf(stderr, "curl_easy_perform() failed: %s\n",
 					curl_easy_strerror(res));
 
-		curl_easy_setopt(curl, CURLOPT_URL, data_resource.c_str());
+		curl_easy_setopt(curl, CURLOPT_URL, image_resource.c_str());
 
 		res = curl_easy_perform(curl);
 

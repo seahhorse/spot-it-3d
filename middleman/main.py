@@ -37,6 +37,8 @@ class LatestFrame(Resource):
         # parses the argument sent by the post request
         try:
             args = frames_put_args.parse_args()
+            args.pop("unparsed_arguments")
+            nested_args = frames_put_args_nested.parse(req=args)
             if (args == NULL):
                 print("args empty")
         except Exception as e: 
@@ -86,8 +88,11 @@ def append_frames(args):
 
 # JSON parsesr for frames
 frames_put_args = reqparse.RequestParser(bundle_errors=True)
-frames_put_args.add_argument("Detections", type=str, action= 'append', help="Please provide detection data in the request", required=True)
-#frames_put_args.add_argument("Detections 2", type=str, action= 'append', help="Fake geolocation", required=True)
+frames_put_args.add_argument("Detections", type=list, location = "json", help="Please provide detection data in the request", required=True)
+
+frames_put_args_nested = reqparse.RequestParser()
+frames_put_args_nested.add_argument("Frame-Number", location = ('Detections'))
+frames_put_args_nested.add_argument("Objects", location = ('Detections'))
 
 # Converter class to handle conversion from relative to absolute position
 class Converter(Resource):
@@ -209,6 +214,7 @@ class Image(Resource):
             # opens the file where the image is located.
             with open(IMAGE_PATH,'rb') as img_obj:
                 content = img_obj.read()
+                image.clear()
                 img_str = base64.b64encode(content)
                 image.append(img_str)
         except FileNotFoundError:
