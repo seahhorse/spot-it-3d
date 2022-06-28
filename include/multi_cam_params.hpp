@@ -40,7 +40,7 @@ namespace mcmt {
     // follow convention: "YYYY-DD-MM_<location>_<session no>"
     // input files should be named in the format "<SESSION_NAME>_<cam no>.<file ext>"
     // for edge cams (IS_REALTIME_ = 2), specify IP addresses directly in CAMERA_INPUT_. SESSION_NAME_ will be unused
-    const std::string SESSION_NAME_ = "msp6"; 
+    const std::string SESSION_NAME_ = "test"; 
     const std::vector<std::string> CAMERA_INPUT_ = {"0", "1"};
     const std::string INPUT_FILE_EXTENSION_ = "avi";
     const int IS_REALTIME_ = 0;
@@ -57,10 +57,11 @@ namespace mcmt {
     const bool SHOW_ID_ = true;
     const bool SHOW_3D_COORDINATES_ = false;
     const bool SHOW_DISPLAY_STATUS_ = true;
+    const bool SHOW_CONNECTING_LINES = true;
 
 	// declare video parameters
-	const int FRAME_WIDTH_ = 1920;
-    const int FRAME_HEIGHT_ = 1080;
+	const int FRAME_WIDTH_ = 1280;
+    const int FRAME_HEIGHT_ = 720;
     const int VIDEO_FPS_ = 30;
     const int MAX_TOLERATED_CONSECUTIVE_DROPPED_FRAMES_ = 5;
 

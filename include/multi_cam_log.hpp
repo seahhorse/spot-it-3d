@@ -86,6 +86,7 @@ namespace mcmt {
 	// declare UI functions
 	void print_frame_summary();
 	void annotate_frames();
+	cv::Mat draw_lines(cv::Mat combined_frame);
 	void graphical_UI(double actual_fps);
 	
 	// declare logging functions
@@ -93,6 +94,7 @@ namespace mcmt {
 	void log_2D();
 	void log_3D(std::shared_ptr<TrackPlot> track_plot_a, std::shared_ptr<TrackPlot> track_plot_b);
 	void write_logs();
+	void post_to_server(std::string resource_url);
 
 }
 

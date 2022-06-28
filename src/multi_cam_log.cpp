@@ -203,6 +203,24 @@ namespace mcmt {
 		}
 	}
 
+	cv::Mat draw_lines(cv::Mat combined_frame) {
+		if (NUM_OF_CAMERAS_ == 2 && SHOW_CONNECTING_LINES) {
+			for (auto & it : matched_tracks_) {
+				if (it.second[2] != 2) continue;
+				auto x1 = cumulative_tracks_[0]->track_plots_[it.first]->xs_.back();
+				auto x2 = cumulative_tracks_[1]->track_plots_[it.first]->xs_.back() + FRAME_WIDTH_;
+				auto y1 = cumulative_tracks_[0]->track_plots_[it.first]->ys_.back();
+				auto y2 = cumulative_tracks_[1]->track_plots_[it.first]->ys_.back();
+				double score = compute_matching_score(cumulative_tracks_[0]->track_plots_[it.first], cumulative_tracks_[1]->track_plots_[it.first], 0, 1);
+				std::string score_output = (score >= 0.5) ? std::to_string(score).substr(0,4) : "< 0.5";
+				cv::line(combined_frame, cv::Point(x1,y1), cv::Point(x2,y2), cv::Scalar(0, (int) (score*255), 0));
+				cv::putText(combined_frame, score_output, cv::Point((int) (x1/2+x2/2), (int) (y1/2+y2/2)), cv::FONT_HERSHEY_SIMPLEX,
+				FONT_SCALE_ * 1.5, cv::Scalar(0, (int) (score*255.0), 0), 1.5, cv::LINE_AA);
+			}
+		}
+		return combined_frame;
+	}
+
 	void graphical_UI(double actual_fps) {
 
 		int ui_width = 3840;
@@ -315,7 +333,7 @@ namespace mcmt {
 			detection["XYZ-Coordinates"] = xyz;
 			detection["Geolocation"] = Json::Value("Placeholder Geolocation");
 			time_t now = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-			std::string s(14, '\0');
+			std::string s(20, '\0');
 			std::strftime(&s[0], s.size(), "%Y-%m-%d %H:%M:%S", std::localtime(&now));
 			detection["Timestamp"] = s;
 			detections_3d_.append(detection);
@@ -371,6 +389,71 @@ namespace mcmt {
 		targets_3d_file.close();
 		std::cout << "Log writing complete!" << std::endl;
 
+	}
+
+	void post_to_server(std::string resource_url) {
+		
+		std::string image_resource = resource_url + "/image";
+		std::string data_resource = resource_url + "/latestframe";
+
+		CURL *curl;
+		CURLcode res;
+		curl_global_init(CURL_GLOBAL_ALL);
+		curl = curl_easy_init();
+		if (!curl) return;
+
+		std::string readBuffer;
+
+		Json::Value detection;
+		detection["Frame-Number"] = (int) frame_count_;
+		Json::Value objects(Json::arrayValue);
+		for (auto & matched_track : matched_tracks_) {
+			if (matched_track.second[NUM_OF_CAMERAS_] < 2) continue;
+			int matched_id = matched_track.first;
+			Json::Value obj;
+			obj["ID"] = matched_id;
+			Json::Value xyz(Json::arrayValue);
+			xyz.append(cumulative_tracks_[0]->track_plots_[matched_id]->xyz_[0]);
+			xyz.append(cumulative_tracks_[0]->track_plots_[matched_id]->xyz_[1]);
+			xyz.append(cumulative_tracks_[0]->track_plots_[matched_id]->xyz_[2]);
+			obj["XYZ-Coordinates"] = xyz;
+			objects.append(obj);
+		}
+		detection["Objects"] = objects;
+
+		Json::Value detection_array;
+		detection_array.append(detection);
+
+		Json::Value wrapper;
+		wrapper["Detections"] = detection_array;
+
+		std::string payload = wrapper.toStyledString();
+
+		struct curl_slist *list = NULL;
+		list = curl_slist_append(list, "Content-Type: application/json");
+		list = curl_slist_append(list, "Accept: application/json");
+
+		curl_easy_setopt(curl, CURLOPT_HTTPHEADER, list);
+		curl_easy_setopt(curl, CURLOPT_POST, 1);
+		curl_easy_setopt(curl, CURLOPT_POSTFIELDS, payload.c_str());
+		curl_easy_setopt(curl, CURLOPT_URL, data_resource.c_str());
+
+		res = curl_easy_perform(curl);
+
+		if(res != CURLE_OK)
+			fprintf(stderr, "curl_easy_perform() failed: %s\n",
+					curl_easy_strerror(res));
+
+		curl_easy_setopt(curl, CURLOPT_URL, image_resource.c_str());
+
+		res = curl_easy_perform(curl);
+
+		if(res != CURLE_OK)
+			fprintf(stderr, "curl_easy_perform() failed: %s\n",
+					curl_easy_strerror(res));
+
+		curl_easy_cleanup(curl);
+		curl_global_cleanup();
 	}
 
 }
