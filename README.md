@@ -76,11 +76,52 @@ The following is a general high-level overview of the main code pipeline:
 
 ## 6. Installation Guide
 
-The following step-by-step processing will guide you on the installation process. Our software runs on a Linux environment. It is assumed that the Linux environment is pre-installed with GCC (GNU Compiler Collection). GCC comes with native installations of Ubuntu. If GCC is not yet installed, please follow the instructions at https://www.ubuntupit.com/how-to-install-and-use-gcc-compiler-on-linux-system/ or any GCC installation tutorial.
+The following step-by-step processing will guide you on the installation process. Our software runs on a Linux environment, is heavily dependent on OpenCV 4.5.2 and above, and compiles using CMake.
 
 ### 6.1 Linux-based Operating Systems
 
-1. Install OpenCV and other dependencies (@TODO)
+1. Install Open CV and other dependencies
+
+	Make sure your sources are updated
+
+	``` bash
+	sudo apt-get update
+	sudo apt-get upgrade
+	```
+
+	Install dependencies
+
+	``` bash
+	sudo apt-get install build-essential cmake git libgtk2.0-dev pkg-config libavcodec-dev libavformat-dev libswscale-dev
+	sudo apt-get install python3.5-dev python3-numpy libtbb2 libtbb-dev
+	sudo apt-get install libjpeg-dev libpng-dev libtiff5-dev libjasper-dev libdc1394-22-dev libeigen3-dev libtheora-dev libvorbis-dev libxvidcore-dev libx264-dev sphinx-common libtbb-dev yasm libfaac-dev libopencore-amrnb-dev libopencore-amrwb-dev libopenexr-dev libgstreamer-plugins-base1.0-dev libavutil-dev libavfilter-dev libavresample-dev
+	```
+	
+	Navigate to any folder of your choice and install Open CV (instructions have been modified from the OpenCV Installation Docs: https://docs.opencv.org/4.5.2/d7/d9f/tutorial_linux_install.html):
+
+	``` bash
+	# Clone sources
+	git clone https://github.com/opencv/opencv.git
+	git clone https://github.com/opencv/opencv_contrib.git
+
+	# Create build directory and switch into it
+	mkdir opencv_build
+	cd opencv_build
+
+	# Configure; note that several flags are toggled for optimisation purposes
+	cmake -D BUILD_TIFF=ON -D WITH_CUDA=OFF -D ENABLE_AVX=OFF -D WITH_OPENGL=OFF -D WITH_OPENCL=OFF -D WITH_IPP=OFF -D WITH_TBB=ON -D BUILD_TBB=ON -D WITH_EIGEN=OFF -D WITH_V4L=ON -D WITH_VTK=OFF -D BUILD_TESTS=OFF -D BUILD_PERF_TESTS=OFF -D CMAKE_BUILD_TYPE=RELEASE -D OPENCV_GENERATE_PKGCONFIG=YES -D CMAKE_INSTALL_PREFIX=/usr/local -D OPENCV_EXTRA_MODULES_PATH=../opencv_contrib/modules ../opencv
+
+	# Build
+	make -j4
+	sudo make install
+	sudo ldconfig
+	```
+
+	You can test whether OpenCV is successfully installed using the following command:
+
+	``` bash
+	pkg-config --modversion opencv4
+	```
 
 2. Pull spot-it-3d repository from GitHub.
 
@@ -121,21 +162,13 @@ The following step-by-step processing will guide you on the installation process
 	with # replaced with your camera device number.
 
 
-4. Run the compile script. You will be prompted to install OpenCV 4 if the system does not have the required version.
-
-	Compile with gcc:
-
-	``` bash
-	bash compile_gcc.sh
-	```
-
-	Compile with cmake:
+5. Run the CMake compile script. You will be prompted to install OpenCV 4 if the system does not have the required version.
 
 	``` bash
 	bash compile_cmake.sh
 	```
 
-5. The compile scripts generate an executable named "spot-it-3d" in the root folder of this repository. Run the executable to run the program:
+6. The compile scripts generate an executable named "spot-it-3d" in the root folder of this repository. Run the executable to run the program:
 
 	``` bash
 	./spot-it-3d
@@ -169,4 +202,4 @@ We would like to thank the lead researcher in this project, Dr. Sutthiphong Srig
 2. Niven Sie Jun Liang (email: sieniven@gmail.com, GitHub profile: https://github.com/sieniven)
 3. Seah Shao Xuan (email: shaoxuan.seah@gmail.com, GitHub profile: https://github.com/seahhorse)
 4. Lau Yan Han (email: sps08.lauyanhan@gmail.com, GitHub profile: https://github.com/disgruntled-patzer)
-5. Kieren Chua (email: ), Github profile: https://github.com/YeOldMan23
+5. Kieren Chua (email: kieren.chua23@gmail.com), Github profile: https://github.com/YeOldMan23
