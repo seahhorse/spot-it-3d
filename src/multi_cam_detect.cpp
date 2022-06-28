@@ -146,6 +146,27 @@ namespace mcmt {
 	}
 
 	/**
+	 * Detect objects using Yolov5. Use this for large targets
+	 */
+	void yolo_detection(std::shared_ptr<Camera> & camera) {
+		
+		camera->yolo_objects.clear();
+		camera->yolo_objects = camera->yolo_detector->detect(camera->frame_);
+
+		// transfer Yolo detections into camera detections
+		for (auto & detection : camera->yolo_objects) {
+			float size = std::min(float(detection.box.width), float(detection.box.height));
+			float centroid_x = float(detection.box.x) + 0.5*float(detection.box.width);
+			float centroid_y = float(detection.box.y) + 0.5*float(detection.box.height);
+			cv::Point2f coords(centroid_x, centroid_y);
+			camera->centroids_.push_back(coords);
+			camera->sizes_.push_back(size);
+			camera->yolo_class_ids_.push_back(detection.class_id);
+			camera->yolo_confidences_.push_back(detection.confidence);
+		}
+	}
+
+	/**
 	 * Apply environmental compensation on frame. This is needed when environmental conditions prevent
  	 * the target from standing out. Localised contrast and saturation changes are applied to
  	 * regions of the frame identified as sky depending on brightness conditions in each region
@@ -782,6 +803,10 @@ namespace mcmt {
 			track->age_++;
 			track->totalVisibleCount_++;
 			track->consecutiveInvisibleCount_ = 0;
+			if (USE_YOLO_DETECTION_) {
+				track->yolo_class_id_ = camera->yolo_class_ids_[detection_index];
+				track->yolo_confidence_ = camera->yolo_confidences_[detection_index];
+			}
 		}
 	}
 
@@ -824,6 +849,10 @@ namespace mcmt {
 			// initialize new track
 			auto new_track = std::shared_ptr<Track>(
 				new Track(camera->next_id_, size, cen, VIDEO_FPS_, SEC_FILTER_DELAY_));
+			if (USE_YOLO_DETECTION_) {
+				new_track->yolo_class_id_ = camera->yolo_class_ids_[unassigned_detection];
+				new_track->yolo_confidence_ = camera->yolo_confidences_[unassigned_detection];
+			}
 			camera->tracks_.push_back(new_track);
 			camera->next_id_++;
 		}

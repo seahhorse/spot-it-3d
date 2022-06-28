@@ -54,9 +54,10 @@ Thumbs.db
 *.jpg
 *.pdf
 
-# ignore csv and json data files
+# ignore csv, json and other data files
 *.csv
 *.json
+*.mat
 
 # CMake build folder
 build/

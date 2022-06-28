@@ -80,6 +80,9 @@ namespace mcmt {
 	// declare recording functions
 	void initialize_recording(int frame_width, int frame_height);
 
+	// declare yolo class list functions
+	void load_yolo_class_list();
+
 	// declare UI functions
 	void print_frame_summary();
 	void annotate_frames();

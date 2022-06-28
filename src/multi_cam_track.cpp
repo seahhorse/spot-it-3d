@@ -178,15 +178,27 @@ namespace mcmt {
 				}
 			}
 
-			if (max_score < 0.5 && track_plot->frameNos_.size() > 180) {
+			if (DO_CONSTANT_RESET_) {
+				// force reset the re-id process after every 30 frames
 				track_plot->mismatch_count_ += 1;
-			} else {
-				track_plot->mismatch_count_ = 0;
+			}
+			else {
+				// reset re-id process only if mismatch exceeds 30 consecutive frames
+				if (max_score < 0.5 && track_plot->frameNos_.size() > 180) {
+					track_plot->mismatch_count_ += 1;
+				} else {
+					track_plot->mismatch_count_ = 0;
+				}
 			}
 
 			if (track_plot->mismatch_count_ >= VIDEO_FPS_) {
 				track_plot->mismatch_count_ = 0;
-				debug_messages.push_back("Target ID " +  std::to_string(matched_id) + " from Cam " + std::to_string(idx) + " is dropped due to mismatch");
+				if (DO_CONSTANT_RESET_) {
+					debug_messages.push_back("Target ID " +  std::to_string(matched_id) + " from Cam " + std::to_string(idx) + " is dropped due to age");
+				}
+				else {
+					debug_messages.push_back("Target ID " +  std::to_string(matched_id) + " from Cam " + std::to_string(idx) + " is dropped due to mismatch");
+				}
 				remove_tracks.push_back(track_plot);
 			}
 		}
