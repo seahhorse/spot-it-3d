@@ -62,6 +62,9 @@ namespace mcmt {
 	// define debugging tools
 	std::vector<std::string> debug_messages;
 
+	// declare yolo class list variables
+	std::vector<std::string> yolo_class_list_;
+
 	// declare logging variables
 	Json::Value detections_2d_(Json::arrayValue);
 	Json::Value detections_3d_(Json::arrayValue);
@@ -81,6 +84,19 @@ namespace mcmt {
 		
 		targets_2d_file.open("data/log/" + SESSION_NAME_ + "_targets-2d-out.json");
 		targets_3d_file.open("data/log/" + SESSION_NAME_ + "_targets-3d-out.json");
+
+		load_yolo_class_list();
+	}
+
+	// initialise class list to map yolo detection class ids to their class names
+	void load_yolo_class_list() {
+		std::ifstream ifs("yolo_config/classes.txt");
+		std::string line;
+		while (getline(ifs, line))
+		{
+			yolo_class_list_.push_back(line);
+		}
+		ifs.close();
 	}
 
 	void annotate_frames() {
@@ -293,6 +309,10 @@ namespace mcmt {
 				std::string bottom_right = "(" + std::to_string(bottom_right_x) + ", " + std::to_string(bottom_right_y) + ")";
 				detection["Top-Left"] = top_left;
 				detection["Bottom-Right"] = bottom_right;
+				if (USE_YOLO_DETECTION_) {
+					detection["Class-ID"] = yolo_class_list_[track->class_id].c_str();
+					detection["Confidence"] = track->confidence;
+				}
 				detections.append(detection);
 			}
 			frame_detections["Cam " + std::to_string(i)] = detections;

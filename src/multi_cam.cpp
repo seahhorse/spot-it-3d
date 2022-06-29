@@ -150,6 +150,11 @@ int main(int argc, char * argv[]) {
 					// clear detection variable vectors
 					camera->clear_detection_variables();
 
+					if (USE_YOLO_DETECTION_) {
+						yolo_detection(camera);
+					}
+					else{
+
 					// correct for environmental effects
 					apply_env_compensation(camera);
 
@@ -165,6 +170,8 @@ int main(int argc, char * argv[]) {
 					}
 					else {
 						contour_detection(camera);
+					}
+
 					}
 				}// Edge Cam Interface is currently before KF/DCF. To be shifted
 
@@ -212,6 +219,10 @@ int main(int argc, char * argv[]) {
 					good_track->x = track->centroid_.x;
 					good_track->y = track->centroid_.y;
 					good_track->size = track->size_;
+					if (USE_YOLO_DETECTION_) {
+						good_track->class_id = track->yolo_class_id_;
+						good_track->confidence = track->yolo_confidence_;
+					}
 					good_tracks_[i].push_back(good_track);
 				}
 			}

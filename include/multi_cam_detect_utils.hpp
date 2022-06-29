@@ -32,6 +32,7 @@
 #include <opencv2/ximgproc.hpp>
 #include <opencv2/tracking.hpp>
 #include <WSrtInterface.hpp>
+#include <yolo.hpp>
 
 // standard package imports
 #include <string>
@@ -76,6 +77,10 @@ namespace mcmt {
 
 			// size of detected blob
 			float size_;
+
+			// yolo detection class id and confidence
+			int yolo_class_id_;
+			float yolo_confidence_;
 
 			// declare tracking variables
 			int id_, age_, totalVisibleCount_, consecutiveInvisibleCount_;
@@ -128,6 +133,10 @@ namespace mcmt {
 			std::vector<float> sizes_;
 			std::vector<cv::Point2f> centroids_;
 
+			// declare yolo detection variables
+			std::vector<int> yolo_class_ids_;
+			std::vector<float> yolo_confidences_;
+
 			// declare tracking variables
 			std::vector<int> unassigned_tracks_, unassigned_detections_;
 			std::vector<int> unassigned_tracks_kf_, unassigned_detections_kf_;
@@ -154,6 +163,10 @@ namespace mcmt {
 			std::vector<cv::Vec4i> hierarchy;
 			cv::Point2f contour_center;
 			float contour_radius;
+
+			// Yolo detection parameters
+			std::shared_ptr<YoloDetector> yolo_detector;
+			std::vector<yolo_object> yolo_objects;
 
 			// declare class functions
 			// bool get_frame();

@@ -76,6 +76,7 @@ namespace mcmt {
 
 	void simple_background_subtraction(std::shared_ptr<Camera> & camera);
 	void contour_detection(std::shared_ptr<Camera> & camera);
+	void yolo_detection(std::shared_ptr<Camera> & camera);
 
 	// declare utility functions
 	float euclideanDist(cv::Point2f & p, cv::Point2f & q);
