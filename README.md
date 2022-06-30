@@ -40,6 +40,9 @@
 	* Yi, Jiahe, and Sutthiphong Srigrarom. "Near-Parallel Binocular-Like Camera Pair for Multi-Drone Detection and 3D Localization." In *2020 16th International Conference on Control, Automation, Robotics and Vision (ICARCV)*, pp. 204-210. IEEE, Shenzhen, China, 2020.
 	* Link to paper: https://ieeexplore.ieee.org/abstract/document/9305485
 
+6. Paper on kinematics-based re-identification across multiple cameras using 2D and 3D motion-based methods:
+	* S. X. Seah, Y. H. Lau, and S. Srigrarom, “Multiple Aerial Targets Re-Identification by 2D- and 3D- Kinematics-Based Matching,” *Journal of Imaging*, vol. 8, no. 2, p. 26, Jan. 2022, doi: 10.3390/jimaging8020026.
+	* Link to paper: https://www.mdpi.com/2313-433X/8/2/26
 
 ## 4. Aim
 
@@ -202,4 +205,4 @@ We would like to thank the lead researcher in this project, Dr. Sutthiphong Srig
 2. Niven Sie Jun Liang (email: sieniven@gmail.com, GitHub profile: https://github.com/sieniven)
 3. Seah Shao Xuan (email: shaoxuan.seah@gmail.com, GitHub profile: https://github.com/seahhorse)
 4. Lau Yan Han (email: sps08.lauyanhan@gmail.com, GitHub profile: https://github.com/disgruntled-patzer)
-5. Kieren Chua (email: kieren.chua23@gmail.com), Github profile: https://github.com/YeOldMan23
+5. Kieren Chua (email: kieren.chua23@gmail.com, Github profile: https://github.com/YeOldMan23)
