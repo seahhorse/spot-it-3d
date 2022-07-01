@@ -1,3 +1,5 @@
+# NOTE: This script is DEPRECATED. It is kept for reference purposes; do not use to to compile the code
+
 opencv_installed=0
 set -e
 trap "trap - SIGTERM && kill -- -$$" SIGINT SIGTERM EXIT
