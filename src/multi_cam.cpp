@@ -263,8 +263,12 @@ int main(int argc, char * argv[]) {
 		cv::hconcat(frames_, combined_frame_);
 
 		// post image and data to the server hosted on the specified URL
-		cv::imwrite("middleman/image.jpg", frames_[0]); 
-		post_to_server("localhost:5000");
+		// @TODO: Middleman throws segmentation fault for some videos where the bounding box
+		// exceeds the frame. Set POST_TO_SERVER_ to false until the problem is fixed
+		if (POST_TO_SERVER_) {
+			cv::imwrite("middleman/image.jpg", frames_[0]); 
+			post_to_server("localhost:5000");
+		}
 
 		combined_frame_ = draw_lines(combined_frame_);
 

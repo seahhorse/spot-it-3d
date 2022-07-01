@@ -49,7 +49,10 @@ namespace mcmt {
 
     // declare master switch
     const bool RUN_DETECT_TRACK_ = true;
-    
+
+    // declare settings for posting data to a remote server
+    const bool POST_TO_SERVER_ = false;
+
     // declare display settings
     const bool GRAPHIC_UI_ = true;
     const bool SHOW_UNMATCHED_TARGETS_ = true;
