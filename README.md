@@ -138,19 +138,30 @@ The following step-by-step processing will guide you on the installation process
 	nano spot-it-3d/include/multi_cam_params.hpp
 	```
 
-4. 	Replace the parameters as shown below to your specific setup.
+4. 	Set the parameters as shown below to your specific setup.
+
+	* Set NUM_OF_CAMERAS_ to the number of cameras in your setup
+	* For non-realtime processing, set IS_REALTIME_ = 0, This processes pre-recorded video files and is meant for research and debugging purposes. The format and location of these files are very specific.
+		* The location of these video files should be, **relative to the location of this Readme file, placed in "data/input" folder**. The code will only read pre-recorded inputs from this specific folder
+		* **Video input files should be named in the format "<SESSION_NAME_>_<CAMERA_INPUT_>.<INPUT_FILE_EXTENSION_>"**. 
+		* For example, if you are processing one avi video file originally called "A.avi", rename it as "A_0.avi". Then in the parameteres file, set "A" as your SESSION_NAME_, CAMERA_INPUT_ to {"0"}
+		* If you are processing two avi video files simultaneously (simulating two camera inputs), set the filenames to "A_0.avi", "A_1.avi", and set CAMERA_INPUT_ to {"0", "1"}
+	* For realtime processing with direct USB cameras, set IS_REALTIME_ = 1. This is the usual operating scenario. Specify the camera port numbers directly in CAMERA_INPUT_. You may set SESSION_NAME_ and INPUT_FILE_EXTENSION to any string of your choice (it will be used as the name and file extension of the output files, which will be explained later)
+		* For example, if you have a single USB camera connected to /dev/video0, set CAMERA_INPUT_ = {"0"}
+		* If you have two USB cameras, one connected to /dev/video2 and another to /dev/video4, set CAMERA_INPUT_ = {"2", "4"}
+		* If you are unsure what is your camera port number, type `v4l2-ctl --list-devices` in a separate terminal to bring up the list of media devices connected to your computer.
+	* For realtime processing with vilota edge cameras, set IS_REALTIME_ = 2. This is an experimental setup to test the effectiveness of the code on edge computing. Specify the IP addresses of the edge cameras directly in CAMERA_INPUT_. You may set SESSION_NAME_ and INPUT_FILE_EXTENSION_ to any string of your choice and it will be used as the name and file extension of the output files
+		* For example, if you have two edge cameras on 192.168.1.101 and 192.168.1.102, set CAMERA_INPUT_ = {"192.168.1.101", "192.168.1.102"}
+	* Set the video resolution parameters FRAME_WIDTH_ and FRAME_HEIGHT_ to the **exact** video resolution of the input video files (for non-realtime processing), or the **desired** video resolution of the camera inputs (for realtime processing)
 
 	``` cpptools
 	// declare session and camera parameters
-    // follow convention: "YYYY-DD-MM_<location>_<session no>"
-    // for non-realtime processing (IS_REALTIME_ = 0), input files should be named in the format "<SESSION_NAME_>_<CAMERA_INPUT_>.<INPUT_FILE_EXTENSION_>". Example: "A_0.avi"
-	// for realtime processing with direct USB cameras, specify the device number directly in CAMERA_INPUT_. SESSION_NAME_ will only be used for writing output files
-    // for vilota edge cameras (IS_REALTIME_ = 2), specify IP addresses directly in CAMERA_INPUT_. SESSION_NAME_ will only be used for writing output files
-	const int IS_REALTIME_ = // 0 = non realtime processing, 1 = realtime processing with direct USB cameras, 2 = realtime processing for vilota edge cameras ;
-    const int NUM_OF_CAMERAS_ = // 1 for single camera processing, 2 for double camera processing;
-    const std::string SESSION_NAME_ = "A" // example
-    const std::vector<std::string> CAMERA_INPUT_ = {"0", "1"}; // example
-    const std::string INPUT_FILE_EXTENSION_ = "avi"; // example
+    // for the SESSION_NAME_, it is recommended to follow this convention: "YYYY-DD-MM_<location>_<session no>"
+	const int IS_REALTIME_ = 0 // 0 = non realtime processing, 1 = realtime processing with direct USB cameras, 2 = realtime processing for vilota edge cameras ;
+    const int NUM_OF_CAMERAS_ = 2 // 1 for single camera processing, 2 for double camera processing;
+    const std::string SESSION_NAME_ = "A" // name of output video file (and input video file for non-realtime processing)
+    const std::vector<std::string> CAMERA_INPUT_ = {"0", "1"}; // input locations of cameras
+    const std::string INPUT_FILE_EXTENSION_ = "avi"; // input video file extension for non-realtime processing
 
 	// declare video parameters
 	const int FRAME_WIDTH_ = 1920;
@@ -164,14 +175,27 @@ The following step-by-step processing will guide you on the installation process
 	```
 	with # replaced with your camera device number.
 
+	Note that the code will write output video files to the following folder, relative to the location of this Readme file: "data/output". The following files will be output:
 
-5. Run the CMake compile script. You will be prompted to install OpenCV 4 if the system does not have the required version.
+	* <SESSION_NAME_>_annotated.<INPUT_FILE_EXTENSION_>: Contains the annotated videos with detection, tracking and re-identification across all cameras
+	* <SESSION_NAME_>_<CAMERA_INPUT_>.<INPUT_FILE_EXTENSION_>: Contains the un-annotated video recordings. Useful for realtime processing scenarios where the recording of the test is required for debugging or offline re-processing purposes
+	* <SESSION_NAME_>_
+
+	The code will also write the following log files to the "data/log" folder, if run successfully to completion:
+
+	* <SESSION_NAME_>_targets-2d-out,json: Contains 2D coordinates of all tracks across all cameras
+	* <SESSION_NAME_>_target-3d-out.json: Contains estimated 3D coordinates of all re-identified targets. This is relevant only for setups with 2 or more camera inputs
+	* <SESSION_NAME_>_frame-time.csv: Contains processing time taken for each frame, for debug purposes
+
+	It is recommended to clear these output files when they are no longer needed to avoid buildup of junk files.
+
+5. Run the CMake compile script. It should compile the code, generate the executable and automatically run it.
 
 	``` bash
 	bash compile_cmake.sh
 	```
 
-6. The compile scripts generate an executable named "spot-it-3d" in the root folder of this repository. Run the executable to run the program:
+6. The compile scripts generate an executable named "spot-it-3d" in the root folder of this repository and should be automatically launched by the script above. In the event the executable is not launched or you need to rerun it, run the executable directly to run the program:
 
 	``` bash
 	./spot-it-3d
