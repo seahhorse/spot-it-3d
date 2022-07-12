@@ -143,7 +143,7 @@ The following step-by-step processing will guide you on the installation process
 	* Set NUM_OF_CAMERAS_ to the number of cameras in your setup
 	* For non-realtime processing, set IS_REALTIME_ = 0, This processes pre-recorded video files and is meant for research and debugging purposes. The format and location of these files are very specific.
 		* The location of these video files should be, **relative to the location of this Readme file, placed in "data/input" folder**. The code will only read pre-recorded inputs from this specific folder
-		* **Video input files should be named in the format "<SESSION_NAME_>_<CAMERA_INPUT_>.<INPUT_FILE_EXTENSION_>"**. 
+		* **Video input files should be named in the format "<SESSION_NAME_>\_<CAMERA_INPUT_>.<INPUT_FILE_EXTENSION_>"**. 
 		* For example, if you are processing one avi video file originally called "A.avi", rename it as "A_0.avi". Then in the parameteres file, set "A" as your SESSION_NAME_, CAMERA_INPUT_ to {"0"}
 		* If you are processing two avi video files simultaneously (simulating two camera inputs), set the filenames to "A_0.avi", "A_1.avi", and set CAMERA_INPUT_ to {"0", "1"}
 	* For realtime processing with direct USB cameras, set IS_REALTIME_ = 1. This is the usual operating scenario. Specify the camera port numbers directly in CAMERA_INPUT_. You may set SESSION_NAME_ and INPUT_FILE_EXTENSION to any string of your choice (it will be used as the name and file extension of the output files, which will be explained later)
@@ -177,15 +177,14 @@ The following step-by-step processing will guide you on the installation process
 
 	Note that the code will write output video files to the following folder, relative to the location of this Readme file: "data/output". The following files will be output:
 
-	* <SESSION_NAME_>_annotated.<INPUT_FILE_EXTENSION_>: Contains the annotated videos with detection, tracking and re-identification across all cameras
-	* <SESSION_NAME_>_<CAMERA_INPUT_>.<INPUT_FILE_EXTENSION_>: Contains the un-annotated video recordings. Useful for realtime processing scenarios where the recording of the test is required for debugging or offline re-processing purposes
-	* <SESSION_NAME_>_
+	* **<SESSION_NAME_>\_annotated.<INPUT_FILE_EXTENSION_>**: Contains the annotated videos with detection, tracking and re-identification across all cameras
+	* **<SESSION_NAME_>\_<CAMERA_INPUT_>.<INPUT_FILE_EXTENSION_>**: Contains the un-annotated video recordings. Useful for realtime processing scenarios where the recording of the test is required for debugging or offline re-processing purposes
 
 	The code will also write the following log files to the "data/log" folder, if run successfully to completion:
 
-	* <SESSION_NAME_>_targets-2d-out,json: Contains 2D coordinates of all tracks across all cameras
-	* <SESSION_NAME_>_target-3d-out.json: Contains estimated 3D coordinates of all re-identified targets. This is relevant only for setups with 2 or more camera inputs
-	* <SESSION_NAME_>_frame-time.csv: Contains processing time taken for each frame, for debug purposes
+	* **<SESSION_NAME_>\_targets-2d-out,json**: Contains 2D coordinates of all tracks across all cameras
+	* **<SESSION_NAME_>\_target-3d-out.json**: Contains estimated 3D coordinates of all re-identified targets. This is relevant only for setups with 2 or more camera inputs
+	* **<SESSION_NAME_>\_frame-time.csv**: Contains processing time taken for each frame, for debug purposes
 
 	It is recommended to clear these output files when they are no longer needed to avoid buildup of junk files.
 
