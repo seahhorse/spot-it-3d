@@ -126,10 +126,12 @@ The following step-by-step processing will guide you on the installation process
 	pkg-config --modversion opencv4
 	```
 
+	Install the dependencies for the WSrt package as specified [here](Vilota_Wsrt_Guide.md). @TODO: Decouple the WSrt package from the main code so that users who do not need edge computing do not have to install these dependencies
+
 2. Pull spot-it-3d repository from GitHub.
 
 	``` bash
-	get clone https://github.com/seahhorse/spot-it-3d.git
+	git clone https://github.com/seahhorse/spot-it-3d.git
 	```
 
 3. Navigate to the spot-it-3d parameters file and open it with a text editor of choice.
@@ -167,6 +169,8 @@ The following step-by-step processing will guide you on the installation process
 	const int FRAME_WIDTH_ = 1920;
     const int FRAME_HEIGHT_ = 1080;
 	```
+
+	For a more detailed breakdown of the key parameters and how they affect the code, refer to (@TODO: Write new MD file on parameter breakdown).
 
 	Take special note that each camera is pre-built with a set of (resolution, fps) settings. To check all possible combinations, run:
 
