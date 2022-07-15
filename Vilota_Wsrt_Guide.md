@@ -81,12 +81,24 @@ All startup scripts for the edge camera are contained in the "examples" folder
 
 ### Initialise client
 
+Go to the CMakelists.txt file in the base folder of the repository and activate the "WSRT" variable by setting it to "ON". This will activate the WSRT_ENABLED macro in the code:
+
+```
+set(WSRT ON)
+message(STATUS "WSRT set to ${WSRT}")
+if (WSRT)
+    add_compile_definitions(WSRT_ENABLED)
+endif()
+```
+
 Go to the parameters file of the Spot-it-3d code and change the following parameters
 
-- **IS_REALTIME_**: Set to 2
-- **VIDEO_INPUT_**: Set to the IP Addresses of the edge cams
+- **IS_REALTIME_**: Set to True
+- **CAMERA_INPUT_**: Set to the IP Addresses of the edge cams. For example, if you have two edge cameras on 192.168.1.101 and 192.168.1.102, set CAMERA_INPUT_ = {"192.168.1.101", "192.168.1.102"}
 
 Then compile with cmake and run the spot-it-3d executable as usual
+
+> **WARNING**: Setting "WSRT" to "ON" and "IS_REALTIME" to False will lead to undefined behaviour. If you want to run non-realtime videos, always set "WSRT" to "OFF"
 
 ### Troubleshooting
 
