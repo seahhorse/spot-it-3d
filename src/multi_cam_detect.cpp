@@ -905,12 +905,11 @@ namespace mcmt {
 	 */
 	void close_cameras() {
 		for (int cam_idx = 0; cam_idx < NUM_OF_CAMERAS_; cam_idx++) {
-			if (IS_REALTIME_ == 2) { // To remove when interface shifts
+			#if WSRT_ENABLED // To remove when interface shifts
 				cameras_[cam_idx]->edgecam_cap_->reset_receivers();
-			}
-			else {
+			#else
 				cameras_[cam_idx].get()->cap_.release();
-			}
+			#endif
 			if (IS_REALTIME_) cameras_[cam_idx]->recording_.release();
 		}
 	}

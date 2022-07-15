@@ -16,6 +16,14 @@ file(GLOB SOURCES src/*.cpp)
 # compiles the files defined by SOURCES to generate the executable defined by EXEC
 add_executable(${EXEC} ${SOURCES})
 
+# set WSRT to ON to enable WSrt Edge Camera processing
+# this will activate the macro WSRT_ENABLED to enable all WSrt code
+set(WSRT OFF)
+message(STATUS "WSRT set to ${WSRT}")
+if (WSRT)
+    add_compile_definitions(WSRT_ENABLED)
+endif()
+
 ################################
 # Add dependencies and libraries
 ################################
@@ -53,15 +61,17 @@ target_link_libraries(${EXEC} PUBLIC ${CMAKE_SOURCE_DIR}/lib/wsrt/libsrtreceiver
 target_link_libraries(${EXEC} PUBLIC ${CMAKE_SOURCE_DIR}/lib/wsrt/libwsclient.a)
 
 # add wsrt dependent libraries
-find_library(GOBJECT gobject-2.0)
-target_link_libraries(${EXEC} PUBLIC ${GOBJECT})
-find_library(GLIB glib-2.0)
-target_link_libraries(${EXEC} PUBLIC ${GLIB})
-find_library(PTHREAD pthread)
-target_link_libraries(${EXEC} PUBLIC ${PTHREAD})
-find_library(GSTAPP gstapp-1.0)
-target_link_libraries(${EXEC} PUBLIC ${GSTAPP})
-find_library(TBB tbb)
-target_link_libraries(${EXEC} PUBLIC ${TBB})
-find_library(SOUP soup-2.4)
-target_link_libraries(${EXEC} PUBLIC ${SOUP})
+if (WSRT)
+    find_library(GOBJECT gobject-2.0)
+    target_link_libraries(${EXEC} PUBLIC ${GOBJECT})
+    find_library(GLIB glib-2.0)
+    target_link_libraries(${EXEC} PUBLIC ${GLIB})
+    find_library(PTHREAD pthread)
+    target_link_libraries(${EXEC} PUBLIC ${PTHREAD})
+    find_library(GSTAPP gstapp-1.0)
+    target_link_libraries(${EXEC} PUBLIC ${GSTAPP})
+    find_library(TBB tbb)
+    target_link_libraries(${EXEC} PUBLIC ${TBB})
+    find_library(SOUP soup-2.4)
+    target_link_libraries(${EXEC} PUBLIC ${SOUP})
+endif()

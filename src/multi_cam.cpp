@@ -82,7 +82,7 @@ int main(int argc, char * argv[]) {
 		for (auto & camera : cameras_) {
 
 			// get camera frame
-			if (IS_REALTIME_ == 2) { // To remove when interface shifts
+			#if WSRT_ENABLED // To remove when interface shifts
 				
 				// here is where data from edge cam is passed to the main detection/tracking pipeline
 				wsrt_output edgecam_data;
@@ -124,10 +124,9 @@ int main(int argc, char * argv[]) {
 				// 	{camera->centroids_[i].x + camera->sizes_[i], camera->centroids_[i].y + camera->sizes_[i]}, 150, 3);
 				// }
 				// cv::imshow("SRT raw detections", srt_frame);
-			}
-			else {
+			#else
 				camera->cap_ >> camera->frame_;
-			}
+			#endif
 
 			// check if getting frame was successful
 			if (camera->frame_.empty()) {
@@ -145,7 +144,7 @@ int main(int argc, char * argv[]) {
 
 			if (RUN_DETECT_TRACK_) {
 
-				if (IS_REALTIME_ != 2) { // To remove when interface shifts
+				#if !WSRT_ENABLED // To remove when interface shifts
 
 					// clear detection variable vectors
 					camera->clear_detection_variables();
@@ -169,7 +168,7 @@ int main(int argc, char * argv[]) {
 					}
 
 					}
-				}// Edge Cam Interface is currently before KF/DCF. To be shifted
+				#endif // Edge Cam Interface is currently before KF/DCF. To be shifted
 
 				// apply state estimation filters
 				predict_new_locations_of_tracks(camera);

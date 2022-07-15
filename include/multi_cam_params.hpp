@@ -37,15 +37,14 @@
 namespace mcmt {  
 
     // declare session and camera parameters
-    // follow convention: "YYYY-DD-MM_<location>_<session no>"
+    // recommended convention for session name: "YYYY-DD-MM_<location>_<session no>"
     // input files should be named in the format "<SESSION_NAME>_<cam no>.<file ext>"
-    // for edge cams (IS_REALTIME_ = 2), specify IP addresses directly in CAMERA_INPUT_. SESSION_NAME_ will be unused
     const std::string SESSION_NAME_ = "test"; 
     const std::vector<std::string> CAMERA_INPUT_ = {"0", "1"};
     const std::string INPUT_FILE_EXTENSION_ = "avi";
-    const int IS_REALTIME_ = 0;
+    const bool IS_REALTIME_ = false; // if WSRT_ENABLED, this must be set to true
     const int NUM_OF_CAMERAS_ = 2;
-    const bool USE_YOLO_DETECTION_ = true;
+    const bool USE_YOLO_DETECTION_ = false;
 
     // declare master switch
     const bool RUN_DETECT_TRACK_ = true;

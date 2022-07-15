@@ -116,7 +116,9 @@ namespace mcmt {
 
 			// declare video parameters
 			cv::VideoCapture cap_;
-			std::shared_ptr<WSrt> edgecam_cap_; // To remove when interface shifts
+			#if WSRT_ENABLED
+				std::shared_ptr<WSrt> edgecam_cap_; // To remove when interface shifts
+			#endif
 			cv::VideoWriter recording_;
 			cv::Mat frame_, frame_ec_, gray_;
 			std::array<cv::Mat, 2> masked_;

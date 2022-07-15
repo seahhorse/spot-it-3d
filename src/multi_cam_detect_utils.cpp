@@ -251,27 +251,28 @@ namespace mcmt {
 		cam_index_ = index;
 
 		// open video capturing or video file
-		if (IS_REALTIME_ == 1) {
-			cap_ = cv::VideoCapture(std::stoi(video_input_), cv::CAP_V4L2);
-			cap_.set(cv::CAP_PROP_FOURCC, cv::VideoWriter::fourcc('M', 'J', 'P', 'G'));
-			cap_.set(cv::CAP_PROP_FRAME_WIDTH, FRAME_WIDTH_);
-			cap_.set(cv::CAP_PROP_FRAME_HEIGHT, FRAME_HEIGHT_);
-			cap_.set(cv::CAP_PROP_FPS, VIDEO_FPS_);
-		} else if (IS_REALTIME_ == 2) { // To remove when interface shifts
+		#if WSRT_ENABLED // To remove when interface shifts
 			edgecam_cap_ = std::shared_ptr<WSrt>(new WSrt(cam_index_, video_input_, "8888", "49999", "avdec_h264"));
-		} else {
-			cap_ = cv::VideoCapture(video_input_);
-		}
+		#else
+			if (IS_REALTIME_) {
+				cap_ = cv::VideoCapture(std::stoi(video_input_), cv::CAP_V4L2);
+				cap_.set(cv::CAP_PROP_FOURCC, cv::VideoWriter::fourcc('M', 'J', 'P', 'G'));
+				cap_.set(cv::CAP_PROP_FRAME_WIDTH, FRAME_WIDTH_);
+				cap_.set(cv::CAP_PROP_FRAME_HEIGHT, FRAME_HEIGHT_);
+				cap_.set(cv::CAP_PROP_FPS, VIDEO_FPS_);
+			} else {
+				cap_ = cv::VideoCapture(video_input_);
+			}
+		#endif
 
 		// get video parameters
-		if (IS_REALTIME_ == 2) {// To remove when interface shifts
+		#if WSRT_ENABLED // To remove when interface shifts
 			frame_w_ = FRAME_WIDTH_; // placeholder... how to get frame width/height from edgecam?
 			frame_h_ = FRAME_HEIGHT_;
-		}
-		else {
+		#else
 			frame_w_ = int(cap_.get(cv::CAP_PROP_FRAME_WIDTH));
 			frame_h_ = int(cap_.get(cv::CAP_PROP_FRAME_HEIGHT));
-		}
+		#endif
 		assert (frame_w_ == FRAME_WIDTH_ && frame_h_ == FRAME_HEIGHT_);
 		fps_ = VIDEO_FPS_;
 		scale_factor_ = (sqrt(pow(frame_w_, 2) + pow(frame_h_, 2))) / (sqrt(pow(848, 2) + pow(480, 2)));
@@ -287,8 +288,9 @@ namespace mcmt {
 			scale_factor_ = (sqrt(pow(frame_w_, 2) + pow(frame_h_, 2))) / (sqrt(pow(848, 2) + pow(480, 2)));
 		}
 
-		std::cout << (IS_REALTIME_ != 2 && cap_.isOpened()) ? 
-		"Camera opened successful!\n" : "Error: Cannot open camera! Please check!\n";
+		#if !WSRT_ENABLED // To remove when interface shifts
+			std::cout << cap_.isOpened() ? "Camera opened successful!\n" : "Error: Cannot open camera! Please check!\n";
+		#endif
 
 		if (IS_REALTIME_) {
 			std::string vid_output = "data/output/" + SESSION_NAME_ + "_" + std::to_string(cam_index_) + ".avi";
@@ -296,7 +298,7 @@ namespace mcmt {
 			cv::Size(frame_w_, frame_h_));
 		}
 		
-		if (IS_REALTIME_ != 2) { // To remove when interface shifts
+		#if !WSRT_ENABLED // To remove when interface shifts
 		
 			// initialize blob detector
 			cv::SimpleBlobDetector::Params blob_params;
@@ -318,7 +320,7 @@ namespace mcmt {
 
 			// initialize yolo detector
 			yolo_detector = std::shared_ptr<YoloDetector>(new YoloDetector());
-		}
+		#endif
 	}
 
 	/**
