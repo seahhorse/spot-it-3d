@@ -158,15 +158,11 @@ int main(int argc, char * argv[]) {
 					// correct for environmental effects
 					apply_env_compensation(camera);
 
-					// apply background subtractor
-					// remove_ground(camera, 0);
-					// remove_ground(camera, 1);
-
 					simple_background_subtraction(camera);
 
 					// get detections
 					if (USE_BLOB_DETECTION) {
-						detect_objects(camera);
+						blob_detection(camera);
 					}
 					else {
 						contour_detection(camera);
