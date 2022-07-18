@@ -26,6 +26,9 @@
 
 #include "WSrtInterface.hpp"
 
+// this macro is enabled directly in CMakelists.txt
+#ifdef WSRT_ENABLED
+
 #include <thread>
 #include <chrono>
 #include <queue>
@@ -187,3 +190,5 @@ void WSrt::reset_receivers() {
 }
 
 }
+
+#endif // WSRT_ENABLED

@@ -1,6 +1,8 @@
 // Copyright (c) 2021 Vilota Pte Ltd
 // Author: Huimin C.
 
+#ifdef WSRT_ENABLED
+
 #ifndef WSRTINTERFACE_HPP_
 #define WSRTINTERFACE_HPP_
 
@@ -78,3 +80,5 @@ class WSrt {
 }
 
 #endif          // WSRTINTERFACE_HPP_
+
+#endif          // WSRT_ENABLED

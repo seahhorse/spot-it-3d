@@ -58,10 +58,11 @@ namespace mcmt {
 
 	// declare detection and tracking functions
 	void initialize_cameras						();
+	void yolo_detection							(std::shared_ptr<Camera> & camera);
 	void apply_env_compensation					(std::shared_ptr<Camera> & camera);
-	void apply_bg_subtractions					(std::shared_ptr<Camera> & camera, int frame_id);
-	void detect_objects							(std::shared_ptr<Camera> & camera);
-	void remove_ground							(std::shared_ptr<Camera> & camera, int masked_id);
+	void simple_background_subtraction			(std::shared_ptr<Camera> & camera);
+	void blob_detection							(std::shared_ptr<Camera> & camera);
+	void contour_detection						(std::shared_ptr<Camera> & camera);
 	void predict_new_locations_of_tracks		(std::shared_ptr<Camera> & camera);
 	void clear_track_variables					(std::shared_ptr<Camera> & camera);
 	void detection_to_track_assignment_KF		(std::shared_ptr<Camera> & camera);
@@ -73,10 +74,6 @@ namespace mcmt {
 	void delete_lost_tracks						(std::shared_ptr<Camera> & camera);
 	void filter_tracks							(std::shared_ptr<Camera> & camera);
 	void close_cameras							();
-
-	void simple_background_subtraction(std::shared_ptr<Camera> & camera);
-	void contour_detection(std::shared_ptr<Camera> & camera);
-	void yolo_detection(std::shared_ptr<Camera> & camera);
 
 	// declare utility functions
 	float euclideanDist(cv::Point2f & p, cv::Point2f & q);

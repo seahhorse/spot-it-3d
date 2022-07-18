@@ -98,6 +98,7 @@ The following step-by-step processing will guide you on the installation process
 	sudo apt-get install build-essential cmake git libgtk2.0-dev pkg-config libavcodec-dev libavformat-dev libswscale-dev
 	sudo apt-get install python3.5-dev python3-numpy libtbb2 libtbb-dev
 	sudo apt-get install libjpeg-dev libpng-dev libtiff5-dev libjasper-dev libdc1394-22-dev libeigen3-dev libtheora-dev libvorbis-dev libxvidcore-dev libx264-dev sphinx-common libtbb-dev yasm libfaac-dev libopencore-amrnb-dev libopencore-amrwb-dev libopenexr-dev libgstreamer-plugins-base1.0-dev libavutil-dev libavfilter-dev libavresample-dev
+	sudo apt install curl && sudo apt-get install libcurl4-openssl-dev
 	```
 	
 	Navigate to any folder of your choice and install Open CV (instructions have been modified from the OpenCV Installation Docs: https://docs.opencv.org/4.5.2/d7/d9f/tutorial_linux_install.html):
@@ -111,7 +112,7 @@ The following step-by-step processing will guide you on the installation process
 	mkdir opencv_build
 	cd opencv_build
 
-	# Configure; note that several flags are toggled for optimisation purposes
+	# Configure; note that several flags are toggled for optimisation purposes (@TODO: Re-activate CUDA?)
 	cmake -D BUILD_TIFF=ON -D WITH_CUDA=OFF -D ENABLE_AVX=OFF -D WITH_OPENGL=OFF -D WITH_OPENCL=OFF -D WITH_IPP=OFF -D WITH_TBB=ON -D BUILD_TBB=ON -D WITH_EIGEN=OFF -D WITH_V4L=ON -D WITH_VTK=OFF -D BUILD_TESTS=OFF -D BUILD_PERF_TESTS=OFF -D CMAKE_BUILD_TYPE=RELEASE -D OPENCV_GENERATE_PKGCONFIG=YES -D CMAKE_INSTALL_PREFIX=/usr/local -D OPENCV_EXTRA_MODULES_PATH=../opencv_contrib/modules ../opencv
 
 	# Build
@@ -126,7 +127,7 @@ The following step-by-step processing will guide you on the installation process
 	pkg-config --modversion opencv4
 	```
 
-	Install the dependencies for the WSrt package as specified [here](Vilota_Wsrt_Guide.md). @TODO: Decouple the WSrt package from the main code so that users who do not need edge computing do not have to install these dependencies
+	**Only if you intend to run WSrt Edge Computing Software**: Install the dependencies for the WSrt package as specified [here](Vilota_Wsrt_Guide.md).
 
 2. Pull spot-it-3d repository from GitHub.
 
@@ -143,27 +144,26 @@ The following step-by-step processing will guide you on the installation process
 4. 	Set the parameters as shown below to your specific setup.
 
 	* Set NUM_OF_CAMERAS_ to the number of cameras in your setup
-	* For non-realtime processing, set IS_REALTIME_ = 0, This processes pre-recorded video files and is meant for research and debugging purposes. The format and location of these files are very specific.
+	* For non-realtime processing, set IS_REALTIME_ = false, This processes pre-recorded video files and is meant for research and debugging purposes. The format and location of these files are very specific.
 		* The location of these video files should be, **relative to the location of this Readme file, placed in "data/input" folder**. The code will only read pre-recorded inputs from this specific folder
 		* **Video input files should be named in the format "<SESSION_NAME_>\_<CAMERA_INPUT_>.<INPUT_FILE_EXTENSION_>"**. 
 		* For example, if you are processing one avi video file originally called "A.avi", rename it as "A_0.avi". Then in the parameteres file, set "A" as your SESSION_NAME_, CAMERA_INPUT_ to {"0"}
 		* If you are processing two avi video files simultaneously (simulating two camera inputs), set the filenames to "A_0.avi", "A_1.avi", and set CAMERA_INPUT_ to {"0", "1"}
-	* For realtime processing with direct USB cameras, set IS_REALTIME_ = 1. This is the usual operating scenario. Specify the camera port numbers directly in CAMERA_INPUT_. You may set SESSION_NAME_ and INPUT_FILE_EXTENSION to any string of your choice (it will be used as the name and file extension of the output files, which will be explained later)
+	* For realtime processing with direct USB cameras, set IS_REALTIME_ = true. This is the usual operating scenario. Specify the camera port numbers directly in CAMERA_INPUT_. You may set SESSION_NAME_ and INPUT_FILE_EXTENSION to any string of your choice (it will be used as the name and file extension of the output files, which will be explained later)
 		* For example, if you have a single USB camera connected to /dev/video0, set CAMERA_INPUT_ = {"0"}
 		* If you have two USB cameras, one connected to /dev/video2 and another to /dev/video4, set CAMERA_INPUT_ = {"2", "4"}
 		* If you are unsure what is your camera port number, type `v4l2-ctl --list-devices` in a separate terminal to bring up the list of media devices connected to your computer.
-	* For realtime processing with vilota edge cameras, set IS_REALTIME_ = 2. This is an experimental setup to test the effectiveness of the code on edge computing. Specify the IP addresses of the edge cameras directly in CAMERA_INPUT_. You may set SESSION_NAME_ and INPUT_FILE_EXTENSION_ to any string of your choice and it will be used as the name and file extension of the output files
-		* For example, if you have two edge cameras on 192.168.1.101 and 192.168.1.102, set CAMERA_INPUT_ = {"192.168.1.101", "192.168.1.102"}
+	* For realtime processing with vilota edge cameras, set the parameters as specified [here](Vilota_Wsrt_Guide.md#Initialise-Client).
 	* Set the video resolution parameters FRAME_WIDTH_ and FRAME_HEIGHT_ to the **exact** video resolution of the input video files (for non-realtime processing), or the **desired** video resolution of the camera inputs (for realtime processing)
 
 	``` cpptools
 	// declare session and camera parameters
     // for the SESSION_NAME_, it is recommended to follow this convention: "YYYY-DD-MM_<location>_<session no>"
-	const int IS_REALTIME_ = 0 // 0 = non realtime processing, 1 = realtime processing with direct USB cameras, 2 = realtime processing for vilota edge cameras ;
-    const int NUM_OF_CAMERAS_ = 2 // 1 for single camera processing, 2 for double camera processing;
     const std::string SESSION_NAME_ = "A" // name of output video file (and input video file for non-realtime processing)
     const std::vector<std::string> CAMERA_INPUT_ = {"0", "1"}; // input locations of cameras
     const std::string INPUT_FILE_EXTENSION_ = "avi"; // input video file extension for non-realtime processing
+	const bool IS_REALTIME_ = false // true = realtime processing
+    const int NUM_OF_CAMERAS_ = 2 // 1 for single camera processing, 2 for double camera processing;
 
 	// declare video parameters
 	const int FRAME_WIDTH_ = 1920;

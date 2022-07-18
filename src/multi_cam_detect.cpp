@@ -75,77 +75,6 @@ namespace mcmt {
 	}
 
 	/**
-	 * Simple background subtractor, using MOG2
-	 */
-	void simple_background_subtraction(std::shared_ptr<Camera> & camera) {
-		cv::Mat current_frame = camera->frame_;
-		cv::Mat current_frame_ec = camera->frame_ec_;
-
-		camera->simple_MOG2->apply(current_frame , camera->foreground_mask);
-		camera->foreground_mask.convertTo(camera->masked_[0], CV_8UC1);
-
-		camera->simple_MOG2_ec->apply(current_frame_ec , camera->foreground_mask_ec);
-		camera->foreground_mask_ec.convertTo(camera->masked_[1], CV_8UC1);
-		
-	}
-
-	void contour_detection(std::shared_ptr<Camera> & camera) {
-
-		// Dilate to increase size of contours, making them more visible
-		cv::erode(camera->masked_[0], camera->masked_[0], erode_element, cv::Point(), DILATION_ITER_);
-		cv::dilate(camera->masked_[0], camera->masked_[0], dilate_element, cv::Point(), DILATION_ITER_);
-
-		// Find the contours in current 
-		cv::findContours(camera->masked_[0], camera->current_frame_contours, cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE);
-		
-		cv::imshow("After erode-dilate", camera->masked_[0]);
-
-		for (int j = 0; j < camera->current_frame_contours.size(); j++) {
-			if (cv::contourArea(camera->current_frame_contours[j]) > SMALLEST_ALLOWED_CONTOUR) {
-				cv::minEnclosingCircle(camera->current_frame_contours[j], camera->contour_center, camera->contour_radius);
-				camera->centroids_.push_back(camera->contour_center);
-				camera->sizes_.push_back(cv::contourArea(camera->current_frame_contours[j]));
-			}
-		}
-
-		// Remove overlapped detections using searching algorithm
-		int search_pointer = 0;
-		for (auto & centroid : camera->centroids_) {
-		
-		}
-		/**
-		// Clear the contours after every search, save original size
-		int original_size = camera->current_frame_contours.size();
-		camera->current_frame_contours.clear();
-
-		// Dilate to increase size of contours, making them more visible for environmental compensation
-		cv::erode(camera->masked_[1], camera->masked_[1], erode_element, cv::Point(), DILATION_ITER_);
-		cv::dilate(camera->masked_[1], camera->masked_[1], dilate_element, cv::Point(), DILATION_ITER_);
-
-		cv::imshow("Env comp after", camera->masked_[1]);
-
-		
-		// Find the contours in enviornmentally compensated, add if no overlap
-		cv::findContours(camera->masked_[1], camera->current_frame_contours, cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE);
-		
-		for (int k = 0; k < camera->current_frame_contours.size(); k++) {
-			bool valid = true;
-			for (int l = 0; l < original_size; l++ ) {
-				cv::minEnclosingCircle(camera->current_frame_contours[k], camera->contour_center, camera->contour_radius);
-				if (euclideanDist(camera->centroids_[l], camera->contour_center) < 5) {
-					valid = false;
-					break;
-				}
-			}
-			if (valid) {
-				camera->centroids_.push_back(camera->contour_center);
-				camera->sizes_.push_back(cv::contourArea(camera->current_frame_contours[k]));
-			}
-		}
-		**/
-	}
-
-	/**
 	 * Detect objects using Yolov5. Use this for large targets
 	 */
 	void yolo_detection(std::shared_ptr<Camera> & camera) {
@@ -240,51 +169,26 @@ namespace mcmt {
 		// cv::imshow("After sun compensation", camera->frame_ec_);
 	}
 
-	/** 
-	 * This function uses the background subtractor to subtract the history from the current frame.
+	/**
+	 * Simple background subtractor, using MOG2
 	 */
-	void remove_ground(std::shared_ptr<Camera> & camera, int masked_id)	{
+	void simple_background_subtraction(std::shared_ptr<Camera> & camera) {
+		cv::Mat current_frame = camera->frame_;
+		cv::Mat current_frame_ec = camera->frame_ec_;
 
-		cv::Mat masked;
+		camera->simple_MOG2->apply(current_frame , camera->foreground_mask);
+		camera->foreground_mask.convertTo(camera->masked_[0], CV_8UC1);
+
+		camera->simple_MOG2_ec->apply(current_frame_ec , camera->foreground_mask_ec);
+		camera->foreground_mask_ec.convertTo(camera->masked_[1], CV_8UC1);
+		cv::imshow("bg-subtracted", camera->masked_[0]);
 		
-		// Apply contrast and brightness gains
-		// To-do: Explain how the formula for calculating brightness in the 2nd line works
-		cv::convertScaleAbs((masked_id ? camera->frame_ec_ : camera->frame_), masked, 1, (256 - average_brightness(camera) + BRIGHTNESS_GAIN_));
-		
-		// subtract background
-		camera->fgbg_[masked_id]->apply(masked, masked, FGBG_LEARNING_RATE_);
-		masked.convertTo(camera->masked_[masked_id], CV_8UC1);
-
-		if (USE_BG_SUBTRACTOR_){
-			// declare variables
-			std::vector<std::vector<cv::Point>> contours, background_contours;
-
-			// number of iterations determines how close objects need to be to be considered background
-			cv::Mat dilated;
-			cv::dilate(camera->masked_[masked_id], dilated, element_, cv::Point(), int(REMOVE_GROUND_ITER_ * camera->scale_factor_));
-			findContours(dilated, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
-
-			for (auto & it : contours) {
-				float circularity = 4 * M_PI * cv::contourArea(it) / (pow(cv::arcLength(it, true), 2));
-				if (circularity <= BACKGROUND_CONTOUR_CIRCULARITY_) {
-					background_contours.push_back(it);
-				}
-			}
-			
-			// show removed background on raw image frames
-			// cv::Mat bg_removed = masked_id ? camera->frame_ec_.clone() : camera->frame_.clone();
-			// cv::drawContours(bg_removed, background_contours, -1, cv::Scalar(0, 255, 0), 3);
-			// cv::imshow("bg_removed", bg_removed);
-
-			// draw contours on masked frame using solid shape to remove background
-			cv::drawContours(camera->masked_[masked_id], background_contours, -1, cv::Scalar(0, 0, 0), -1);
-		}
 	}
 
 	/**
 	 * This function applies masking operations before performing blob detection
 	 */
-	void detect_objects(std::shared_ptr<Camera> & camera) {
+	void blob_detection(std::shared_ptr<Camera> & camera) {
 		
 		// apply morphological transformation
 		cv::dilate(camera->masked_[0], camera->masked_[0], element_, cv::Point(), DILATION_ITER_);
@@ -320,6 +224,63 @@ namespace mcmt {
 				camera->sizes_.push_back(it.size);
 			}
 		}
+	}
+
+	/**
+	 * This function applies contour detection, an alternative to moving object blob detection
+	 */
+	void contour_detection(std::shared_ptr<Camera> & camera) {
+
+		// Dilate to increase size of contours, making them more visible
+		cv::erode(camera->masked_[0], camera->masked_[0], erode_element, cv::Point(), DILATION_ITER_);
+		cv::dilate(camera->masked_[0], camera->masked_[0], dilate_element, cv::Point(), DILATION_ITER_);
+
+		// Find the contours in current 
+		cv::findContours(camera->masked_[0], camera->current_frame_contours, cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE);
+
+		for (int j = 0; j < camera->current_frame_contours.size(); j++) {
+			if (cv::contourArea(camera->current_frame_contours[j]) > SMALLEST_ALLOWED_CONTOUR) {
+				cv::minEnclosingCircle(camera->current_frame_contours[j], camera->contour_center, camera->contour_radius);
+				camera->centroids_.push_back(camera->contour_center);
+				camera->sizes_.push_back(cv::contourArea(camera->current_frame_contours[j]));
+			}
+		}
+
+		// Remove overlapped detections using searching algorithm
+		int search_pointer = 0;
+		for (auto & centroid : camera->centroids_) {
+		
+		}
+		/**
+		// Clear the contours after every search, save original size
+		int original_size = camera->current_frame_contours.size();
+		camera->current_frame_contours.clear();
+
+		// Dilate to increase size of contours, making them more visible for environmental compensation
+		cv::erode(camera->masked_[1], camera->masked_[1], erode_element, cv::Point(), DILATION_ITER_);
+		cv::dilate(camera->masked_[1], camera->masked_[1], dilate_element, cv::Point(), DILATION_ITER_);
+
+		cv::imshow("Env comp after", camera->masked_[1]);
+
+		
+		// Find the contours in enviornmentally compensated, add if no overlap
+		cv::findContours(camera->masked_[1], camera->current_frame_contours, cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE);
+		
+		for (int k = 0; k < camera->current_frame_contours.size(); k++) {
+			bool valid = true;
+			for (int l = 0; l < original_size; l++ ) {
+				cv::minEnclosingCircle(camera->current_frame_contours[k], camera->contour_center, camera->contour_radius);
+				if (euclideanDist(camera->centroids_[l], camera->contour_center) < 5) {
+					valid = false;
+					break;
+				}
+			}
+			if (valid) {
+				camera->centroids_.push_back(camera->contour_center);
+				camera->sizes_.push_back(cv::contourArea(camera->current_frame_contours[k]));
+			}
+		}
+		**/
 	}
 
 	/**
@@ -944,12 +905,11 @@ namespace mcmt {
 	 */
 	void close_cameras() {
 		for (int cam_idx = 0; cam_idx < NUM_OF_CAMERAS_; cam_idx++) {
-			if (IS_REALTIME_ == 2) { // To remove when interface shifts
+			#if WSRT_ENABLED // To remove when interface shifts
 				cameras_[cam_idx]->edgecam_cap_->reset_receivers();
-			}
-			else {
+			#else
 				cameras_[cam_idx].get()->cap_.release();
-			}
+			#endif
 			if (IS_REALTIME_) cameras_[cam_idx]->recording_.release();
 		}
 	}
