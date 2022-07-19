@@ -154,18 +154,19 @@ int main(int argc, char * argv[]) {
 					}
 					else{
 
-					// correct for environmental effects
-					apply_env_compensation(camera);
+						// correct for environmental effects
+						apply_env_compensation(camera);
 
-					simple_background_subtraction(camera);
-
-					// get detections
-					if (USE_BLOB_DETECTION) {
-						blob_detection(camera);
-					}
-					else {
-						contour_detection(camera);
-					}
+						// subtract background and get detections
+						if (USE_BLOB_DETECTION) {
+							remove_ground(camera, 0);
+							remove_ground(camera, 1);
+							blob_detection(camera);
+						}
+						else {
+							simple_background_subtraction(camera);
+							contour_detection(camera);
+						}
 
 					}
 				#endif // Edge Cam Interface is currently before KF/DCF. To be shifted

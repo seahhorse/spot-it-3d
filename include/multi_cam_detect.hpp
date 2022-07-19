@@ -60,6 +60,7 @@ namespace mcmt {
 	void initialize_cameras						();
 	void yolo_detection							(std::shared_ptr<Camera> & camera);
 	void apply_env_compensation					(std::shared_ptr<Camera> & camera);
+	void remove_ground							(std::shared_ptr<Camera> & camera, int masked_id);
 	void simple_background_subtraction			(std::shared_ptr<Camera> & camera);
 	void blob_detection							(std::shared_ptr<Camera> & camera);
 	void contour_detection						(std::shared_ptr<Camera> & camera);

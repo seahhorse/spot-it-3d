@@ -169,19 +169,64 @@ namespace mcmt {
 		// cv::imshow("After sun compensation", camera->frame_ec_);
 	}
 
+	/** 
+	 * This function uses the background subtractor to subtract the history from the current frame
+	 * Used for blob detection method
+	 */
+	void remove_ground(std::shared_ptr<Camera> & camera, int masked_id)	{
+
+		cv::Mat masked;
+		
+		// Apply contrast and brightness gains
+		// To-do: Explain how the formula for calculating brightness in the 2nd line works
+		cv::convertScaleAbs((masked_id ? camera->frame_ec_ : camera->frame_), masked, 1, (256 - average_brightness(camera) + BRIGHTNESS_GAIN_));
+		
+		// subtract background
+		camera->fgbg_[masked_id]->apply(masked, masked, FGBG_LEARNING_RATE_);
+		masked.convertTo(camera->masked_[masked_id], CV_8UC1);
+
+		if (USE_BG_SUBTRACTOR_){
+			// declare variables
+			std::vector<std::vector<cv::Point>> contours, background_contours;
+
+			// number of iterations determines how close objects need to be to be considered background
+			cv::Mat dilated;
+			cv::dilate(camera->masked_[masked_id], dilated, element_, cv::Point(), int(REMOVE_GROUND_ITER_ * camera->scale_factor_));
+			findContours(dilated, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
+
+			for (auto & it : contours) {
+				float circularity = 4 * M_PI * cv::contourArea(it) / (pow(cv::arcLength(it, true), 2));
+				if (circularity <= BACKGROUND_CONTOUR_CIRCULARITY_) {
+					background_contours.push_back(it);
+				}
+			}
+			
+			// show removed background on raw image frames
+			// cv::Mat bg_removed = masked_id ? camera->frame_ec_.clone() : camera->frame_.clone();
+			// cv::drawContours(bg_removed, background_contours, -1, cv::Scalar(0, 255, 0), 3);
+			// cv::imshow("bg_removed", bg_removed);
+
+			// draw contours on masked frame using solid shape to remove background
+			cv::drawContours(camera->masked_[masked_id], background_contours, -1, cv::Scalar(0, 0, 0), -1);
+		}
+	}
+
 	/**
-	 * Simple background subtractor, using MOG2
+	 * Simple background subtractor, using MOG2. Used for contour detection method
 	 */
 	void simple_background_subtraction(std::shared_ptr<Camera> & camera) {
 		cv::Mat current_frame = camera->frame_;
 		cv::Mat current_frame_ec = camera->frame_ec_;
 
+		// original frame
 		camera->simple_MOG2->apply(current_frame , camera->foreground_mask);
 		camera->foreground_mask.convertTo(camera->masked_[0], CV_8UC1);
 
+		// frame with environmental compensation
 		camera->simple_MOG2_ec->apply(current_frame_ec , camera->foreground_mask_ec);
 		camera->foreground_mask_ec.convertTo(camera->masked_[1], CV_8UC1);
-		cv::imshow("bg-subtracted", camera->masked_[0]);
+
+		// cv::imshow("bg-subtracted", camera->masked_[0]);
 		
 	}
 
