@@ -336,6 +336,18 @@ namespace mcmt {
 			std::string s(20, '\0');
 			std::strftime(&s[0], s.size(), "%Y-%m-%d %H:%M:%S", std::localtime(&now));
 			detection["Timestamp"] = s;
+			
+			// insert 2d coords and sizes of each matched id
+			detection["Frame Number"] = frame_count_;
+			detection["Cam 1 Bounding Box Size"] = track_plot_a->size_.back();
+			detection["Cam 1 Target Size"] = track_plot_a->area_.back();
+			detection["Cam 1 X"] = track_plot_a->xs_.back();
+			detection["Cam 1 Y"] = track_plot_a->ys_.back();
+			detection["Cam 2 Bounding Box Size"] = track_plot_b->size_.back();
+			detection["Cam 2 Target Size"] = track_plot_b->area_.back();
+			detection["Cam 2 X"] = track_plot_b->xs_.back();
+			detection["Cam 2 Y"] = track_plot_b->ys_.back();
+
 			detections_3d_.append(detection);
 	}
 

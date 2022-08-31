@@ -155,6 +155,7 @@ The following step-by-step processing will guide you on the installation process
 		* If you are unsure what is your camera port number, type `v4l2-ctl --list-devices` in a separate terminal to bring up the list of media devices connected to your computer.
 	* For realtime processing with vilota edge cameras, set the parameters as specified [here](Vilota_Wsrt_Guide.md#Initialise-Client).
 	* Set the video resolution parameters FRAME_WIDTH_ and FRAME_HEIGHT_ to the **exact** video resolution of the input video files (for non-realtime processing), or the **desired** video resolution of the camera inputs (for realtime processing)
+	* If you wish to run the Middleman Server code, refer to the initial configuration in the Middleman [Readme](middleman/README.md#initial-configuration)
 
 	``` cpptools
 	// declare session and camera parameters

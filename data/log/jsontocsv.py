@@ -10,6 +10,7 @@ import csv
 import sys
 
 NUM_OF_CAMERAS = 2
+USE_YOLO_DETECTOR = True
 
 # Calculate XY centroid from bottom_right and top_left coordinates
 def get_centroid(bottom_right,top_left):
@@ -47,8 +48,9 @@ for i in range(0,NUM_OF_CAMERAS):
 # add headers
 header = list()
 header.append('Frame Number')
-header.append('Class ID')
-header.append('Confidence')
+if USE_YOLO_DETECTOR:
+    header.append('Class ID')
+    header.append('Confidence')
 header.append('x')
 header.append('y')
 header.append('width')
@@ -72,8 +74,9 @@ for frame in data:
             # rowdata contains the data for a given detection at a given frame
             rowdata = list()
             rowdata.append(frame['Frame Number'])
-            rowdata.append(frame[cam][idx]['Class-ID'])
-            rowdata.append(frame[cam][idx]['Confidence'])
+            if USE_YOLO_DETECTOR:
+                rowdata.append(frame[cam][idx]['Class-ID'])
+                rowdata.append(frame[cam][idx]['Confidence'])
             rowdata.append(cen_x)
             rowdata.append(cen_y)
             rowdata.append(width)
