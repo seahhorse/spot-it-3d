@@ -165,7 +165,7 @@ def validate_object_z(obj_z):
 # returns coordinates in a dictionary 
 # format of dictionary:
 # {
-#   "degreees" : <int:degrees>,
+#   "degrees" : <int:degrees>,
 #   "minutes"  : <int:minutes>,
 #   "seconds"  : <int:seconds>
 # }
@@ -178,7 +178,7 @@ def convert_to_dms(degrees):
     s = degrees - d*3600 - m*60
 
     coordinate_in_dms = {
-        "degreees" : d,
+        "degrees" : d,
         "minutes"  : m,
         "seconds"  : s
    }
@@ -236,4 +236,4 @@ def resource_not_found(e):
     return jsonify(error=str(e)), 404
 
 if __name__ == "__main__":
-    app.run(debug = True)
+    app.run(debug = True, host="localhost")

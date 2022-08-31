@@ -260,10 +260,10 @@ int main(int argc, char * argv[]) {
 
 		// post image and data to the server hosted on the specified URL
 		// @TODO: Middleman throws segmentation fault for some videos where the bounding box
-		// exceeds the frame. Set POST_TO_SERVER_ to false until the problem is fixed
-		if (POST_TO_SERVER_) {
+		// exceeds the frame. Set POST_TO_MIDDLEMAN_ to false until the problem is fixed
+		if (POST_TO_MIDDLEMAN_) {
 			cv::imwrite("middleman/image.jpg", frames_[0]); 
-			post_to_server("localhost:5000");
+			post_to_server(MIDDLEMAN_IP_);
 		}
 
 		combined_frame_ = draw_lines(combined_frame_);

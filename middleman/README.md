@@ -8,15 +8,14 @@ Run the installation script to install the dependencies.
 pip install -r /path/to/requirements.txt
 ```
 
-Run the server using this command:
+The main SPOT-IT-3D compile script will automatically run SPOT-IT-3D and the middleman. You can also run the server independently (without the SPOT-IT-3D code) using this command:
 ```
-python3 server.py
+python3 main.py
 ```
 # Documentation
 SPOT-IT-3D will output frames with annotated information, which will be POST-ed onto the middleman. GET requests can be sent to the middleman to retrieve these frames. An added functionality is the conversion of relative coordinates to absolute coordinates in Latitude and Longitude, given a specific set of base coordinates. The following will document the various methods used.
-> Base URL: "localhost:5000"
 
-This process can be observed in the following flow chart:
+The overall middleman process can be observed in the following flow chart:
 
 <b>Latestframe & Listframe</b>
 
@@ -25,6 +24,30 @@ This process can be observed in the following flow chart:
 <b>Convert Coordinates</b>
 
 ![Convert](https://user-images.githubusercontent.com/65325079/150501118-ddc3aaab-2f31-4b90-b285-9cd859536a3c.png)
+
+## Initial Configuration
+
+To configure SPOT-IT-3D to post to the middleman, open the parameters file (/include/multi_cam_params.hpp) and set the following parameter to true:
+
+```
+const bool POST_TO_MIDDLEMAN_ = true;
+```
+
+By default, the middleman server will bind to localhost, port 500. To change the binding IP address and port, do the following steps (assuming the intended middleman IP is 192.168.1.23 and port is 5000):
+
+1. In main.py, update the final line (which calls the Flask app) to the following:
+
+```python
+if __name__ == "__main__":
+    app.run(debug = True, host="192.168.1.23")
+```
+
+2. Configure SPOT-IT-3D to post to the correct middleman URL by opening the parameters file and change the following parameter:
+
+```cpptools
+const std::string MIDDLEMAN_IP_ = "192.168.1.23:5000"
+```
+
 
 ## Format of JSON Packet
 ````
