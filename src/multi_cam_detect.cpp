@@ -43,6 +43,7 @@
 
 // standard package imports
 #include <string>
+#include <math.h>
 #include <memory>
 #include <chrono>
 #include <vector>
@@ -287,7 +288,7 @@ namespace mcmt {
 			if (cv::contourArea(camera->current_frame_contours[j]) > SMALLEST_ALLOWED_CONTOUR) {
 				cv::minEnclosingCircle(camera->current_frame_contours[j], camera->contour_center, camera->contour_radius);
 				camera->centroids_.push_back(camera->contour_center);
-				camera->sizes_.push_back(cv::contourArea(camera->current_frame_contours[j]));
+				camera->sizes_.push_back(sqrt(cv::contourArea(camera->current_frame_contours[j])));
 			}
 		}
 
@@ -955,7 +956,7 @@ namespace mcmt {
 			#else
 				cameras_[cam_idx].get()->cap_.release();
 			#endif
-			if (IS_REALTIME_) cameras_[cam_idx]->recording_.release();
+			if (IS_REALTIME_ && RECORD_VIDEO_TO_FILE_) cameras_[cam_idx]->recording_.release();
 		}
 	}
 

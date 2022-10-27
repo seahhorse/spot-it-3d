@@ -68,8 +68,12 @@ int main(int argc, char * argv[]) {
 
 	initialize_cameras();
 	initialize_tracks();
-	if (RUN_DETECT_TRACK_) initialize_recording(cameras_[0]->frame_w_, cameras_[0]->frame_h_);
-	if (RUN_DETECT_TRACK_) initialize_logs();
+	if (RUN_DETECT_TRACK_ && RECORD_VIDEO_TO_FILE_) {
+		initialize_recording(cameras_[0]->frame_w_, cameras_[0]->frame_h_);
+	}
+	if (RUN_DETECT_TRACK_ && RECORD_LOGS_) {
+		initialize_logs();
+	}
 
 	auto frame_end = std::chrono::system_clock::now();
 	std::chrono::duration<float> elapsed_seconds = std::chrono::duration<float>::zero();
@@ -137,7 +141,7 @@ int main(int argc, char * argv[]) {
 			else {
 				// make a copy of the frame to be run through env compensation pipeline
 				camera->frame_ec_ = camera->frame_.clone();
-				if (IS_REALTIME_) {
+				if (IS_REALTIME_ && RECORD_VIDEO_TO_FILE_) {
 					camera->recording_.write(camera->frame_);
 				}
 			}
@@ -201,7 +205,7 @@ int main(int argc, char * argv[]) {
 		}
 
 		if (is_disconnected_) break;
-		if (RUN_DETECT_TRACK_) log_2D();
+		if (RUN_DETECT_TRACK_ && RECORD_LOGS_) log_2D();
 
 		auto detect_end = std::chrono::system_clock::now();
 		
@@ -249,14 +253,22 @@ int main(int argc, char * argv[]) {
 				calculate_3D();
 			}
 
-			print_frame_summary();
-			annotate_frames();
+			if (WRITE_TO_CONSOLE_) {
+				print_frame_summary();
+			}
+
+			// annotate frame with detections if we want to display or save them
+			if (RECORD_VIDEO_TO_FILE_ || DISPLAY_VIDEO_) {
+				annotate_frames();
+			}
 		}
 
 		auto track_end = std::chrono::system_clock::now();
 		
 		// show and save video combined tracking frame
-		cv::hconcat(frames_, combined_frame_);
+		if (RECORD_VIDEO_TO_FILE_ || DISPLAY_VIDEO_) {
+			cv::hconcat(frames_, combined_frame_);
+		}
 
 		// post image and data to the server hosted on the specified URL
 		// @TODO: Middleman throws segmentation fault for some videos where the bounding box
@@ -266,27 +278,45 @@ int main(int argc, char * argv[]) {
 			post_to_server(MIDDLEMAN_IP_);
 		}
 
-		combined_frame_ = draw_lines(combined_frame_);
+		if (RECORD_VIDEO_TO_FILE_ || DISPLAY_VIDEO_) {
+			combined_frame_ = draw_lines(combined_frame_);
+		}
 
-		std::cout << "Total frame took: " << elapsed_seconds.count() << "s\n";
+		if (WRITE_TO_CONSOLE_) {
+			std::cout << "Total frame took: " << elapsed_seconds.count() << "s\n";
+		}
 
 		if (RUN_DETECT_TRACK_) {
 			std::chrono::duration<float> detect_elapsed_seconds = detect_end - detect_start;
-			std::cout << "Detection took: " << detect_elapsed_seconds.count() << "s\n";	
 			std::chrono::duration<float> track_elapsed_seconds = track_end - track_start;
-			std::cout << "Tracking took: " << track_elapsed_seconds.count() << "s\n";
-			frame_time_file << detect_elapsed_seconds.count() << ", " << track_elapsed_seconds.count() << ", " << elapsed_seconds.count() << "\n"; 
+			if (RECORD_LOGS_) {
+				frame_time_file << detect_elapsed_seconds.count() << ", " << track_elapsed_seconds.count() << ", " << elapsed_seconds.count() << "\n"; 
+			}
+			if (WRITE_TO_CONSOLE_) {
+				std::cout << "Detection took: " << detect_elapsed_seconds.count() << "s\n";
+				std::cout << "Tracking took: " << track_elapsed_seconds.count() << "s\n";
+			}
 		}
 
-		if (GRAPHIC_UI_) {
-			graphical_UI(1.0 / elapsed_seconds.count());
-			cv::vconcat(combined_frame_, ui_, combined_frame_);
+		if (DISPLAY_VIDEO_ || RECORD_VIDEO_TO_FILE_) {
+			if (GRAPHIC_UI_) {
+				graphical_UI(1.0 / elapsed_seconds.count());
+				cv::vconcat(combined_frame_, ui_, combined_frame_);
+			}
+		}
+
+		if (DISPLAY_OUTPUT_FPS_) {
+			std::cout << "FPS: " << 1.0 / elapsed_seconds.count() << std::endl;
 		}
 	
-		if (RUN_DETECT_TRACK_) annotated_.write(combined_frame_);
+		if (RUN_DETECT_TRACK_ && RECORD_VIDEO_TO_FILE_) {
+			annotated_.write(combined_frame_);
+		}
 
 		// show cv window
-		imshow_resized("Annotated", combined_frame_);
+		if (DISPLAY_VIDEO_) {
+			imshow_resized("Annotated", combined_frame_);
+		}
 		
 		frame_count_ += 1;
 
@@ -297,8 +327,12 @@ int main(int argc, char * argv[]) {
 	}
 
 	if (RUN_DETECT_TRACK_) {
-		write_logs();
-	 	annotated_.release();
+		if (RECORD_LOGS_) {
+			write_logs();
+		}
+	 	if (RECORD_VIDEO_TO_FILE_) {
+			annotated_.release();
+		}
 	}
 	close_cameras();
 	std::raise(SIGINT);

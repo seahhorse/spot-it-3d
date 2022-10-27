@@ -292,7 +292,7 @@ namespace mcmt {
 			std::cout << cap_.isOpened() ? "Camera opened successful!\n" : "Error: Cannot open camera! Please check!\n";
 		#endif
 
-		if (IS_REALTIME_) {
+		if (IS_REALTIME_ && RECORD_VIDEO_TO_FILE_) {
 			std::string vid_output = "data/output/" + SESSION_NAME_ + "_" + std::to_string(cam_index_) + ".avi";
 			recording_ = cv::VideoWriter(vid_output, cv::VideoWriter::fourcc('M','J','P','G'), VIDEO_FPS_, 
 			cv::Size(frame_w_, frame_h_));
