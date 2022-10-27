@@ -773,7 +773,9 @@ namespace mcmt {
 			track_plot_a->xyz_ = {X, Y, Z};
 			track_plot_b->xyz_ = {X, Y, Z};
 
-			log_3D(track_plot_a, track_plot_b);
+			if (RECORD_LOGS_) {
+				log_3D(track_plot_a, track_plot_b);
+			}
 		}
 	}
 

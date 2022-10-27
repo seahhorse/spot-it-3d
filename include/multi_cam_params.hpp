@@ -53,7 +53,14 @@ namespace mcmt {
     const bool POST_TO_MIDDLEMAN_ = false;
     const std::string MIDDLEMAN_IP_ = "localhost:5000";
 
+    // declare logging and video recording switches
+    const bool WRITE_TO_CONSOLE_ = true;
+    const bool DISPLAY_OUTPUT_FPS_ = true;
+    const bool RECORD_VIDEO_TO_FILE_ = true;
+    const bool RECORD_LOGS_ = true;
+
     // declare display settings
+    const bool DISPLAY_VIDEO_ = true;
     const bool GRAPHIC_UI_ = true;
     const bool SHOW_UNMATCHED_TARGETS_ = true;
     const bool SHOW_CAM_NUM_ = true;

@@ -956,7 +956,7 @@ namespace mcmt {
 			#else
 				cameras_[cam_idx].get()->cap_.release();
 			#endif
-			if (IS_REALTIME_) cameras_[cam_idx]->recording_.release();
+			if (IS_REALTIME_ && RECORD_VIDEO_TO_FILE_) cameras_[cam_idx]->recording_.release();
 		}
 	}
 
