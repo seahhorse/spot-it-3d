@@ -709,12 +709,12 @@ namespace mcmt {
 	 */
 	void calculate_3D()	{
 
-		double fx = 1190.0;
-		double cx = 487.5;
-		double fy = 1192.4;
-		double cy = 815.5;
-		double B = 10.0;
-		int epsilon = 10;
+		double fx = FOCAL_LEN_X_;
+		double cx = CURVATURE_X_;
+		double fy = FOCAL_LEN_Y_;
+		double cy = CURVATURE_Y_;
+		double B = DISTANCE_BETWEEN_CAMS_METRES_;
+		int epsilon = CAMERA_PAN_DEGREES_;
 
 		for (auto & matched_track : matched_tracks_) {
 

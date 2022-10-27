@@ -75,6 +75,14 @@ namespace mcmt {
     const int VIDEO_FPS_ = 30;
     const int MAX_TOLERATED_CONSECUTIVE_DROPPED_FRAMES_ = 5;
 
+    // declare camera intrinsic params, pose, and orientation
+    const float FOCAL_LEN_X_ = 1190.0;
+    const float CURVATURE_X_ = 487.5;
+    const float FOCAL_LEN_Y_ = 1192.4;
+    const float CURVATURE_Y_ = 815.5;
+    const float DISTANCE_BETWEEN_CAMS_METRES_ = 10.0;
+    const float CAMERA_PAN_DEGREES_ = 10.0;
+
 	// declare filter parameters
     const float VISIBILITY_RATIO_ = 0.5;
     const float VISIBILITY_THRESH_ = 1.0;
