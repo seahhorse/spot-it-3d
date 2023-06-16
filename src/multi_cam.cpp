@@ -153,25 +153,28 @@ int main(int argc, char * argv[]) {
 					// clear detection variable vectors
 					camera->clear_detection_variables();
 
-					if (USE_YOLO_DETECTION_) {
+					if (USE_YOLO_DETECTION_ == 1) {
 						yolo_detection(camera);
 					}
 					else{
+						if (USE_YOLO_DETECTION_ == 0) {
+							// correct for environmental effects
+							apply_env_compensation(camera);
 
-						// correct for environmental effects
-						apply_env_compensation(camera);
-
-						// subtract background and get detections
-						if (USE_BLOB_DETECTION) {
-							remove_ground(camera, 0);
-							remove_ground(camera, 1);
-							blob_detection(camera);
-						}
-						else {
-							simple_background_subtraction(camera);
+							// subtract background and get detections
+							if (USE_BLOB_DETECTION) {
+								remove_ground(camera, 0);
+								remove_ground(camera, 1);
+								blob_detection(camera);
+							}
+							else {
+								simple_background_subtraction(camera);
+								contour_detection(camera);
+							}
+						} else if (USE_YOLO_DETECTION_ == 2) {
+							fft_thresholding(camera);
 							contour_detection(camera);
 						}
-
 					}
 				#endif // Edge Cam Interface is currently before KF/DCF. To be shifted
 
@@ -219,7 +222,7 @@ int main(int argc, char * argv[]) {
 					good_track->x = track->centroid_.x;
 					good_track->y = track->centroid_.y;
 					good_track->size = track->size_;
-					if (USE_YOLO_DETECTION_) {
+					if (USE_YOLO_DETECTION_ == 1) {
 						good_track->class_id = track->yolo_class_id_;
 						good_track->confidence = track->yolo_confidence_;
 					}

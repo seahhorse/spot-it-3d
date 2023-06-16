@@ -279,6 +279,13 @@ namespace mcmt {
 		aspect_ratio_ = frame_w_ / frame_h_;
 		next_id_ = 1000;
 
+		//initialize FFT attributes in camera class
+		FFT[0] = cv::Mat::zeros(frame_h_, frame_w_,CV_32FC1); // real
+		FFT[1] = cv::Mat::zeros(frame_h_, frame_w_,CV_32FC1); // imaginary
+		for (int j = 0; j < windowsize; j++) {
+			sliding_window.push(cv::Mat::zeros(frame_h_, frame_w_,CV_32FC1));
+		}
+
 		// if video frame size is too big, downsize
 		downsample_ = false;
 		if ((frame_w_ * frame_h_) > (FRAME_WIDTH_ * FRAME_HEIGHT_)) {

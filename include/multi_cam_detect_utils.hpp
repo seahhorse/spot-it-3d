@@ -170,6 +170,10 @@ namespace mcmt {
 			std::shared_ptr<YoloDetector> yolo_detector;
 			std::vector<yolo_object> yolo_objects;
 
+			// FFT detection parameters
+			std::queue<cv::Mat> sliding_window;
+			cv::Mat FFT[2];
+
 			// declare class functions
 			// bool get_frame();
 			void clear_detection_variables();

@@ -39,12 +39,12 @@ namespace mcmt {
     // declare session and camera parameters
     // recommended convention for session name: "YYYY-DD-MM_<location>_<session no>"
     // input files should be named in the format "<SESSION_NAME>_<cam no>.<file ext>"
-    const std::string SESSION_NAME_ = "test"; 
+    const std::string SESSION_NAME_ = "30-08-2022-5"; 
     const std::vector<std::string> CAMERA_INPUT_ = {"0", "1"};
     const std::string INPUT_FILE_EXTENSION_ = "avi";
     const bool IS_REALTIME_ = false; // if WSRT_ENABLED, this must be set to true
     const int NUM_OF_CAMERAS_ = 2;
-    const bool USE_YOLO_DETECTION_ = false;
+    const int USE_YOLO_DETECTION_ = 2; // 0:MOG2 Simple_background_subtraction, 1:YOLO, 2:FFT
 
     // declare master switch
     const bool RUN_DETECT_TRACK_ = true;
@@ -62,6 +62,8 @@ namespace mcmt {
     // declare display settings
     const bool DISPLAY_VIDEO_ = true;
     const bool GRAPHIC_UI_ = true;
+    const bool SHOW_FFT_GRAYSCALE = false;
+    const bool SHOW_FFT_BINARY = false;
     const bool SHOW_UNMATCHED_TARGETS_ = true;
     const bool SHOW_CAM_NUM_ = true;
     const bool SHOW_ID_ = true;
@@ -70,8 +72,8 @@ namespace mcmt {
     const bool SHOW_CONNECTING_LINES = true;
 
 	// declare video parameters
-	const int FRAME_WIDTH_ = 1280;
-    const int FRAME_HEIGHT_ = 720;
+	const int FRAME_WIDTH_ = 640;
+    const int FRAME_HEIGHT_ = 480;
     const int VIDEO_FPS_ = 30;
     const int MAX_TOLERATED_CONSECUTIVE_DROPPED_FRAMES_ = 5;
 
@@ -112,7 +114,24 @@ namespace mcmt {
     const int DILATION_ITER_ = 1;
     const float REMOVE_GROUND_ITER_ = 5.75;
     const float BACKGROUND_CONTOUR_CIRCULARITY_ = 0.5;
-
+    
+    // declare FFT detector parameters
+    const float pi = std::acos(-1);
+	const int windowsize = 2;
+	const double frequencyframetoselect = 2;
+    const float theta = 2*pi*(frequencyframetoselect-1)/float(windowsize);
+    const float cos_theta = cosf(theta);
+    const float sin_theta = sinf(theta);
+	//Parameters for thresholding
+	const double ffthresh = 20;
+	const double gaussthresh = 15;
+	//Parameters for Morphological Operations
+	const cv::Mat openingkernel1 = cv::getStructuringElement(0, cv::Size(2, 1));
+	const cv::Mat openingkernel2 = cv::getStructuringElement(0, cv::Size(3, 3));
+	const cv::Mat closingkernel = cv::getStructuringElement(0, cv::Size(35, 24));
+	//Parameters for gaussian blur
+	const double sig = 3;
+	const int filtsize = 17;
     // declare tracking parameters
     const int PRUNE_HIST_ = 30;
 

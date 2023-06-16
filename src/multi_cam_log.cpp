@@ -309,7 +309,7 @@ namespace mcmt {
 				std::string bottom_right = "(" + std::to_string(bottom_right_x) + ", " + std::to_string(bottom_right_y) + ")";
 				detection["Top-Left"] = top_left;
 				detection["Bottom-Right"] = bottom_right;
-				if (USE_YOLO_DETECTION_) {
+				if (USE_YOLO_DETECTION_ == 1) {
 					detection["Class-ID"] = yolo_class_list_[track->class_id].c_str();
 					detection["Confidence"] = track->confidence;
 				}

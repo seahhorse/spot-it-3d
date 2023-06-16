@@ -230,7 +230,42 @@ namespace mcmt {
 		// cv::imshow("bg-subtracted", camera->masked_[0]);
 		
 	}
+	/**
+    * Propeller detector, using sliding window FFT algo (constant time per frame regardless of window size)
+	* https://www.comm.utoronto.ca/~dimitris/ece431/slidingdft.pdf
+	* Note that window size = 2 and frequency frame to select = 2, turns the algo into simple frame differencing
+    */
+    
+    void fft_thresholding(std::shared_ptr<Camera> & camera) {
+		cv::Mat current;
+		cv::cvtColor(camera->frame_, current, cv::COLOR_BGR2GRAY);
+		current.convertTo(current, CV_32F);
+		
+		cv::Mat minus = camera->sliding_window.front();
+		camera->sliding_window.pop();
+		camera->sliding_window.push(current);
 
+		//FFT[0] is real part, FFT[1] is complex. Instead of complex exponential, use sin and cos via euler's identity
+		cv::Mat temp[] = {camera->FFT[0] - minus + current, camera->FFT[1]};
+		camera->FFT[0] = cos_theta*temp[0] - sin_theta*temp[1];
+		camera->FFT[1] = cos_theta*temp[1] + sin_theta*temp[0];
+		
+		cv::Mat absFFTMat = camera->FFT[0].mul(camera->FFT[0]) + camera->FFT[1].mul(camera->FFT[1]);
+		cv::sqrt(absFFTMat,absFFTMat); //magnitude of FFT
+		
+		if (SHOW_FFT_GRAYSCALE) cv::imshow("absFFT", absFFTMat*(1.0/255));
+
+		cv::threshold(absFFTMat, camera->foreground_mask, ffthresh, 255,cv::THRESH_BINARY);
+		camera->foreground_mask.convertTo(camera->masked_[0], CV_8UC1);
+		cv::morphologyEx(camera->masked_[0], camera->masked_[0], cv::MORPH_OPEN, openingkernel1);
+		cv::GaussianBlur(camera->masked_[0], camera->masked_[0], cv::Size(filtsize, filtsize), sig);
+		cv::threshold(camera->masked_[0], camera->masked_[0], gaussthresh, 255,cv::THRESH_BINARY);
+		cv::morphologyEx(camera->masked_[0], camera->masked_[0], cv::MORPH_CLOSE, closingkernel);
+		cv::morphologyEx(camera->masked_[0], camera->masked_[0], cv::MORPH_OPEN, openingkernel2);
+
+        if (SHOW_FFT_BINARY) cv::imshow("FFTDetector", camera->masked_[0]);
+    }
+	
 	/**
 	 * This function applies masking operations before performing blob detection
 	 */
@@ -810,7 +845,7 @@ namespace mcmt {
 			track->age_++;
 			track->totalVisibleCount_++;
 			track->consecutiveInvisibleCount_ = 0;
-			if (USE_YOLO_DETECTION_) {
+			if (USE_YOLO_DETECTION_ == 1) {
 				track->yolo_class_id_ = camera->yolo_class_ids_[detection_index];
 				track->yolo_confidence_ = camera->yolo_confidences_[detection_index];
 			}
@@ -856,7 +891,7 @@ namespace mcmt {
 			// initialize new track
 			auto new_track = std::shared_ptr<Track>(
 				new Track(camera->next_id_, size, cen, VIDEO_FPS_, SEC_FILTER_DELAY_));
-			if (USE_YOLO_DETECTION_) {
+			if (USE_YOLO_DETECTION_ == 1) {
 				new_track->yolo_class_id_ = camera->yolo_class_ids_[unassigned_detection];
 				new_track->yolo_confidence_ = camera->yolo_confidences_[unassigned_detection];
 			}
